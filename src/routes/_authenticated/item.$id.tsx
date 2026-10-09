@@ -67,7 +67,8 @@ function ItemEditor({ item }: { item: Item }) {
       .eq("id", item.id);
     if (error) {
       setBusy(false);
-      return toast.error(error.message);
+      toast.error(error.message);
+      return;
     }
     try {
       await reprice({ data: { id: item.id } });
