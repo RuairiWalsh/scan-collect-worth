@@ -11,7 +11,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data, context }) => {
-    const { collectPrices, ebayConfigured } = await import("./prices.server");
+    const { collectPrices, ebayConfigured } = await import("@/server/prices.server");
     const { data: item, error } = await context.supabase
       .from("items")
       .select("*")
@@ -38,6 +38,6 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
 export const pricingStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { ebayConfigured } = await import("./prices.server");
+    const { ebayConfigured } = await import("@/server/prices.server");
     return { ebay: ebayConfigured() };
   });

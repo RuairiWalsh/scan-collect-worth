@@ -5,8 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Camera, CameraOff, ImagePlus, Loader2, Trash2, CheckCheck, ChevronRight, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { identifyItem } from "@/server/scan.functions";
-import { refreshItemPrice } from "@/server/prices.functions";
+import { identifyItem } from "@/lib/scan.functions";
+import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
 import { captureVideo, fileToImages, usd } from "@/lib/image";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
@@ -16,9 +16,9 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
     meta: [
-      { title: "Live scanner — Vaultscan" },
+      { title: "Live scanner — Lymitz" },
       { name: "description", content: "Scan cards, stamps and coins into a batch and review before saving." },
-      { property: "og:title", content: "Live scanner — Vaultscan" },
+      { property: "og:title", content: "Live scanner — Lymitz" },
       { property: "og:description", content: "Scan cards, stamps and coins into a batch and review before saving." },
     ],
   }),
@@ -141,7 +141,7 @@ function ScanPage() {
 
   async function updateItem(id: string, patch: Partial<Item>, repriceAfter = false) {
     const { error } = await supabase.from("items").update(patch).eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["items", "batch"] });
     if (repriceAfter) doPrice(id);
   }
@@ -155,7 +155,7 @@ function ScanPage() {
     const ids = batch.map((b) => b.id);
     if (!ids.length) return;
     const { error } = await supabase.from("items").update({ status: "collection" }).in("id", ids);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(`Added ${ids.length} item${ids.length > 1 ? "s" : ""} to your collection`);
     qc.invalidateQueries({ queryKey: ["items"] });
   }

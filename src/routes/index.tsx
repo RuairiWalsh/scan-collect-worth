@@ -6,12 +6,12 @@ import hero from "@/assets/hero.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vaultscan — Live scanner for cards, stamps & coins" },
+      { title: "Lymitz — Live scanner for cards, stamps & coins" },
       {
         name: "description",
-        content: "Point your camera at TCG, sports cards, stamps or coins. Vaultscan identifies them and tracks real market value.",
+        content: "Point your camera at TCG, sports cards, stamps or coins. Lymitz identifies them and tracks real market value.",
       },
-      { property: "og:title", content: "Vaultscan — Live scanner for cards, stamps & coins" },
+      { property: "og:title", content: "Lymitz — Live scanner for cards, stamps & coins" },
       { property: "og:description", content: "Scan collectibles in batches and see what your whole collection is worth." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -43,7 +43,7 @@ function Index() {
 
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <span className="font-display text-2xl font-black tracking-tight">
-          VAULT<span className="text-primary">SCAN</span>
+          LYM<span className="text-primary">ITZ</span>
         </span>
         <Button asChild variant="outline" size="sm">
           <Link to="/auth">Sign in</Link>

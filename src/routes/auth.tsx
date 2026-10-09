@@ -11,9 +11,9 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Vaultscan" },
+      { title: "Sign in — Lymitz" },
       { name: "description", content: "Sign in to scan collectibles and track your collection's value." },
-      { property: "og:title", content: "Sign in — Vaultscan" },
+      { property: "og:title", content: "Sign in — Lymitz" },
       { property: "og:description", content: "Sign in to scan collectibles and track your collection's value." },
     ],
   }),
@@ -64,7 +64,7 @@ function AuthPage() {
     <div className="grid-paper flex min-h-screen items-center justify-center px-4">
       <div className="panel shadow-hard w-full max-w-sm p-8">
         <Link to="/" className="font-display text-xl font-black">
-          VAULT<span className="text-primary">SCAN</span>
+          LYM<span className="text-primary">ITZ</span>
         </Link>
         <h1 className="mt-6 text-2xl font-extrabold">{mode === "in" ? "Welcome back" : "Open your vault"}</h1>
         <Button variant="outline" className="mt-6 w-full" onClick={google}>

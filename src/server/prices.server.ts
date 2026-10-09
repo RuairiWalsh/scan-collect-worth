@@ -26,7 +26,7 @@ const q = (s: string) => s.replace(/"/g, "");
 /** Pokémon TCG API — includes TCGplayer market prices (near-mint, raw). */
 export async function pokemonTcg(item: PricedItem): Promise<PriceSource[]> {
   const parts = [`name:"${q(item.name)}"`];
-  if (item.number) parts.push(`number:${q(item.number.split("/")[0]).trim()}`);
+  if (item.number) parts.push(`number:${q(item.number.split("/")[0] ?? "").trim()}`);
   if (item.set_name) parts.push(`set.name:"${q(item.set_name)}"`);
   const headers: Record<string, string> = {};
   const key = process.env["POKEMON_TCG_API_KEY"];
@@ -50,7 +50,7 @@ export async function pokemonTcg(item: PricedItem): Promise<PriceSource[]> {
     : item.variant?.toLowerCase().includes("1st")
       ? "1stEditionHolofoil"
       : undefined;
-  const p = (variantKey && prices[variantKey]) || prices.holofoil || prices.normal || Object.values(prices)[0];
+  const p = (variantKey && prices[variantKey]) || prices['holofoil'] || prices['normal'] || Object.values(prices)[0];
   const price = p?.market ?? p?.mid;
   if (!price) return [];
   return [{ source: "tcgplayer", label: "TCGplayer market", price, kind: "reference", url: card.tcgplayer.url }];
@@ -60,9 +60,9 @@ export async function pokemonTcg(item: PricedItem): Promise<PriceSource[]> {
 export async function scryfall(item: PricedItem): Promise<PriceSource[]> {
   const data = await getJson(
     `https://api.scryfall.com/cards/search?unique=prints&q=${encodeURIComponent(
-      `!"${q(item.name)}"${item.number ? ` cn:${q(item.number.split("/")[0])}` : ""}`,
+      `!"${q(item.name)}"${item.number ? ` cn:${q(item.number.split("/")[0] ?? "")}` : ""}`,
     )}`,
-    { headers: { "User-Agent": "VaultScan/1.0", Accept: "application/json" } },
+    { headers: { "User-Agent": "Lymitz/1.0", Accept: "application/json" } },
   );
   let card = data?.data?.[0];
   if (item.set_name && data?.data?.length) {

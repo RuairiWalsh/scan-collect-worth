@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Vaultscan — Scan & value your collectibles" },
+      { title: "Lymitz — Scan & value your collectibles" },
       { name: "description", content: "Live-scan cards, stamps and coins and track what your collection is worth." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -28,7 +28,7 @@ function AuthedLayout() {
       <header className="sticky top-0 z-30 border-b-2 border-ink bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/collection" className="font-display text-xl font-black">
-            VAULT<span className="text-primary">SCAN</span>
+            LYM<span className="text-primary">ITZ</span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             <Link to="/collection" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>

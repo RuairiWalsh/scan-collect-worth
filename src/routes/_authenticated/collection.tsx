@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
     meta: [
-      { title: "My collection — Vaultscan" },
+      { title: "My collection — Lymitz" },
       { name: "description", content: "Your cards, stamps and coins with live estimated value." },
-      { property: "og:title", content: "My collection — Vaultscan" },
+      { property: "og:title", content: "My collection — Lymitz" },
       { property: "og:description", content: "Your cards, stamps and coins with live estimated value." },
     ],
   }),

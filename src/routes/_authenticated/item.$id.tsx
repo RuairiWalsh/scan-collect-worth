@@ -9,7 +9,7 @@ import { itemQuery, type Item } from "@/lib/items";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import type { PriceSource } from "@/lib/pricing";
-import { refreshItemPrice, pricingStatus } from "@/server/prices.functions";
+import { refreshItemPrice, pricingStatus } from "@/lib/prices.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +20,9 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
     meta: [
-      { title: "Item details — Vaultscan" },
+      { title: "Item details — Lymitz" },
       { name: "description", content: "Edit details, condition and see price sources for this collectible." },
-      { property: "og:title", content: "Item details — Vaultscan" },
+      { property: "og:title", content: "Item details — Lymitz" },
       { property: "og:description", content: "Edit details, condition and see price sources for this collectible." },
     ],
   }),
@@ -67,7 +67,8 @@ function ItemEditor({ item }: { item: Item }) {
       .eq("id", item.id);
     if (error) {
       setBusy(false);
-      return toast.error(error.message);
+      toast.error(error.message);
+      return;
     }
     try {
       await reprice({ data: { id: item.id } });

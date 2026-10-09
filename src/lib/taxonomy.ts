@@ -76,7 +76,7 @@ export function defaultCondition(cat: CategoryKey): string {
 
 export function conditionFor(cat: string, key: string): Condition {
   const list = CONDITIONS[(cat as CategoryKey) in CONDITIONS ? (cat as CategoryKey) : "cards"];
-  return list.find((c) => c.key === key) ?? list[0];
+  return list.find((c) => c.key === key) ?? list[0]!;
 }
 
 export function categoryLabel(cat: string, sub?: string | null) {
