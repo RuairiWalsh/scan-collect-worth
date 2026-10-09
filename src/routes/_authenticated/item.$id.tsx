@@ -9,7 +9,7 @@ import { itemQuery, type Item } from "@/lib/items";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import type { PriceSource } from "@/lib/pricing";
-import { refreshItemPrice, pricingStatus } from "@/server/prices.functions";
+import { refreshItemPrice, pricingStatus } from "@/lib/prices.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

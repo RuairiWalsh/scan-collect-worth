@@ -58,7 +58,7 @@ export const identifyItem = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const { streamJson, AiError } = await import("./ai.server");
+    const { streamJson, AiError } = await import("@/server/ai.server");
     try {
       const result = await streamJson<Identification>({
         instructions:
