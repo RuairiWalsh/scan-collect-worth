@@ -40,7 +40,12 @@ function ItemEditor({ item }: { item: Item }) {
   const [f, setF] = useState(item);
   const [busy, setBusy] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
-...
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const reprice = useServerFn(refreshItemPrice);
+  const status = useServerFn(pricingStatus);
+
+  useEffect(() => setF(item), [item]);
   useEffect(() => {
     status().then((s) => setPriceStatus(s)).catch(() => {});
   }, [status]);
