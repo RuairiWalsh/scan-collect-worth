@@ -38,6 +38,6 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
 export const pricingStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { ebayConfigured } = await import("@/server/prices.server");
-    return { ebay: ebayConfigured() };
+    const { ebayConfigured, justtcgConfigured } = await import("@/server/prices.server");
+    return { ebay: ebayConfigured(), justtcg: justtcgConfigured() };
   });

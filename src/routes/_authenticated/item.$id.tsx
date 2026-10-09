@@ -39,15 +39,10 @@ function ItemPage() {
 function ItemEditor({ item }: { item: Item }) {
   const [f, setF] = useState(item);
   const [busy, setBusy] = useState(false);
-  const [ebayOn, setEbayOn] = useState<boolean | null>(null);
-  const qc = useQueryClient();
-  const navigate = useNavigate();
-  const reprice = useServerFn(refreshItemPrice);
-  const status = useServerFn(pricingStatus);
-
-  useEffect(() => setF(item), [item]);
+  const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
+...
   useEffect(() => {
-    status().then((s) => setEbayOn(s.ebay)).catch(() => {});
+    status().then((s) => setPriceStatus(s)).catch(() => {});
   }, [status]);
 
   const set = <K extends keyof Item>(k: K, v: Item[K]) => setF((p) => ({ ...p, [k]: v }));
