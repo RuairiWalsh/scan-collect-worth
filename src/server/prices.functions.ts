@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { estimateValue } from "@/lib/pricing";
+import type { Json } from "@/integrations/supabase/types";
 import { conditionFor } from "@/lib/taxonomy";
 
 export const refreshItemPrice = createServerFn({ method: "POST" })
@@ -26,7 +27,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         est_value: est?.est ?? null,
         price_low: est?.low ?? null,
         price_high: est?.high ?? null,
-        price_sources: sources,
+        price_sources: sources as unknown as Json,
         price_updated_at: new Date().toISOString(),
       })
       .eq("id", data.id);
