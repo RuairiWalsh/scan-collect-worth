@@ -139,11 +139,82 @@ export async function ebay(item: PricedItem): Promise<PriceSource[]> {
   ];
 }
 
+const JUSTTCG_GAMES: Record<string, string> = {
+  pok: "pokemon",
+  magic: "magic-the-gathering",
+  "yu-gi-oh": "yugioh",
+  yugioh: "yugioh",
+  lorcana: "disney-lorcana",
+  "one piece": "one-piece-card-game",
+  digimon: "digimon-card-game",
+  union: "union-arena",
+};
+
+export function justtcgConfigured() {
+  return Boolean(process.env["JUSTTCG_API_KEY"]);
+}
+
+/** JustTCG — multi-game TCG pricing (TCGplayer-based), one API for all card lines. */
+export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
+  const key = process.env["JUSTTCG_API_KEY"];
+  if (!key) return [];
+  const line = (item.line ?? "").toLowerCase();
+  const game = Object.entries(JUSTTCG_GAMES).find(([k]) => line.includes(k))?.[1];
+
+  const params = new URLSearchParams({ name: item.name, limit: "5" });
+  if (game) params.set("game", game);
+  if (item.set_name) params.set("set_name", item.set_name);
+  if (item.number) params.set("number", item.number.split("/")[0]!.trim());
+
+  const headers = { "x-api-key": key };
+  let data = await getJson(`https://api.justtcg.com/v1/cards?${params}`, { headers });
+  if (!data?.data?.length && (params.has("set_name") || params.has("number"))) {
+    const loose = new URLSearchParams({ name: item.name, limit: "5" });
+    if (game) loose.set("game", game);
+    data = await getJson(`https://api.justtcg.com/v1/cards?${loose}`, { headers });
+  }
+  const card = data?.data?.[0];
+  const variants = (card?.variants ?? []) as {
+    condition?: string;
+    printing?: string;
+    price?: number;
+  }[];
+  if (!variants.length) return [];
+
+  const wantFoil = item.variant?.toLowerCase().includes("foil") || item.variant?.toLowerCase().includes("holo");
+  const pool = variants.filter((v) =>
+    wantFoil ? /foil|holo/i.test(v.printing ?? "") : !/foil|holo/i.test(v.printing ?? ""),
+  );
+  const usable = (pool.length ? pool : variants).filter((v) => (v.price ?? 0) > 0);
+  if (!usable.length) return [];
+  // Prefer the variant matching the item's condition; otherwise Near Mint as reference.
+  const condLabel = item.category === "cards" ? conditionFor("cards", item.condition).label : "";
+  const match =
+    usable.find((v) => v.condition?.toLowerCase() === condLabel.toLowerCase()) ??
+    usable.find((v) => v.condition === "Near Mint") ??
+    usable[0]!;
+  const isNm = match.condition === "Near Mint";
+  return [
+    {
+      source: "justtcg",
+      label: `JustTCG (${match.condition ?? "market"}${match.printing ? ` ${match.printing}` : ""})`,
+      price: match.price!,
+      kind: isNm ? "reference" : "market",
+    },
+  ];
+}
+
 export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
   const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   const line = (item.line ?? "").toLowerCase();
-  if (item.category === "cards" && line.includes("pok")) tasks.push(pokemonTcg(item));
-  if (item.category === "cards" && line.includes("magic")) tasks.push(scryfall(item));
+  if (item.category === "cards") {
+    if (justtcgConfigured()) {
+      tasks.push(justtcg(item));
+    } else {
+      if (line.includes("pok")) tasks.push(pokemonTcg(item));
+      if (line.includes("magic")) tasks.push(scryfall(item));
+    }
+  }
   const settled = await Promise.allSettled(tasks);
   return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
 }
