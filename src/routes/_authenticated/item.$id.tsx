@@ -127,9 +127,9 @@ function ItemEditor({ item }: { item: Item }) {
               ))}
               {!sources.length && <li className="text-muted-foreground">No market matches found yet.</li>}
             </ul>
-            {ebayOn === false && (
+            {priceStatus && !priceStatus.justtcg && !priceStatus.ebay && (
               <p className="mt-3 rounded bg-accent p-2 text-xs text-accent-foreground">
-                eBay pricing isn't connected yet — results use catalog prices only.
+                No pricing APIs connected yet — add a JustTCG or eBay key to see live prices.
               </p>
             )}
             <Button variant="outline" size="sm" className="mt-4 w-full" disabled={busy} onClick={save}>
