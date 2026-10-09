@@ -20,9 +20,9 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
     meta: [
-      { title: "Item details — Vaultscan" },
+      { title: "Item details — Lymitz" },
       { name: "description", content: "Edit details, condition and see price sources for this collectible." },
-      { property: "og:title", content: "Item details — Vaultscan" },
+      { property: "og:title", content: "Item details — Lymitz" },
       { property: "og:description", content: "Edit details, condition and see price sources for this collectible." },
     ],
   }),

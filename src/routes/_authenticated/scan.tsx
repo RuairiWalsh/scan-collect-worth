@@ -16,9 +16,9 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
     meta: [
-      { title: "Live scanner — Vaultscan" },
+      { title: "Live scanner — Lymitz" },
       { name: "description", content: "Scan cards, stamps and coins into a batch and review before saving." },
-      { property: "og:title", content: "Live scanner — Vaultscan" },
+      { property: "og:title", content: "Live scanner — Lymitz" },
       { property: "og:description", content: "Scan cards, stamps and coins into a batch and review before saving." },
     ],
   }),

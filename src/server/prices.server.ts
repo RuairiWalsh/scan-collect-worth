@@ -62,7 +62,7 @@ export async function scryfall(item: PricedItem): Promise<PriceSource[]> {
     `https://api.scryfall.com/cards/search?unique=prints&q=${encodeURIComponent(
       `!"${q(item.name)}"${item.number ? ` cn:${q(item.number.split("/")[0] ?? "")}` : ""}`,
     )}`,
-    { headers: { "User-Agent": "VaultScan/1.0", Accept: "application/json" } },
+    { headers: { "User-Agent": "Lymitz/1.0", Accept: "application/json" } },
   );
   let card = data?.data?.[0];
   if (item.set_name && data?.data?.length) {
