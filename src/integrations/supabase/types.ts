@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      items: {
+        Row: {
+          ai_confidence: number | null
+          category: string
+          condition: string
+          created_at: string
+          est_value: number | null
+          grade: string | null
+          grader: string | null
+          id: string
+          line: string | null
+          name: string
+          notes: string | null
+          number: string | null
+          price_high: number | null
+          price_low: number | null
+          price_sources: Json
+          price_updated_at: string | null
+          quantity: number
+          set_name: string | null
+          status: string
+          subcategory: string | null
+          thumbnail: string | null
+          updated_at: string
+          user_id: string
+          variant: string | null
+          year: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          category?: string
+          condition?: string
+          created_at?: string
+          est_value?: number | null
+          grade?: string | null
+          grader?: string | null
+          id?: string
+          line?: string | null
+          name: string
+          notes?: string | null
+          number?: string | null
+          price_high?: number | null
+          price_low?: number | null
+          price_sources?: Json
+          price_updated_at?: string | null
+          quantity?: number
+          set_name?: string | null
+          status?: string
+          subcategory?: string | null
+          thumbnail?: string | null
+          updated_at?: string
+          user_id?: string
+          variant?: string | null
+          year?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          category?: string
+          condition?: string
+          created_at?: string
+          est_value?: number | null
+          grade?: string | null
+          grader?: string | null
+          id?: string
+          line?: string | null
+          name?: string
+          notes?: string | null
+          number?: string | null
+          price_high?: number | null
+          price_low?: number | null
+          price_sources?: Json
+          price_updated_at?: string | null
+          quantity?: number
+          set_name?: string | null
+          status?: string
+          subcategory?: string | null
+          thumbnail?: string | null
+          updated_at?: string
+          user_id?: string
+          variant?: string | null
+          year?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
