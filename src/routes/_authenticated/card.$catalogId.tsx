@@ -1,3 +1,4 @@
+import { trimPresale } from "@/lib/collection-history";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -38,7 +39,7 @@ function CardPage() {
   const selected = selectedCardVariant(variants, condition, printing);
   // Saved historical series is NM/base only; never relabel it as another quality.
   const baseHistory = condition === "raw_nm" && resolved === resolvePrinting(variants, null);
-  const points = baseHistory ? (data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
+  const points = baseHistory ? trimPresale(data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-24">
