@@ -31,6 +31,7 @@ type Props = {
   line: string;
   stamp: StampFilter;
   coin: CoinFilter;
+  onCatChange: (cat: CategoryKey | "all") => void;
   onCardsChange: (sub: string, line: string) => void;
   onStampChange: (next: StampFilter) => void;
   onCoinChange: (next: CoinFilter) => void;
