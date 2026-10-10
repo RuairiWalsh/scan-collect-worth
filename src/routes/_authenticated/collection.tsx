@@ -15,6 +15,7 @@ import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coi
 import { CategoryCascade } from "@/components/CategoryCascade";
 import { QuickChips } from "@/components/QuickChips";
 import { useOfficialImages } from "@/hooks/use-official-images";
+import { foldersQuery, useCreateFolder } from "@/components/FolderPicker";
 
 type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
 
@@ -52,9 +53,15 @@ function CollectionPage() {
   const [year, setYear] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortKey>("added_desc");
   const [q, setQ] = useState("");
+  const [folder, setFolder] = useState<string>("all");
+  const { data: folders = [] } = useQuery(foldersQuery());
+  const createFolder = useCreateFolder();
 
-  const searching = q.trim().length > 0;
-  const searched = useMemo(() => items.filter((i) => matchesCollectionQuery(i, q)), [items, q]);
+  const searching = q.trim().length > 0 || folder !== "all";
+  const searched = useMemo(
+    () => items.filter((i) => (folder === "all" || i.folder_id === folder) && matchesCollectionQuery(i, q)),
+    [items, q, folder],
+  );
   const total = items.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
   const byCat = CATEGORY_KEYS.map((k) => ({
     k,
@@ -185,7 +192,31 @@ function CollectionPage() {
         </div>
       </section>
 
-      <div className="mt-5">
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+        {[{ id: "all", name: "All items" }, ...folders].map((f) => {
+          const n = f.id === "all" ? items.length : items.filter((i) => i.folder_id === f.id).length;
+          const active = folder === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFolder(f.id)}
+              className={`shrink-0 rounded-full border-2 px-3 py-1 text-xs font-bold ${active ? "border-ink bg-ink text-background" : "border-border bg-card"}`}
+            >
+              {f.id === "all" ? f.name : `📁 ${f.name}`} <span className="opacity-60">{n}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={async () => { const id = await createFolder(); if (id) setFolder(id); }}
+          className="shrink-0 rounded-full border-2 border-dashed border-border px-3 py-1 text-xs font-bold text-muted-foreground hover:border-ink"
+        >
+          + New folder
+        </button>
+      </div>
+
+      <div className="mt-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input

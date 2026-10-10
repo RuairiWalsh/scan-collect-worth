@@ -97,6 +97,27 @@ export type Database = {
         }
         Relationships: []
       }
+      folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           ai_confidence: number | null
@@ -105,6 +126,7 @@ export type Database = {
           condition: string
           created_at: string
           est_value: number | null
+          folder_id: string | null
           grade: string | null
           grader: string | null
           id: string
@@ -134,6 +156,7 @@ export type Database = {
           condition?: string
           created_at?: string
           est_value?: number | null
+          folder_id?: string | null
           grade?: string | null
           grader?: string | null
           id?: string
@@ -163,6 +186,7 @@ export type Database = {
           condition?: string
           created_at?: string
           est_value?: number | null
+          folder_id?: string | null
           grade?: string | null
           grader?: string | null
           id?: string
@@ -185,7 +209,15 @@ export type Database = {
           variant?: string | null
           year?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "items_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_history: {
         Row: {

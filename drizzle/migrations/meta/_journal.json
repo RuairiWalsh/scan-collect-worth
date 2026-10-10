@@ -57,6 +57,13 @@
       "when": 1791597120272,
       "tag": "0007_catalog_price_history_unique_point",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791670882379,
+      "tag": "0008_folders",
+      "breakpoints": true
     }
   ]
 }
