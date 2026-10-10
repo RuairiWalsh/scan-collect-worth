@@ -39,10 +39,12 @@ function ItemPage() {
   const { data: history } = useQuery(priceHistoryQuery(id));
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
-  return <ItemEditor item={item} />;
+  return <ItemEditor item={item} history={history ?? []} />;
 }
 
-function ItemEditor({ item }: { item: Item }) {
+type HistoryPoint = { est_value: number | null; price_low: number | null; price_high: number | null; recorded_at: string };
+
+function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) {
   const [f, setF] = useState(item);
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
