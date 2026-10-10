@@ -31,7 +31,7 @@ export function fileToImages(file: File): Promise<{ full: string; thumb: string 
     const img = new Image();
     img.onload = () => {
       resolve({
-        full: drawToDataUrl(img, img.naturalWidth, img.naturalHeight, 1024),
+        full: drawToDataUrl(img, img.naturalWidth, img.naturalHeight, 1600, 0.9),
         thumb: drawToDataUrl(img, img.naturalWidth, img.naturalHeight, 320, 0.75),
       });
       URL.revokeObjectURL(url);
