@@ -30,26 +30,43 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
 
         let updated = 0;
         let failed = 0;
-        const { seedCatalogHistory, nmVariantOf } = await import("@/server/prices.server");
+        const { seedCatalogHistory, nmVariantOf, catalogCardsByIds } = await import("@/server/prices.server");
+        const { cardVariants } = await import("@/lib/card-pricing");
+        const { officialCardImage } = await import("@/lib/card-artwork");
+
+        // Cards with no history yet get a per-card 180-day backfill fetch.
+        const { data: histRows } = await supabaseAdmin
+          .from("catalog_price_history")
+          .select("catalog_id")
+          .in("catalog_id", ids.length ? ids : ["__none__"]);
+        const hasHistory = new Set((histRows ?? []).map((r) => r.catalog_id as string));
+        const needsHistory = ids.filter((id) => !hasHistory.has(id));
+
+        // Current prices for every owned card in a handful of batched requests
+        // (up to 200 cards per call) instead of one request per card.
+        const cards = await catalogCardsByIds(ids);
+        const byId = new Map(cards.map((c) => [c.id, c]));
+
+        // Backfill history for the (rare) cards that don't have any yet.
+        for (const id of needsHistory) {
+          try {
+            const card = await catalogCardById(id, { history: true });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+            if (card) await seedCatalogHistory(supabaseAdmin as any, card);
+          } catch {
+            // history backfill is best-effort; tonight's price still updates
+          }
+        }
+
         for (const id of ids) {
           try {
-            // Cards with no history yet get the 180-day backfill fetch.
-            const { data: hist } = await supabaseAdmin
-              .from("catalog_price_history")
-              .select("catalog_id")
-              .eq("catalog_id", id)
-              .limit(1);
-            const card = await catalogCardById(id, { history: !hist?.length });
+            const card = byId.get(id);
             if (!card) {
               failed++;
               continue;
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-            await seedCatalogHistory(supabaseAdmin as any, card);
-            const { cardVariants } = await import("@/lib/card-pricing");
             const variants = cardVariants(card.variants);
             const nm = nmVariantOf(card);
-            const { officialCardImage } = await import("@/lib/card-artwork");
             const { error: upErr } = await supabaseAdmin.from("catalog_prices").upsert({
               catalog_id: card.id,
               name: card.name,
@@ -85,7 +102,7 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
           .not("catalog_id", "is", null);
         const { data: prices } = await supabaseAdmin.from("catalog_prices").select("catalog_id, variants, updated_at");
         const priceById = new Map((prices ?? []).map((p) => [p.catalog_id, p]));
-        const { cardPriceSources, cardVariants } = await import("@/lib/card-pricing");
+        const { cardPriceSources } = await import("@/lib/card-pricing");
         const { estimateValue } = await import("@/lib/pricing");
         let revalued = 0;
         for (const item of items ?? []) {

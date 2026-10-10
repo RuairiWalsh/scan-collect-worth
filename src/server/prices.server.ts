@@ -205,6 +205,37 @@ export async function catalogCardById(id: string, opts?: { history?: boolean }) 
   return (await jtCards(params))[0] ?? null;
 }
 
+/**
+ * Batch-fetch many catalog cards in as few requests as possible.
+ * JustTCG's POST /v1/cards accepts up to N cards per call (plan-dependent:
+ * 20 free, 100 starter/pro, 200 enterprise). One request per batch, so the
+ * nightly refresh costs ceil(cards / batchSize) requests instead of one each.
+ */
+export async function catalogCardsByIds(ids: string[]): Promise<CatalogCard[]> {
+  const key = process.env["JUSTTCG_API_KEY"];
+  if (!key || !ids.length) return [];
+  const batchSize = Math.max(
+    1,
+    Math.min(200, parseInt(process.env["JUSTTCG_BATCH_SIZE"] ?? "20", 10) || 20),
+  );
+  const out: CatalogCard[] = [];
+  for (let i = 0; i < ids.length; i += batchSize) {
+    const chunk = ids.slice(i, i + batchSize);
+    const res = await fetch("https://api.justtcg.com/v1/cards", {
+      method: "POST",
+      headers: { "x-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify(chunk.map((cardId) => ({ cardId }))),
+    });
+    if (!res.ok) {
+      console.error("JustTCG batch", res.status, await res.text().catch(() => ""));
+      continue;
+    }
+    const j = (await res.json()) as { data?: CatalogCard[] };
+    out.push(...(j.data ?? []));
+  }
+  return out;
+}
+
 /** Pick the near-mint, non-reverse variant (the one we track as nm_price). */
 export function nmVariantOf(card: CatalogCard) {
   const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0 || (v.priceHistory?.length ?? 0) > 0);
