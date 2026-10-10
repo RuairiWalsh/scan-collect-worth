@@ -102,7 +102,7 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
           .not("catalog_id", "is", null);
         const { data: prices } = await supabaseAdmin.from("catalog_prices").select("catalog_id, variants, updated_at");
         const priceById = new Map((prices ?? []).map((p) => [p.catalog_id, p]));
-        const { cardPriceSources, cardVariants } = await import("@/lib/card-pricing");
+        const { cardPriceSources } = await import("@/lib/card-pricing");
         const { estimateValue } = await import("@/lib/pricing");
         let revalued = 0;
         for (const item of items ?? []) {
