@@ -79,7 +79,7 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, on
 
   let rows: Chip[][] = [catRow];
   if (cat === "cards") {
-    rows = [
+    rows = [catRow,
       [
         { key: "all", label: `All ${TAXONOMY.cards.label.toLowerCase()}`, count: countFor({ cat }), active: sub === "all", onPick: () => onCardsChange("all", "all") },
         ...Object.entries(TAXONOMY.cards.subcategories).map(([k, v]) => ({
@@ -110,7 +110,7 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, on
       ]);
     }
   } else if (cat === "stamps") {
-    rows = [];
+    rows = [catRow];
     STAMP_LEVELS.forEach((level, index) => {
       const parents = STAMP_LEVELS.slice(0, index);
       if (parents.some((p) => stamp[p] === "all")) return;
@@ -129,7 +129,7 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, on
       ]);
     });
   } else if (cat === "coins") {
-    rows = [];
+    rows = [catRow];
     COIN_LEVELS.forEach((level, index) => {
       const parents = COIN_LEVELS.slice(0, index);
       if (parents.some((p) => coin[p] === "all")) return;
