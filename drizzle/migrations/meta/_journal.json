@@ -36,6 +36,13 @@
       "when": 1791596508475,
       "tag": "0004_create_catalog_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791596592071,
+      "tag": "0005_cron_config_and_schedule",
+      "breakpoints": true
     }
   ]
 }
