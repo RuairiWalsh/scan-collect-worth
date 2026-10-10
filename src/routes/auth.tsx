@@ -2,8 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/use-auth";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,11 +57,6 @@ function AuthPage() {
     }
   }
 
-  async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-    if (result.error) toast.error(result.error.message ?? "Google sign-in failed");
-  }
-
   return (
     <div className="grid-paper flex min-h-screen items-center justify-center px-4">
       <div className="panel shadow-hard w-full max-w-sm p-8">
@@ -69,13 +64,7 @@ function AuthPage() {
           LYM<span className="text-primary">ITZ</span>
         </Link>
         <h1 className="mt-6 text-2xl font-extrabold">{mode === "in" ? "Welcome back" : "Open your vault"}</h1>
-        <Button variant="outline" className="mt-6 w-full" onClick={google}>
-          Continue with Google
-        </Button>
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> or <div className="h-px flex-1 bg-border" />
-        </div>
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
