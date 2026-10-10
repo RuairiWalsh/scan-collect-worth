@@ -98,35 +98,42 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, 
       ]);
     }
   } else if (cat === "stamps") {
-    const level = STAMP_LEVELS[0];
-    const empty = { ...EMPTY_STAMP_FILTER };
-    rows = [
-      [
-        { key: "all", label: "All countries", count: stampCount(empty), active: stamp[level] === "all", onPick: () => onStampChange(empty) },
-        ...stampOptions(items, stamp, level).map((value) => ({
+    rows = [];
+    STAMP_LEVELS.forEach((level, index) => {
+      const parents = STAMP_LEVELS.slice(0, index);
+      if (parents.some((p) => stamp[p] === "all")) return;
+      const base = { ...EMPTY_STAMP_FILTER };
+      for (const p of parents) base[p] = stamp[p];
+      const allLabel = `All ${level === "country" ? "countries" : level === "century" ? "centuries" : level === "decade" ? "decades" : "subjects"}`;
+      rows.push([
+        { key: "all", label: allLabel, count: stampCount(base), active: stamp[level] === "all", onPick: () => onStampChange(pickStampLevel(stamp, level, "all")) },
+        ...stampOptions(items, base, level).map((value) => ({
           key: value,
           label: value,
-          count: stampCount({ ...empty, [level]: value }),
+          count: stampCount({ ...base, [level]: value }),
           active: stamp[level] === value,
           onPick: () => onStampChange(pickStampLevel(stamp, level, value)),
         })),
-      ],
-    ];
+      ]);
+    });
   } else if (cat === "coins") {
-    const level = COIN_LEVELS[0];
-    const empty = { ...EMPTY_COIN_FILTER };
-    rows = [
-      [
-        { key: "all", label: COIN_LABELS[level].all, count: coinCount(empty), active: coin[level] === "all", onPick: () => onCoinChange(empty) },
-        ...coinOptions(items, coin, level).map((value) => ({
+    rows = [];
+    COIN_LEVELS.forEach((level, index) => {
+      const parents = COIN_LEVELS.slice(0, index);
+      if (parents.some((p) => coin[p] === "all")) return;
+      const base = { ...EMPTY_COIN_FILTER };
+      for (const p of parents) base[p] = coin[p];
+      rows.push([
+        { key: "all", label: COIN_LABELS[level].all, count: coinCount(base), active: coin[level] === "all", onPick: () => onCoinChange(pickCoinLevel(coin, level, "all")) },
+        ...coinOptions(items, base, level).map((value) => ({
           key: value,
           label: value,
-          count: coinCount({ ...empty, [level]: value }),
+          count: coinCount({ ...base, [level]: value }),
           active: coin[level] === value,
           onPick: () => onCoinChange(pickCoinLevel(coin, level, value)),
         })),
-      ],
-    ];
+      ]);
+    });
   }
 
   return (
