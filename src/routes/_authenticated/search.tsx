@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, SearchIcon } from "lucide-react";
-import { searchCards, type SearchResult } from "@/lib/search.functions";
+import { ChevronDown, Loader2, SearchIcon } from "lucide-react";
+import { catalogPriceHistory, searchCards, type CatalogHistoryPoint, type SearchResult } from "@/lib/search.functions";
 import { usd } from "@/lib/image";
+import { PriceSparkline } from "@/components/PriceSparkline";
 
 export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({

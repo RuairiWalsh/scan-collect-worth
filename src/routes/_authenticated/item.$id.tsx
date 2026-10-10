@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
