@@ -29,6 +29,8 @@ function CollectionPage() {
   const [cat, setCat] = useState<CategoryKey | "all">("all");
   const [sub, setSub] = useState<string | "all">("all");
   const [line, setLine] = useState<string | "all">("all");
+  const [year, setYear] = useState<string | "all">("all");
+  const [sort, setSort] = useState<SortKey>("added_desc");
 
   const total = items.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
   const byCat = CATEGORY_KEYS.map((k) => ({
@@ -50,12 +52,46 @@ function CollectionPage() {
     [items, cat, sub],
   );
 
-  const shown = items.filter(
+  const filtered = items.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
       (sub === "all" || i.subcategory === sub) &&
-      (line === "all" || i.line === line),
+      (line === "all" || i.line === line) &&
+      (year === "all" || i.year === year),
   );
+
+  const years = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          filtered
+            .map((i) => i.year)
+            .filter(Boolean) as string[],
+        ),
+      ).sort((a, b) => Number(b) - Number(a)),
+    [filtered],
+  );
+
+  const shown = useMemo(() => {
+    const val = (i: (typeof items)[number]) => (i.est_value ?? 0) * i.quantity;
+    const added = (i: (typeof items)[number]) => new Date(i.created_at).getTime();
+    const yr = (i: (typeof items)[number]) => Number(i.year) || 0;
+    const sorted = [...filtered];
+    switch (sort) {
+      case "value_desc":
+        return sorted.sort((a, b) => val(b) - val(a));
+      case "value_asc":
+        return sorted.sort((a, b) => val(a) - val(b));
+      case "year_desc":
+        return sorted.sort((a, b) => yr(b) - yr(a) || val(b) - val(a));
+      case "year_asc":
+        return sorted.sort((a, b) => yr(a) - yr(b) || val(b) - val(a));
+      case "added_asc":
+        return sorted.sort((a, b) => added(a) - added(b));
+      default:
+        return sorted.sort((a, b) => added(b) - added(a));
+    }
+  }, [filtered, sort]);
 
   const chip = (active: boolean) =>
     `rounded-full border-2 px-3 py-1 text-xs font-semibold transition ${
