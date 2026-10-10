@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { EMPTY_STAMP_FILTER, matchesStampFilter, type StampFilter } from "@/lib/stamp-filters";
 import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coin-filters";
-import { CategoryCascade } from "@/components/CategoryCascade";
 import { QuickChips } from "@/components/QuickChips";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { foldersQuery, useCreateFolder } from "@/components/FolderPicker";
@@ -245,26 +244,7 @@ function CollectionPage() {
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <label className="text-xs font-semibold text-muted-foreground">FILTER</label>
-        <CategoryCascade
-          items={items}
-          cat={cat}
-          sub={sub}
-          line={line}
-          stamp={stamp}
-          coin={coin}
-          onCoinChange={(next) => { setCoin(next); setYear("all"); }}
-          onStampChange={(next) => { setStamp(next); setYear("all"); }}
-          onChange={(next) => {
-            setCat(next.cat);
-            setSub(next.sub);
-            setLine(next.line);
-            setYear("all");
-                setStamp({ ...EMPTY_STAMP_FILTER });
-                setCoin({ ...EMPTY_COIN_FILTER });
-          }}
-        />
-        <label className="ml-2 text-xs font-semibold text-muted-foreground">SORT</label>
+        <label className="text-xs font-semibold text-muted-foreground">SORT</label>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
