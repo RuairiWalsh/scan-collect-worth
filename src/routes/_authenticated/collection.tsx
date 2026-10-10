@@ -7,6 +7,7 @@ import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { EMPTY_STAMP_FILTER, matchesStampFilter, type StampFilter } from "@/lib/stamp-filters";
 import { CategoryCascade } from "@/components/CategoryCascade";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
@@ -41,6 +42,7 @@ function CollectionPage() {
   const [cat, setCat] = useState<CategoryKey | "all">("all");
   const [sub, setSub] = useState<string | "all">("all");
   const [line, setLine] = useState<string | "all">("all");
+  const [stamp, setStamp] = useState<StampFilter>({ ...EMPTY_STAMP_FILTER });
   const [year, setYear] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortKey>("added_desc");
 
@@ -54,8 +56,7 @@ function CollectionPage() {
   const filtered = items.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
-      (sub === "all" || i.subcategory === sub) &&
-      (line === "all" || i.line === line) &&
+      (cat === "stamps" ? matchesStampFilter(i, stamp) : (sub === "all" || i.subcategory === sub) && (line === "all" || i.line === line)) &&
       (year === "all" || i.year === year),
   );
 
@@ -113,6 +114,7 @@ function CollectionPage() {
                 setSub("all");
                 setLine("all");
                 setYear("all");
+                setStamp({ ...EMPTY_STAMP_FILTER });
               }}
               className={`rounded-md border-2 p-3 text-left transition ${cat === k ? "border-primary bg-primary/5" : "border-border hover:border-ink"}`}
             >
@@ -131,11 +133,14 @@ function CollectionPage() {
           cat={cat}
           sub={sub}
           line={line}
+          stamp={stamp}
+          onStampChange={(next) => { setStamp(next); setYear("all"); }}
           onChange={(next) => {
             setCat(next.cat);
             setSub(next.sub);
             setLine(next.line);
             setYear("all");
+                setStamp({ ...EMPTY_STAMP_FILTER });
           }}
         />
         <label className="ml-2 text-xs font-semibold text-muted-foreground">SORT</label>
@@ -191,6 +196,7 @@ function CollectionPage() {
               setSub("all");
               setLine("all");
               setYear("all");
+                setStamp({ ...EMPTY_STAMP_FILTER });
             }}
           >
             Show everything

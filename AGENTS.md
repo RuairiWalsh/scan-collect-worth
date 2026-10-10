@@ -18,3 +18,5 @@
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).
 - Keep the original scan in items.thumbnail and matched catalog artwork in items.official_image; resolve provider artwork only from the exact catalog entry's external IDs to avoid look-alike images.
 - Live scan finds cards with a pure, tested rectangle detector (src/lib/card-detect.ts) instead of a fixed guide box — runs every tick on-device with no ML download.
+
+- Stamp collection facets are derived in src/lib/stamp-filters.ts from existing item metadata, with unknown buckets rather than guessed classifications; this keeps filtering client-side without changing scan or storage behavior.
