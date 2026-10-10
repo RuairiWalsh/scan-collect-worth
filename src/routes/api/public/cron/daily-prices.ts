@@ -65,7 +65,10 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
               if (nm?.price != null) {
                 await supabaseAdmin
                   .from("catalog_price_history")
-                  .insert({ catalog_id: card.id, nm_price: nm.price });
+                  .upsert(
+                    { catalog_id: card.id, nm_price: nm.price },
+                    { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+                  );
               }
             }
           } catch {
