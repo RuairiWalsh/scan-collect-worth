@@ -7,6 +7,7 @@ import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/collection")({
 
 function CollectionPage() {
   const { data: items = [], isLoading } = useQuery(itemsQuery("collection"));
+  useOfficialImages(items);
   const [cat, setCat] = useState<CategoryKey | "all">("all");
   const [sub, setSub] = useState<string | "all">("all");
   const [line, setLine] = useState<string | "all">("all");

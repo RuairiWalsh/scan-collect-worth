@@ -13,6 +13,7 @@ import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
@@ -47,6 +48,7 @@ function ScanPage() {
   const identify = useServerFn(identifyItem);
   const reprice = useServerFn(refreshItemPrice);
   const { data: batch = [] } = useQuery(itemsQuery("batch"));
+  useOfficialImages(batch);
 
   const stopCam = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());

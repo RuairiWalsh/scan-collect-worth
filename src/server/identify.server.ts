@@ -1,6 +1,7 @@
 // Server-only: identify a collectible photo, then pin it to an exact catalog card.
 import type { Identification } from "@/lib/scan.functions";
 import { identificationSchema as schema } from "@/lib/scan-schema";
+import { officialCardImage } from "@/lib/card-artwork";
 
 export async function identifyImage(image: string) {
   const data = { image };
@@ -67,6 +68,7 @@ export async function identifyImage(image: string) {
           result.set_name = card.set_name ?? result.set_name;
           result.number = card.number ?? result.number;
           result.catalog_id = card.id;
+          result.official_image = officialCardImage(card);
           result.confidence = Math.max(result.confidence, 0.85);
         }
       }

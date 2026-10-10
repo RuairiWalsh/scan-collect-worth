@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/item/$id")({
 function ItemPage() {
   const { id } = Route.useParams();
   const { data: item } = useQuery(itemQuery(id));
+  useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   return <ItemEditor item={item} />;
 }
