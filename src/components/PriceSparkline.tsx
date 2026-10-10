@@ -4,14 +4,49 @@ import { usd } from "@/lib/image";
 export type SparkPoint = { recorded_at: string; value: number | null };
 
 /** Price-history line chart with touch/pointer scrubbing, like a stock app. */
-export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
+const RANGES = [
+  { key: "1D", days: 1 },
+  { key: "1W", days: 7 },
+  { key: "1M", days: 30 },
+  { key: "6M", days: 182 },
+  { key: "1Y", days: 365 },
+  { key: "All", days: Infinity },
+] as const;
+type RangeKey = (typeof RANGES)[number]["key"];
+
+/** Points within the last `days` days, plus the last point before that so the line starts at the window edge. */
+export function pointsInRange(points: SparkPoint[], days: number, now = Date.now()): SparkPoint[] {
   const pts = points.filter((p) => p.value != null);
+  if (!Number.isFinite(days)) return pts;
+  const cutoff = now - days * 86400000;
+  const i = pts.findIndex((p) => new Date(p.recorded_at).getTime() >= cutoff);
+  if (i === -1) return pts.slice(-1);
+  return i > 0 ? pts.slice(i - 1) : pts;
+}
+
+export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
+  const [range, setRange] = useState<RangeKey>("1W");
+  const pts = pointsInRange(points, RANGES.find((r) => r.key === range)!.days);
   const [active, setActive] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   if (pts.length === 0) {
     return <p className="mt-4 text-xs text-muted-foreground">{emptyHint}</p>;
   }
+  const rangeBar = (
+    <div className="mt-2 flex gap-1">
+      {RANGES.map((r) => (
+        <button
+          key={r.key}
+          type="button"
+          onClick={() => setRange(r.key)}
+          className={`tabular flex-1 rounded border-2 px-1 py-0.5 text-xs font-bold ${range === r.key ? "border-ink bg-ink text-ink-foreground" : "border-transparent text-muted-foreground hover:border-ink"}`}
+        >
+          {r.key}
+        </button>
+      ))}
+    </div>
+  );
 
   const W = 1000,
     H = tall ? 360 : 180,
