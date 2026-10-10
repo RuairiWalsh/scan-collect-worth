@@ -308,32 +308,6 @@ function CollectionPage() {
         )}
       </div>
 
-      {cat !== "all" && (
-        <div className="mt-2">
-          <QuickChips
-            items={items}
-            cat={cat}
-            sub={sub}
-            line={line}
-            stamp={stamp}
-            coin={coin}
-            onCardsChange={(nextSub, nextLine) => {
-              setSub(nextSub);
-              setLine(nextLine);
-              setYear("all");
-            }}
-            onStampChange={(next) => {
-              setStamp(next);
-              setYear("all");
-            }}
-            onCoinChange={(next) => {
-              setCoin(next);
-              setYear("all");
-            }}
-          />
-        </div>
-      )}
-
       {isLoading ? (
         <p className="mt-10 text-center text-muted-foreground">Loading…</p>
       ) : !items.length ? (
