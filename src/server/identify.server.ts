@@ -4,7 +4,7 @@ import { identificationSchema as schema } from "@/lib/scan-schema";
 
 export async function identifyImage(image: string) {
   const data = { image };
-    const { streamJson, AiError } = await import("@/server/ai.server");
+  const { streamJson, AiError } = await import("@/server/ai.server");
   try {
     const result = await streamJson<Identification>({
       instructions: [
