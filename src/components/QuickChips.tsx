@@ -66,7 +66,18 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, on
   const stampCount = (filter: StampFilter) => items.filter((i) => matchesStampFilter(i, filter)).length;
   const coinCount = (filter: CoinFilter) => items.filter((i) => matchesCoinFilter(i, filter)).length;
 
-  let rows: Chip[][] = [];
+  const catRow: Chip[] = [
+    { key: "all", label: "All", count: items.length, active: cat === "all", onPick: () => onCatChange("all") },
+    ...Object.entries(TAXONOMY).map(([k, v]) => ({
+      key: k,
+      label: v.label,
+      count: items.filter((i) => i.category === k).length,
+      active: cat === k,
+      onPick: () => onCatChange(k as CategoryKey),
+    })),
+  ];
+
+  let rows: Chip[][] = [catRow];
   if (cat === "cards") {
     rows = [
       [
