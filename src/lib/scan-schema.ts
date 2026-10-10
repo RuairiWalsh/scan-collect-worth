@@ -5,7 +5,7 @@ export const identificationSchema = {
   additionalProperties: false,
   required: [
     "printed_text", "is_collectible", "category", "subcategory", "line", "name", "set_name",
-    "number", "year", "variant", "grader", "grade", "confidence",
+    "number", "year", "variant", "language", "grader", "grade", "confidence",
   ],
   properties: {
     printed_text: {
@@ -33,6 +33,11 @@ export const identificationSchema = {
     number: { ...nullableStr, description: "Collector number, catalog number (Scott #), or null" },
     year: nullableStr,
     variant: { ...nullableStr, description: "Holo, Refractor, parallel, mint mark, error, etc." },
+    language: {
+      type: "string",
+      enum: ["English", "Japanese", "Korean", "Chinese", "French", "German", "Italian", "Spanish", "Portuguese", "Other"],
+      description: "Language the card is printed in (judge from the printed text, e.g. kana/kanji = Japanese).",
+    },
     grader: { ...nullableStr, description: "PSA, BGS, CGC, SGC, PCGS, NGC if slabbed, else null" },
     grade: { ...nullableStr, description: "Numeric grade on the slab label, else null" },
     confidence: { type: "number", description: "0-1 confidence in the identification" },
