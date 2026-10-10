@@ -235,7 +235,7 @@ function PriceHistoryChart({ history }: { history: HistoryPoint[] }) {
   const x = (i: number) => PAD + (i / Math.max(1, pts.length - 1)) * (W - PAD * 2);
   const y = (v: number) => H - PAD - ((v - min) / span) * (H - PAD * 2);
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.est_value as number).toFixed(1)}`).join(" ");
-  const first = pts[0], last = pts[pts.length - 1];
+  const first = pts[0]!, last = pts[pts.length - 1]!;
   const delta = (last.est_value as number) - (first.est_value as number);
   const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return (
