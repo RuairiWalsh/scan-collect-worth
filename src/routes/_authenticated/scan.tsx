@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { identifyItem } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
-import { captureVideo, fileToImages, usd } from "@/lib/image";
+import { captureVideo, fileToImages, frameSignature, sigContrast, sigDiff, usd } from "@/lib/image";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
@@ -34,6 +34,8 @@ function ScanPage() {
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
+  const [scanState, setScanState] = useState<"searching" | "steady" | "reading">("searching");
+  const inFlight = useRef(0);
   const [pending, setPending] = useState<Pending[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
@@ -87,9 +89,10 @@ function ScanPage() {
   );
 
   const process = useCallback(
-    async (img: { full: string; thumb: string }) => {
+    async (img: { full: string; thumb: string }, auto = false) => {
       const tempId = crypto.randomUUID();
       setPending((p) => [{ id: tempId, thumb: img.thumb }, ...p]);
+      inFlight.current++;
       try {
         const res = await identify({ data: { image: img.full } });
         if (!res.ok) throw new Error(res.error);
@@ -120,19 +123,48 @@ function ScanPage() {
         await qc.invalidateQueries({ queryKey: ["items", "batch"] });
         doPrice(row.id);
       } catch (e) {
-        setPending((p) => p.map((x) => (x.id === tempId ? { ...x, failed: (e as Error).message } : x)));
+        // In live mode, silently drop frames with nothing collectible in them.
+        if (auto && /No collectible/.test((e as Error).message)) {
+          setPending((p) => p.filter((x) => x.id !== tempId));
+        } else {
+          setPending((p) => p.map((x) => (x.id === tempId ? { ...x, failed: (e as Error).message } : x)));
+        }
+      } finally {
+        inFlight.current--;
       }
     },
     [identify, qc, doPrice],
   );
 
-  function shoot() {
-    const v = videoRef.current;
-    if (!v || !v.videoWidth) return;
-    setFlash(true);
-    setTimeout(() => setFlash(false), 150);
-    process(captureVideo(v));
-  }
+  // Live scan: when the picture holds steady on something new, grab it automatically.
+  useEffect(() => {
+    if (!camOn) return;
+    let prev: Float32Array | null = null;
+    let lastShot: Float32Array | null = null;
+    let steady = 0;
+    const t = setInterval(() => {
+      const v = videoRef.current;
+      if (!v || !v.videoWidth) return;
+      const sig = frameSignature(v);
+      const motion = prev ? sigDiff(sig, prev) : 99;
+      prev = sig;
+      steady = motion < 6 ? steady + 1 : 0;
+      const isNew = !lastShot || sigDiff(sig, lastShot) > 18;
+      const hasDetail = sigContrast(sig) > 12;
+      if (inFlight.current >= 3) { setScanState("reading"); return; }
+      if (!isNew || !hasDetail) { setScanState("searching"); return; }
+      setScanState(steady >= 1 ? "steady" : "searching");
+      if (steady >= 3) {
+        lastShot = sig;
+        steady = 0;
+        setFlash(true);
+        setTimeout(() => setFlash(false), 150);
+        navigator.vibrate?.(30);
+        process(captureVideo(v), true);
+      }
+    }, 300);
+    return () => clearInterval(t);
+  }, [camOn, process]);
 
   async function onFiles(files: FileList | null) {
     if (!files) return;
@@ -179,7 +211,7 @@ function ScanPage() {
             <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-ink-foreground">
               <Camera className="size-10" />
               <p className="max-w-xs text-sm opacity-80">
-                {camError ?? "Hold one item at a time inside the frame and tap the shutter. Each scan drops into your batch."}
+                {camError ?? "Start the camera, then pass items under it one at a time. Each one is picked up automatically and added to your batch."}
               </p>
               <Button onClick={startCam}>Start camera</Button>
             </div>
@@ -190,14 +222,16 @@ function ScanPage() {
           <Button variant="outline" onClick={() => fileRef.current?.click()}>
             <ImagePlus /> Upload
           </Button>
-          <button
-            onClick={shoot}
-            disabled={!camOn}
-            aria-label="Capture"
-            className="flex size-16 items-center justify-center rounded-full border-4 border-ink bg-primary shadow-hard-sm transition active:scale-95 disabled:opacity-40"
-          >
-            <span className="size-8 rounded-full bg-primary-foreground" />
-          </button>
+          <p className="flex items-center gap-2 text-sm font-semibold">
+            {camOn ? (
+              <>
+                <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-accent animate-pulse" : "bg-muted-foreground"}`} />
+                {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Pass a card under the camera"}
+              </>
+            ) : (
+              <span className="text-muted-foreground">Live scan off</span>
+            )}
+          </p>
           {camOn ? (
             <Button variant="outline" onClick={stopCam}>
               <CameraOff /> Stop
