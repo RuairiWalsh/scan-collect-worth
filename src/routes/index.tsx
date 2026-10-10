@@ -7,7 +7,18 @@ import hero from "@/assets/hero.jpg";
 export const Route = createFileRoute("/")({
   loader: () => tickerCards(),
   head: () => ({
-...
+    meta: [
+      { title: "Lymitz — Live scanner for cards, stamps & coins" },
+      {
+        name: "description",
+        content: "Point your camera at TCG, sports cards, stamps or coins. Lymitz identifies them and tracks real market value.",
+      },
+      { property: "og:title", content: "Lymitz — Live scanner for cards, stamps & coins" },
+      { property: "og:description", content: "Scan collectibles in batches and see what your whole collection is worth." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
