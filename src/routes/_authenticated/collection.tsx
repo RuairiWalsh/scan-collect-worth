@@ -243,6 +243,38 @@ function CollectionPage() {
         </div>
       </div>
 
+      <div className="mt-3">
+        <QuickChips
+          items={items}
+          cat={cat}
+          sub={sub}
+          line={line}
+          stamp={stamp}
+          coin={coin}
+          onCatChange={(next) => {
+            setCat(next);
+            setSub("all");
+            setLine("all");
+            setStamp(EMPTY_STAMP_FILTER);
+            setCoin(EMPTY_COIN_FILTER);
+            setYear("all");
+          }}
+          onCardsChange={(nextSub, nextLine) => {
+            setSub(nextSub);
+            setLine(nextLine);
+            setYear("all");
+          }}
+          onStampChange={(next) => {
+            setStamp(next);
+            setYear("all");
+          }}
+          onCoinChange={(next) => {
+            setCoin(next);
+            setYear("all");
+          }}
+        />
+      </div>
+
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <label className="text-xs font-semibold text-muted-foreground">SORT</label>
         <select
