@@ -111,3 +111,41 @@ export const catalogPriceHistory = createServerFn({ method: "GET" })
       .limit(365);
     return { history: rows ?? [] };
   });
+
+/** Full card view: shared catalog row + price history (loads 180 days on first view). */
+export const catalogCardDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { catalog_id: string }) => {
+    if (typeof input?.catalog_id !== "string" || !input.catalog_id) throw new Error("Invalid catalog id");
+    return { catalog_id: input.catalog_id };
+  })
+  .handler(async ({ data, context }): Promise<{ card: SearchResult | null; history: CatalogHistoryPoint[] }> => {
+    const load = () =>
+      context.supabase
+        .from("catalog_price_history")
+        .select("recorded_at, nm_price")
+        .eq("catalog_id", data.catalog_id)
+        .order("recorded_at", { ascending: true })
+        .limit(1000);
+    const { data: card } = await context.supabase
+      .from("catalog_prices")
+      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at")
+      .eq("catalog_id", data.catalog_id)
+      .maybeSingle();
+    let { data: rows } = await load();
+    if (card && (rows?.length ?? 0) < 2) {
+      const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+      const full = await catalogCardById(data.catalog_id, { history: true });
+      if (full) {
+        const db = (await adminDb()) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        await db.from("catalog_price_history").delete().eq("catalog_id", data.catalog_id).lt("recorded_at", "1971-01-01");
+        // Seed skips when any row exists; clear the guard by seeding directly.
+        const n = await seedCatalogHistory(
+          { from: (t: string) => (t === "catalog_price_history" ? { ...db.from(t), select: () => ({ eq: () => ({ limit: async () => ({ data: [] }) }) }), upsert: (r: object[], o: object) => db.from(t).upsert(r, o) } : db.from(t)) } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          full,
+        );
+        if (n > 0) ({ data: rows } = await load());
+      }
+    }
+    return { card: card ?? null, history: rows ?? [] };
+  });
