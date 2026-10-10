@@ -9,6 +9,17 @@ import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
+type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "added_desc", label: "Recently added" },
+  { key: "added_asc", label: "Oldest added" },
+  { key: "value_desc", label: "Value: high to low" },
+  { key: "value_asc", label: "Value: low to high" },
+  { key: "year_desc", label: "Release year: newest" },
+  { key: "year_asc", label: "Release year: oldest" },
+];
+
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
     meta: [
