@@ -50,7 +50,7 @@ function ScanPage() {
   const guideRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"manual" | "auto">("manual");
   const [pending, setPending] = useState<Pending[]>([]);
-  const [folderId, setFolderId] = useState("");
+  const [folderIds, setFolderIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
   const identify = useServerFn(identifyItem);
@@ -286,8 +286,14 @@ function ScanPage() {
   async function commitAll() {
     const ids = batch.map((b) => b.id);
     if (!ids.length) return;
-    const { error } = await supabase.from("items").update({ status: "collection", folder_id: folderId || null }).in("id", ids);
+    const { error } = await supabase.from("items").update({ status: "collection" }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    if (folderIds.length) {
+      const rows = ids.flatMap((item_id) => folderIds.map((folder_id) => ({ item_id, folder_id })));
+      const { error: tagError } = await supabase.from("item_folders").upsert(rows, { onConflict: "item_id,folder_id" });
+      if (tagError) { toast.error(tagError.message); return; }
+      qc.invalidateQueries({ queryKey: ["item-folders"] });
+    }
     toast.success(`Added ${ids.length} item${ids.length > 1 ? "s" : ""} to your collection`);
     qc.invalidateQueries({ queryKey: ["items"] });
   }
@@ -442,8 +448,8 @@ function ScanPage() {
           </Button>
         </div>
         <div className="flex items-center gap-2 border-b-2 border-ink px-4 py-2">
-          <label className="text-xs font-semibold text-muted-foreground">ADD TO FOLDER</label>
-          <FolderPicker value={folderId} onChange={setFolderId} className="flex-1" />
+          <label className="text-xs font-semibold text-muted-foreground">ADD TO FOLDERS</label>
+          <FolderPicker value={folderIds} onChange={setFolderIds} className="flex-1" />
         </div>
         <ul className="flex-1 divide-y overflow-y-auto">
           {pending.map((p) => (

@@ -26,11 +26,12 @@ type Chip = { key: string; label: string; count: number; active: boolean; onPick
 
 type Props = {
   items: Row[];
-  cat: CategoryKey;
+  cat: CategoryKey | "all";
   sub: string;
   line: string;
   stamp: StampFilter;
   coin: CoinFilter;
+  onCatChange: (cat: CategoryKey | "all") => void;
   onCardsChange: (sub: string, line: string) => void;
   onStampChange: (next: StampFilter) => void;
   onCoinChange: (next: CoinFilter) => void;
@@ -40,7 +41,7 @@ type Props = {
  * One-tap chips under the filter row so phone users can hop between subtypes
  * (TCG ↔ Sports ↔ Pokémon) without opening the full cascade dropdown.
  */
-export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, onStampChange, onCoinChange }: Props) {
+export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, onCardsChange, onStampChange, onCoinChange }: Props) {
   const countFor = (f: { cat: string; sub?: string; line?: string }) =>
     items.filter(
       (i) =>
@@ -65,9 +66,20 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, 
   const stampCount = (filter: StampFilter) => items.filter((i) => matchesStampFilter(i, filter)).length;
   const coinCount = (filter: CoinFilter) => items.filter((i) => matchesCoinFilter(i, filter)).length;
 
-  let rows: Chip[][] = [];
+  const catRow: Chip[] = [
+    { key: "all", label: "All", count: items.length, active: cat === "all", onPick: () => onCatChange("all") },
+    ...Object.entries(TAXONOMY).map(([k, v]) => ({
+      key: k,
+      label: v.label,
+      count: items.filter((i) => i.category === k).length,
+      active: cat === k,
+      onPick: () => onCatChange(k as CategoryKey),
+    })),
+  ];
+
+  let rows: Chip[][] = [catRow];
   if (cat === "cards") {
-    rows = [
+    rows = [catRow,
       [
         { key: "all", label: `All ${TAXONOMY.cards.label.toLowerCase()}`, count: countFor({ cat }), active: sub === "all", onPick: () => onCardsChange("all", "all") },
         ...Object.entries(TAXONOMY.cards.subcategories).map(([k, v]) => ({
@@ -98,7 +110,7 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, 
       ]);
     }
   } else if (cat === "stamps") {
-    rows = [];
+    rows = [catRow];
     STAMP_LEVELS.forEach((level, index) => {
       const parents = STAMP_LEVELS.slice(0, index);
       if (parents.some((p) => stamp[p] === "all")) return;
@@ -117,7 +129,7 @@ export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, 
       ]);
     });
   } else if (cat === "coins") {
-    rows = [];
+    rows = [catRow];
     COIN_LEVELS.forEach((level, index) => {
       const parents = COIN_LEVELS.slice(0, index);
       if (parents.some((p) => coin[p] === "all")) return;

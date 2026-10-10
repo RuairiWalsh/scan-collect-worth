@@ -22,7 +22,7 @@ import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
 import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
-import { FolderPicker } from "@/components/FolderPicker";
+import { FolderPicker, itemFoldersQuery } from "@/components/FolderPicker";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -65,6 +65,7 @@ type HistoryPoint = { est_value: number | null; price_low: number | null; price_
 
 function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) {
   const [f, setF] = useState(item);
+  const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
@@ -102,20 +103,21 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const subs = TAXONOMY[cat].subcategories;
   const lines = f.subcategory ? subs[f.subcategory]?.lines ?? [] : [];
 
-  // Filing a card into a folder saves straight away — no need to press Save changes.
-  async function moveToFolder(v: string) {
-    const next = v || null;
-    const prev = f.folder_id ?? null;
-    setF((p) => ({ ...p, folder_id: next }));
-    const { error } = await supabase.from("items").update({ folder_id: next }).eq("id", item.id);
-    if (error) {
-      setF((p) => ({ ...p, folder_id: prev }));
-      toast.error(error.message);
-      return;
+  // Folder tags save straight away — no need to press Save changes.
+  async function setFolders(ids: string[]) {
+    const prev = itemFolders.get(item.id) ?? [];
+    const added = ids.filter((id) => !prev.includes(id));
+    const removed = prev.filter((id) => !ids.includes(id));
+    if (removed.length) {
+      const { error } = await supabase.from("item_folders").delete().eq("item_id", item.id).in("folder_id", removed);
+      if (error) { toast.error(error.message); return; }
     }
-    await qc.invalidateQueries({ queryKey: ["item", item.id] });
-    qc.invalidateQueries({ queryKey: ["items"] });
-    toast.success(next ? "Moved to folder" : "Removed from folder");
+    if (added.length) {
+      const { error } = await supabase.from("item_folders").upsert(added.map((folder_id) => ({ item_id: item.id, folder_id })), { onConflict: "item_id,folder_id" });
+      if (error) { toast.error(error.message); return; }
+    }
+    await qc.invalidateQueries({ queryKey: ["item-folders"] });
+    toast.success("Folders updated");
   }
 
   async function save() {
@@ -127,7 +129,6 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         category: f.category, subcategory: f.subcategory, line: f.line, name: f.name,
         set_name: f.set_name, number: f.number, year: f.year, variant: f.variant,
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
-        folder_id: f.folder_id ?? null,
         // Identity edited by hand → re-match the catalog card from the new details.
         ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
           ? { catalog_id: null, official_image: null }
@@ -171,9 +172,9 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         <Link to={item.status === "batch" ? "/scan" : "/collection"} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" /> Back
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="tabular text-xs text-muted-foreground">FOLDER</span>
-          <FolderPicker value={f.folder_id ?? ""} onChange={moveToFolder} className="min-w-40" />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="tabular text-xs text-muted-foreground">FOLDERS</span>
+          <FolderPicker value={itemFolders.get(item.id) ?? []} onChange={setFolders} />
         </div>
       </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">

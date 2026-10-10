@@ -1,6 +1,5 @@
 # Roadmap
-- [x] Exact condition-specific card pricing and available-variant dropdowns
-- [x] Scanner, batch, collection, item pages
-- [x] Rename app to Lymitz
-- [x] Official card artwork primary, with original scan available in card details
-- [ ] eBay pricing keys (waiting on user)
+
+- [x] Filter chips always visible just below the collection search bar (verified: All/Cards/Stamps/Coins row shows on phone viewport)
+- [x] Folders are multi-select tags (item_folders join table, chips on card page + scan batch, collection filter; verified 2 tags persist after reload)
+- [ ] Republish to ship both
