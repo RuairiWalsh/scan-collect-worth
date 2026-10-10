@@ -283,9 +283,6 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               <Field label="Grade"><Input placeholder="10" value={str(f.grade)} onChange={(e) => set("grade", nul(e.target.value))} /></Field>
             </div>
           )}
-          <Field label="Folder">
-            <FolderPicker value={f.folder_id ?? ""} onChange={(v) => set("folder_id", v || null)} className="w-full" />
-          </Field>
           <Field label="Notes"><Textarea value={str(f.notes)} onChange={(e) => set("notes", nul(e.target.value))} /></Field>
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" onClick={del} className="text-destructive"><Trash2 /> Delete</Button>
