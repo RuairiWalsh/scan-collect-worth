@@ -89,3 +89,24 @@ export const pricingStatus = createServerFn({ method: "GET" })
     const { ebayConfigured, justtcgConfigured } = await import("@/server/prices.server");
     return { ebay: ebayConfigured(), justtcg: justtcgConfigured() };
   });
+
+/** One-off: backfill 180-day price history for every catalog card that has none. */
+export const backfillCatalogHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+    const { data: cards } = await context.supabase.from("catalog_prices").select("catalog_id");
+    let seeded = 0;
+    let skipped = 0;
+    for (const c of cards ?? []) {
+      const card = await catalogCardById(c.catalog_id, { history: true });
+      if (!card) {
+        skipped++;
+        continue;
+      }
+      const n = await seedCatalogHistory(context.supabase, card);
+      if (n > 0) seeded++;
+      else skipped++;
+    }
+    return { total: cards?.length ?? 0, seeded, skipped };
+  });
