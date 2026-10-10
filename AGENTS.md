@@ -17,3 +17,4 @@
 - Card scans are pinned to an exact JustTCG catalog card (items.catalog_id) in src/server/identify.server.ts; pricing fetches by that id, and editing a card's identity clears it — prevents prices from a look-alike printing.
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).
 - Keep the original scan in items.thumbnail and matched catalog artwork in items.official_image; resolve provider artwork only from the exact catalog entry's external IDs to avoid look-alike images.
+- Live scan finds cards with a pure, tested rectangle detector (src/lib/card-detect.ts) instead of a fixed guide box — runs every tick on-device with no ML download.
