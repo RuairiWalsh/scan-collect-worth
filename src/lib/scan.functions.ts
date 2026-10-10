@@ -21,7 +21,9 @@ export type Identification = {
 
 export const identifyItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { image: string }) => {
+  .inputValidator((input: { image: string; strip?: string | undefined }) => {
+    if (input.strip !== undefined && (typeof input.strip !== "string" || !input.strip.startsWith("data:image/") || input.strip.length > 2_000_000))
+      throw new Error("Invalid image");
     if (typeof input?.image !== "string" || !input.image.startsWith("data:image/"))
       throw new Error("Invalid image");
     if (input.image.length > 3_000_000) throw new Error("Image too large");
@@ -29,5 +31,5 @@ export const identifyItem = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { identifyImage } = await import("@/server/identify.server");
-    return identifyImage(data.image);
+    return identifyImage(data.image, data.strip);
   });
