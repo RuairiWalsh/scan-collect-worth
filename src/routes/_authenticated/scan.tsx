@@ -120,7 +120,7 @@ function ScanPage() {
   );
 
   const process = useCallback(
-    async (img: { full: string; thumb: string; strip?: string }, auto = false) => {
+    async (img: { full: string; thumb: string; strip?: string | undefined }, auto = false) => {
       const tempId = crypto.randomUUID();
       setPending((p) => [{ id: tempId, thumb: img.thumb }, ...p]);
       inFlight.current++;
@@ -174,7 +174,7 @@ function ScanPage() {
   const gateRef = useRef(initGate());
 
   const shoot = useCallback(
-    (img: { full: string; thumb: string; strip?: string }, auto: boolean) => {
+    (img: { full: string; thumb: string; strip?: string | undefined }, auto: boolean) => {
       setFlash(true);
       setTimeout(() => setFlash(false), 120);
       setCaptured({ thumb: img.thumb, at: Date.now() });
@@ -190,7 +190,7 @@ function ScanPage() {
     let prevBox: Box | null = null;
     let stable = 0;
     let misses = 0;
-    let best: { score: number; img: { full: string; thumb: string; strip?: string } } | null = null;
+    let best: { score: number; img: { full: string; thumb: string; strip?: string | undefined } } | null = null;
     const t = setInterval(() => {
       const v = videoRef.current;
       if (!v || !v.videoWidth) return;
