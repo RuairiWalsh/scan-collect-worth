@@ -40,6 +40,7 @@ function ScanPage() {
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
+  const [captured, setCaptured] = useState<{ thumb: string; at: number } | null>(null);
   const [scanState, setScanState] = useState<"searching" | "steady" | "reading">("searching");
   const inFlight = useRef(0);
   const [pending, setPending] = useState<Pending[]>([]);
@@ -84,12 +85,15 @@ function ScanPage() {
   }
 
   useEffect(() => {
+    if (!captured) return;
+    const t = setTimeout(() => setCaptured(null), 1600);
+    return () => clearTimeout(t);
+  }, [captured]);
+
+  useEffect(() => {
     setInFrame(window.self !== window.top);
-    // Start straight away if camera permission was already granted.
-    navigator.permissions
-      ?.query({ name: "camera" as PermissionName })
-      .then((p) => { if (p.state === "granted") startCam(); })
-      .catch(() => {});
+    // Open straight into the full-screen camera.
+    startCam();
     return () => stopCam();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stopCam]);
@@ -178,24 +182,26 @@ function ScanPage() {
       const sig = frameSignature(v, rect);
       const motion = prev ? sigDiff(sig, prev) : 99;
       prev = sig;
-      steady = motion < 7 ? steady + 1 : 0;
+      // Forgiving thresholds: a normal hand hover counts as steady.
+      steady = motion < 14 ? steady + 1 : 0;
       if (steady === 0) best = null;
-      const isNew = !lastShot || sigDiff(sig, lastShot) > 16;
-      const hasDetail = sigContrast(sig) > 10;
-      if (inFlight.current >= 3) { setScanState("reading"); return; }
+      const isNew = !lastShot || sigDiff(sig, lastShot) > 10;
+      const hasDetail = sigContrast(sig) > 6;
+      if (inFlight.current >= 4) { setScanState("reading"); return; }
       if (!isNew || !hasDetail) { setScanState("searching"); best = null; return; }
       setScanState(steady >= 1 ? "steady" : "searching");
       if (steady >= 1) {
         const score = sharpness(v, rect);
         if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
       }
-      if (steady >= 4 && best) {
+      if (steady >= 2 && best) {
         lastShot = sig;
         steady = 0;
         const img = best.img;
         best = null;
         setFlash(true);
-        setTimeout(() => setFlash(false), 150);
+        setTimeout(() => setFlash(false), 120);
+        setCaptured({ thumb: img.thumb, at: Date.now() });
         navigator.vibrate?.(30);
         process(img, true);
       }
@@ -237,28 +243,69 @@ function ScanPage() {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[1fr_420px]">
-      {/* Scanner */}
+      {/* Scanner — full screen while the camera is on */}
       <section>
-        <div className="panel shadow-hard relative aspect-[3/4] overflow-hidden bg-ink sm:aspect-[4/3]">
+        <div className={camOn ? "fixed inset-0 z-50 overflow-hidden bg-ink" : "panel shadow-hard relative aspect-[3/4] overflow-hidden bg-ink sm:aspect-[4/3]"}>
           <video ref={videoRef} playsInline muted className={`h-full w-full object-cover ${camOn ? "" : "hidden"}`} />
           {camOn && (
             <>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-28">
                 <div
                   ref={guideRef}
-                  className={`relative aspect-[63/88] h-[84%] max-w-[86%] rounded-xl border-[3px] shadow-[0_0_0_9999px_color-mix(in_oklab,var(--ink)_45%,transparent)] transition-colors ${scanState === "steady" ? "border-primary" : "border-ink-foreground/80"}`}
+                  className={`relative aspect-[63/88] h-[72%] max-w-[82%] rounded-xl border-[3px] shadow-[0_0_0_9999px_color-mix(in_oklab,var(--ink)_40%,transparent)] transition-colors ${scanState === "steady" ? "border-primary" : "border-ink-foreground/80"}`}
                 >
                   <div className="animate-scanline absolute inset-x-0 h-0.5 bg-primary shadow-[0_0_12px_2px_var(--primary)]" />
                 </div>
               </div>
-              {flash && <div className="absolute inset-0 bg-ink-foreground/70" />}
+              {flash && <div className="absolute inset-0 bg-ink-foreground/60" />}
+
+              {/* Top bar */}
+              <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
+                <p className="flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-ink-foreground">
+                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-secondary animate-pulse" : "bg-ink-foreground/50"}`} />
+                  {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Fit a card in the outline"}
+                </p>
+                <Button size="sm" onClick={stopCam}>
+                  Done{batch.length ? ` · ${batch.length}` : ""}
+                </Button>
+              </div>
+
+              {/* Captured badge */}
+              {captured && (
+                <div key={captured.at} className="absolute left-1/2 top-20 flex -translate-x-1/2 items-center gap-2 rounded-full border-2 border-ink bg-primary py-1 pl-1 pr-4 text-sm font-extrabold text-primary-foreground shadow-hard">
+                  <img src={captured.thumb} alt="" className="h-10 w-7 rounded object-cover" />
+                  <CheckCheck className="size-4" /> Captured
+                </div>
+              )}
+
+              {/* Camera roll */}
+              <div className="absolute inset-x-0 bottom-0 bg-ink/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <div className="flex gap-2 overflow-x-auto">
+                  {pending.map((p) => (
+                    <div key={p.id} className="relative h-20 w-14 shrink-0 overflow-hidden rounded border-2 border-ink-foreground/40">
+                      <img src={p.thumb} alt="" className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-ink/50 text-ink-foreground">
+                        {p.failed ? <AlertTriangle className="size-4 text-destructive" /> : <Loader2 className="size-4 animate-spin" />}
+                      </div>
+                    </div>
+                  ))}
+                  {batch.map((b) => (
+                    <Link key={b.id} to="/item/$id" params={{ id: b.id }} aria-label={`View ${b.name}`} className="shrink-0">
+                      <ItemArtwork item={b} className="h-20 w-14 rounded border-2 border-ink-foreground/40" />
+                    </Link>
+                  ))}
+                  {!batch.length && !pending.length && (
+                    <p className="py-6 text-xs text-ink-foreground/70">Scanned cards will appear here.</p>
+                  )}
+                </div>
+              </div>
             </>
           )}
           {!camOn && (
             <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-ink-foreground">
               <Camera className="size-10" />
               <p className="max-w-xs text-sm opacity-80">
-                {camError ?? "No buttons to press — hover your phone over a card so it fills the outline, hold for a moment, and it's added to your batch automatically."}
+                {camError ?? "Pass your phone over a card — it captures automatically."}
               </p>
               {camError && inFrame ? (
                 <Button asChild>
