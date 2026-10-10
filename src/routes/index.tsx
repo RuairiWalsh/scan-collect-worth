@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ScanLine, Layers, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { tickerCards, type TickerCard } from "@/lib/ticker.functions";
 import hero from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
+  loader: () => tickerCards(),
   head: () => ({
     meta: [
       { title: "Lymitz — Live scanner for cards, stamps & coins" },
@@ -20,7 +22,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const TICKER = [
+const FALLBACK_TICKER = [
   "CHARIZARD BASE 4/102 · $412.00 ▲",
   "1952 TOPPS MANTLE · PSA 3 · $38,500 ▲",
   "INVERTED JENNY · SCOTT C3a · $1.35M",
@@ -30,12 +32,21 @@ const TICKER = [
   "1893-S MORGAN · XF · $9,800 ▲",
 ];
 
+function tickerLabel(c: TickerCard): string {
+  const parts = [c.name.toUpperCase()];
+  if (c.setName) parts.push(c.setName.toUpperCase());
+  if (c.number) parts.push(`#${c.number}`);
+  return `${parts.join(" · ")} · $${c.price.toFixed(2)}`;
+}
+
 function Index() {
+  const cards = Route.useLoaderData();
+  const items = cards.length > 0 ? cards.map(tickerLabel) : FALLBACK_TICKER;
   return (
     <div className="min-h-screen bg-background">
       <div className="overflow-hidden border-b-2 border-ink bg-ink py-2 text-ink-foreground">
         <div className="animate-ticker flex w-max gap-10 whitespace-nowrap tabular text-xs">
-          {[...TICKER, ...TICKER].map((t, i) => (
+          {[...items, ...items].map((t, i) => (
             <span key={i}>{t}</span>
           ))}
         </div>
