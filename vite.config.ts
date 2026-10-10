@@ -11,7 +11,7 @@ import path from "path";
 // Server routes (e.g. /lovable/email/*) need non-VITE_ env vars such as
 // LOVABLE_API_KEY in process.env. Load them server-side only — never add
 // these to envDefine, which would leak secrets into the client bundle.
-const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
+const serverEnv = loadEnv(process.env["NODE_ENV"] ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
 export default defineConfig({
