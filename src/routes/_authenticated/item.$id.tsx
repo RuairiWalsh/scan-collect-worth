@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { itemQuery, type Item } from "@/lib/items";
+import { itemQuery, priceHistoryQuery, type Item } from "@/lib/items";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import type { PriceSource } from "@/lib/pricing";
@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/item/$id")({
 function ItemPage() {
   const { id } = Route.useParams();
   const { data: item } = useQuery(itemQuery(id));
+  const { data: history } = useQuery(priceHistoryQuery(id));
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   return <ItemEditor item={item} />;
