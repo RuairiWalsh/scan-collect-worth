@@ -7,12 +7,16 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["LOVABLE_CRON_SECRET"];
         const auth = request.headers.get("authorization");
-        if (!secret || auth !== `Bearer ${secret}`) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: cfg } = await supabaseAdmin
+          .from("app_config")
+          .select("value")
+          .eq("key", "cron_secret")
+          .single();
+        if (!cfg?.value || auth !== `Bearer ${cfg.value}`) {
           return new Response("Unauthorized", { status: 401 });
         }
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { catalogCardById, justtcgConfigured } = await import("@/server/prices.server");
         if (!justtcgConfigured()) return Response.json({ ok: false, reason: "justtcg not configured" });
 
