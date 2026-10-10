@@ -29,6 +29,35 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_price_history: {
+        Row: {
+          catalog_id: string
+          id: string
+          nm_price: number | null
+          recorded_at: string
+        }
+        Insert: {
+          catalog_id: string
+          id?: string
+          nm_price?: number | null
+          recorded_at?: string
+        }
+        Update: {
+          catalog_id?: string
+          id?: string
+          nm_price?: number | null
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_price_history_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_prices"
+            referencedColumns: ["catalog_id"]
+          },
+        ]
+      }
       catalog_prices: {
         Row: {
           catalog_id: string
