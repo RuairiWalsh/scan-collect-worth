@@ -63,6 +63,10 @@ function ItemEditor({ item }: { item: Item }) {
         category: f.category, subcategory: f.subcategory, line: f.line, name: f.name,
         set_name: f.set_name, number: f.number, year: f.year, variant: f.variant,
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
+        // Identity edited by hand → re-match the catalog card from the new details.
+        ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
+          ? { catalog_id: null }
+          : {}),
       })
       .eq("id", item.id);
     if (error) {

@@ -1,6 +1,7 @@
 // Server-only price sources.
 import { trimmedMedian, type PriceSource } from "@/lib/pricing";
 import { conditionFor } from "@/lib/taxonomy";
+import { confidentMatch, parseNumber, rankCandidates, type CatalogCard, type ScanGuess } from "@/lib/catalog";
 
 export type PricedItem = {
   category: string;
@@ -14,6 +15,7 @@ export type PricedItem = {
   condition: string;
   grader: string | null;
   grade: string | null;
+  catalog_id?: string | null;
 };
 
 async function getJson(url: string, init?: RequestInit) {
@@ -151,76 +153,100 @@ const JUSTTCG_GAMES: Record<string, string> = {
   union: "union-arena",
 };
 
+export function justtcgGame(line: string | null | undefined) {
+  const l = (line ?? "").toLowerCase();
+  return Object.entries(JUSTTCG_GAMES).find(([k]) => l.includes(k))?.[1];
+}
+
 export function justtcgConfigured() {
   return Boolean(process.env["JUSTTCG_API_KEY"]);
 }
 
-/** JustTCG — multi-game TCG pricing (TCGplayer-based), one API for all card lines. */
-export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
+// Small per-worker cache so repeated lookups don't burn the API rate limit.
+const jtCache = new Map<string, { at: number; data: CatalogCard[] }>();
+
+async function jtCards(params: Record<string, string>): Promise<CatalogCard[]> {
   const key = process.env["JUSTTCG_API_KEY"];
   if (!key) return [];
-  const line = (item.line ?? "").toLowerCase();
-  const game = Object.entries(JUSTTCG_GAMES).find(([k]) => line.includes(k))?.[1];
-
-  const num = (item.number ?? "").split(/[;,]/)[0]!.split("/")[0]!.trim().replace(/^0+/, "");
-  const params = new URLSearchParams({ name: item.name, limit: "20" });
-  if (game) params.set("game", game);
-  if (item.set_name) params.set("set_name", item.set_name);
-  if (num) params.set("number", num);
-
-  const headers = { "x-api-key": key };
-  let data = await getJson(`https://api.justtcg.com/v1/cards?${params}`, { headers });
-  if (!data?.data?.length && (params.has("set_name") || params.has("number"))) {
-    const loose = new URLSearchParams({ name: item.name, limit: "20" });
-    if (game) loose.set("game", game);
-    data = await getJson(`https://api.justtcg.com/v1/cards?${loose}`, { headers });
+  const qs = new URLSearchParams(params).toString();
+  const hit = jtCache.get(qs);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.data;
+  const res = await fetch(`https://api.justtcg.com/v1/cards?${qs}`, { headers: { "x-api-key": key } });
+  if (!res.ok) {
+    console.error("JustTCG", res.status, await res.text().catch(() => ""));
+    return [];
   }
-  const normNum = (s: unknown) => String(s ?? "").split("/")[0]!.trim().replace(/^0+/, "").toLowerCase();
-  const isSealed = (c: any) =>
-    /sealed|booster|box|pack|tin|bundle|collection/i.test(`${c?.rarity ?? ""} ${c?.name ?? ""}`) ||
-    (c?.variants ?? []).every((v: any) => /sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`));
-  let candidates = ((data?.data ?? []) as any[]).filter((c) => !isSealed(c));
-  // Must match the card number when we know it — never price a different card.
-  if (num) candidates = candidates.filter((c) => normNum(c.number) === num.toLowerCase());
-  if (item.set_name && candidates.length > 1) {
-    const s = item.set_name.toLowerCase();
-    const bySet = candidates.filter((c) => String(c.set_name ?? c.set ?? "").toLowerCase().includes(s));
-    if (bySet.length) candidates = bySet;
+  const j = (await res.json()) as { data?: CatalogCard[] };
+  const data = j.data ?? [];
+  jtCache.set(qs, { at: Date.now(), data });
+  return data;
+}
+
+/** Catalog cards that could be the scanned card, best first. Uses as few API calls as possible. */
+export async function findCatalogCandidates(item: ScanGuess & { line: string | null }) {
+  const game = justtcgGame(item.line);
+  const base: Record<string, string> = { q: item.name, limit: "20" };
+  if (game) base["game"] = game;
+  const printed = (item.number ?? "").split(/[;,]/)[0]!.trim();
+  const parsed = parseNumber(printed);
+  let cards: CatalogCard[] = [];
+  if (parsed) {
+    cards = await jtCards({ ...base, number: printed });
+    if (!cards.length && parsed.total) cards = await jtCards({ ...base, number: parsed.num });
   }
-  // Ambiguous (e.g. just "Pikachu" with no number) → no price rather than a wrong one.
-  if (candidates.length !== 1 && !(num && candidates.length)) return [];
-  const card = candidates[0];
-  const variants = ((card?.variants ?? []) as {
-    condition?: string;
-    printing?: string;
-    price?: number;
-  }[]).filter((v) => !/sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`));
+  if (!cards.length) cards = await jtCards(base);
+  return rankCandidates(item, cards);
+}
+
+export async function catalogCardById(id: string) {
+  return (await jtCards({ cardId: id }))[0] ?? null;
+}
+
+function priceFromCard(card: CatalogCard, item: PricedItem): PriceSource[] {
+  const variants = (card.variants ?? []).filter(
+    (v) => !/sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`),
+  );
   if (!variants.length) return [];
-
-  const wantFoil = item.variant?.toLowerCase().includes("foil") || item.variant?.toLowerCase().includes("holo");
-  const wantReverse = item.variant?.toLowerCase().includes("reverse");
+  const vt = (item.variant ?? "").toLowerCase();
+  const wantReverse = vt.includes("reverse");
+  const wantFoil = !wantReverse && (vt.includes("foil") || vt.includes("holo"));
+  const wantFirst = vt.includes("1st");
   const pool = variants.filter((v) => {
     const p = v.printing ?? "";
     if (wantReverse) return /reverse/i.test(p);
-    return wantFoil ? /foil|holo/i.test(p) && !/reverse/i.test(p) : !/foil|holo/i.test(p);
+    if (wantFirst) return /1st/i.test(p);
+    if (wantFoil) return /foil|holo/i.test(p) && !/reverse/i.test(p);
+    return true;
   });
   const usable = (pool.length ? pool : variants).filter((v) => (v.price ?? 0) > 0);
   if (!usable.length) return [];
-  // Prefer the variant matching the item's condition; otherwise Near Mint as reference.
   const condLabel = item.category === "cards" ? conditionFor("cards", item.condition).label : "";
+  const nm = usable.filter((v) => v.condition === "Near Mint");
+  // With no printing preference, the base (non-reverse) printing is the usual one.
+  const nmBase = nm.find((v) => !/reverse/i.test(v.printing ?? "")) ?? nm[0];
   const match =
-    usable.find((v) => v.condition?.toLowerCase() === condLabel.toLowerCase()) ??
-    usable.find((v) => v.condition === "Near Mint") ??
+    usable.find((v) => v.condition?.toLowerCase() === condLabel.toLowerCase() && (!nmBase || v.printing === nmBase.printing)) ??
+    nmBase ??
     usable[0]!;
   const isNm = match.condition === "Near Mint";
   return [
     {
       source: "justtcg",
-      label: `JustTCG (${match.condition ?? "market"}${match.printing ? ` ${match.printing}` : ""})`,
+      label: `JustTCG · ${card.set_name ?? ""} ${card.number ?? ""} (${match.condition ?? "market"}${match.printing ? `, ${match.printing}` : ""})`.replace(/\s+/g, " "),
       price: match.price!,
       kind: isNm ? "reference" : "market",
     },
   ];
+}
+
+/** JustTCG — multi-game TCG pricing. Exact catalog card when known, otherwise a strict match. */
+export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
+  if (!justtcgConfigured()) return [];
+  let card: CatalogCard | null = null;
+  if (item.catalog_id) card = await catalogCardById(item.catalog_id);
+  if (!card) card = confidentMatch(await findCatalogCandidates(item));
+  // Not sure which card it is → no price rather than a wrong one.
+  return card ? priceFromCard(card, item) : [];
 }
 
 export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
