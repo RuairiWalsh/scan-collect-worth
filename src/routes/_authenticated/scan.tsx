@@ -225,7 +225,7 @@ function ScanPage() {
           <p className="flex items-center gap-2 text-sm font-semibold">
             {camOn ? (
               <>
-                <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-accent animate-pulse" : "bg-muted-foreground"}`} />
+                <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-secondary animate-pulse" : "bg-muted-foreground"}`} />
                 {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Pass a card under the camera"}
               </>
             ) : (
