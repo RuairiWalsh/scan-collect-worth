@@ -78,6 +78,24 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
     status().then((s) => setPriceStatus(s)).catch(() => {});
   }, [status]);
 
+  // Auto-refresh the price when the card is opened (skip if already updated in the last hour).
+  const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    const last = item.price_updated_at ? new Date(item.price_updated_at).getTime() : 0;
+    if (Date.now() - last < 3600000) return;
+    setRefreshing(true);
+    reprice({ data: { id: item.id } })
+      .then(() => {
+        qc.invalidateQueries({ queryKey: ["item", item.id] });
+        qc.invalidateQueries({ queryKey: ["price_history", item.id] });
+        qc.invalidateQueries({ queryKey: ["catalog_history_for"] });
+        qc.invalidateQueries({ queryKey: ["items"] });
+      })
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
+
   const set = <K extends keyof Item>(k: K, v: Item[K]) => setF((p) => ({ ...p, [k]: v }));
   const cat = (f.category as CategoryKey) in TAXONOMY ? (f.category as CategoryKey) : "cards";
   const subs = TAXONOMY[cat].subcategories;
@@ -187,9 +205,11 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
                 No pricing APIs connected yet — add a JustTCG or eBay key to see live prices.
               </p>
             )}
-            <Button variant="outline" size="sm" className="mt-4 w-full" disabled={busy} onClick={save}>
-              <RefreshCw className={busy ? "animate-spin" : ""} /> Refresh price
-            </Button>
+            {refreshing && (
+              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <RefreshCw className="size-3 animate-spin" /> Updating price…
+              </p>
+            )}
           </div>
         </div>
 
