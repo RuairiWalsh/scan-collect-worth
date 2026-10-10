@@ -15,6 +15,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Sign in to scan collectibles and track your collection's value." },
       { property: "og:title", content: "Sign in — Lymitz" },
       { property: "og:description", content: "Sign in to scan collectibles and track your collection's value." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,

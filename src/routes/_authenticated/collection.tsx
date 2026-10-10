@@ -6,6 +6,7 @@ import { itemsQuery } from "@/lib/items";
 import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
+import { ItemArtwork } from "@/components/ItemArtwork";
 
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/collection")({
       { name: "description", content: "Your cards, stamps and coins with live estimated value." },
       { property: "og:title", content: "My collection — Lymitz" },
       { property: "og:description", content: "Your cards, stamps and coins with live estimated value." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: CollectionPage,
@@ -122,11 +125,7 @@ function CollectionPage() {
           {shown.map((i) => (
             <li key={i.id}>
               <Link to="/item/$id" params={{ id: i.id }} className="panel block overflow-hidden transition hover:shadow-hard-sm">
-                {i.thumbnail ? (
-                  <img src={i.thumbnail} alt={i.name} loading="lazy" className="aspect-square w-full border-b-2 border-ink object-cover" />
-                ) : (
-                  <div className="aspect-square w-full border-b-2 border-ink bg-muted" />
-                )}
+                <ItemArtwork item={i} className="aspect-[63/88] w-full border-b-2 border-ink" />
                 <div className="p-3">
                   <p className="truncate font-semibold">{i.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
