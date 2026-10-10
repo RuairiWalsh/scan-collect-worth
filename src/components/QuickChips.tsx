@@ -41,7 +41,7 @@ type Props = {
  * One-tap chips under the filter row so phone users can hop between subtypes
  * (TCG ↔ Sports ↔ Pokémon) without opening the full cascade dropdown.
  */
-export function QuickChips({ items, cat, sub, line, stamp, coin, onCardsChange, onStampChange, onCoinChange }: Props) {
+export function QuickChips({ items, cat, sub, line, stamp, coin, onCatChange, onCardsChange, onStampChange, onCoinChange }: Props) {
   const countFor = (f: { cat: string; sub?: string; line?: string }) =>
     items.filter(
       (i) =>
