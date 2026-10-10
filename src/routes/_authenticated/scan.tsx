@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { identifyItem } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
-import { captureRegion, fileToImages, frameSignature, guideToVideoRect, sharpness, sigContrast, sigDiff, usd } from "@/lib/image";
+import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, sharpness, sigDiff, usd } from "@/lib/image";
+import { detectCard, iou, type Box } from "@/lib/card-detect";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
@@ -35,13 +36,13 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const guideRef = useRef<HTMLDivElement>(null);
   const [inFrame, setInFrame] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
   const [captured, setCaptured] = useState<{ thumb: string; at: number } | null>(null);
-  const [scanState, setScanState] = useState<"searching" | "steady" | "reading">("searching");
+  const [scanState, setScanState] = useState<"searching" | "steady" | "reading" | "seen">("searching");
+  const [overlay, setOverlay] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const inFlight = useRef(0);
   const [pending, setPending] = useState<Pending[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
@@ -271,21 +272,21 @@ function ScanPage() {
           <video ref={videoRef} playsInline muted className={`h-full w-full object-cover ${camOn ? "" : "hidden"}`} />
           {camOn && (
             <>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-28">
+              {/* Tap anywhere to capture now */}
+              <button type="button" aria-label="Capture now" onClick={tapCapture} className="absolute inset-0" />
+              {overlay && (
                 <div
-                  ref={guideRef}
-                  className={`relative aspect-[63/88] h-[72%] max-w-[82%] rounded-xl border-[3px] shadow-[0_0_0_9999px_color-mix(in_oklab,var(--ink)_40%,transparent)] transition-colors ${scanState === "steady" ? "border-primary" : "border-ink-foreground/80"}`}
-                >
-                  <div className="animate-scanline absolute inset-x-0 h-0.5 bg-primary shadow-[0_0_12px_2px_var(--primary)]" />
-                </div>
-              </div>
+                  className={`pointer-events-none absolute rounded-lg border-[3px] transition-all duration-150 ${scanState === "seen" ? "border-secondary" : "border-primary"}`}
+                  style={overlay}
+                />
+              )}
               {flash && <div className="absolute inset-0 bg-ink-foreground/60" />}
 
               {/* Top bar */}
               <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
                 <p className="flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-ink-foreground">
-                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-secondary animate-pulse" : "bg-ink-foreground/50"}`} />
-                  {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Fit a card in the outline"}
+                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" || scanState === "seen" ? "bg-secondary" : "bg-ink-foreground/50"}`} />
+                  {scanState === "steady" ? "Card found — hold…" : scanState === "reading" ? "Reading…" : scanState === "seen" ? "Got it — next card" : "Point at a card (or tap)"}
                 </p>
                 <Button size="sm" onClick={stopCam}>
                   Done{batch.length ? ` · ${batch.length}` : ""}
