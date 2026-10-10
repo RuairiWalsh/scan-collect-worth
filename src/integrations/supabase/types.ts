@@ -29,6 +29,7 @@ export type Database = {
           name: string
           notes: string | null
           number: string | null
+          official_image: string | null
           price_high: number | null
           price_low: number | null
           price_sources: Json
@@ -57,6 +58,7 @@ export type Database = {
           name: string
           notes?: string | null
           number?: string | null
+          official_image?: string | null
           price_high?: number | null
           price_low?: number | null
           price_sources?: Json
@@ -85,6 +87,7 @@ export type Database = {
           name?: string
           notes?: string | null
           number?: string | null
+          official_image?: string | null
           price_high?: number | null
           price_low?: number | null
           price_sources?: Json
