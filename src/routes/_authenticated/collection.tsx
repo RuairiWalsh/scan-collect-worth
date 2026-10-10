@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ScanLine } from "lucide-react";
-import { itemsQuery } from "@/lib/items";
+import { itemsQuery, collectionHistoryQuery } from "@/lib/items";
+import { collectionValueSeries } from "@/lib/collection-history";
+import { PriceSparkline } from "@/components/PriceSparkline";
 import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
@@ -96,6 +98,17 @@ function CollectionPage() {
   }, [filtered, sort]);
 
   const filteredTotal = filtered.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
+
+  const { data: historyRows = [] } = useQuery(collectionHistoryQuery());
+  const filteredIds = useMemo(() => new Set(filtered.map((i) => i.id)), [filtered]);
+  const series = useMemo(
+    () =>
+      collectionValueSeries(
+        filtered.map((i) => ({ id: i.id, quantity: i.quantity, created_at: i.created_at })),
+        historyRows.filter((r) => filteredIds.has(r.item_id)),
+      ),
+    [filtered, historyRows, filteredIds],
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
