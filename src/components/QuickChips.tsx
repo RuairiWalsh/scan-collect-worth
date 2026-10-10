@@ -26,7 +26,7 @@ type Chip = { key: string; label: string; count: number; active: boolean; onPick
 
 type Props = {
   items: Row[];
-  cat: CategoryKey;
+  cat: CategoryKey | "all";
   sub: string;
   line: string;
   stamp: StampFilter;
