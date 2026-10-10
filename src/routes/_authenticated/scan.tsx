@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { identifyItem } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
-import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, sharpness, sigDiff, usd } from "@/lib/image";
+import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, screenToBox, sharpness, sigDiff, usd } from "@/lib/image";
 import { detectCard, iou, type Box } from "@/lib/card-detect";
 import { gateShot, gateTick, initGate } from "@/lib/capture-gate";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
@@ -46,6 +46,8 @@ function ScanPage() {
   const [scanState, setScanState] = useState<"searching" | "steady" | "reading" | "seen">("searching");
   const [overlay, setOverlay] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const inFlight = useRef(0);
+  const guideRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<"manual" | "auto">("manual");
   const [pending, setPending] = useState<Pending[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
@@ -187,7 +189,7 @@ function ScanPage() {
 
   // Live scan: find a card-shaped rectangle anywhere in view; once it sits still for a moment, capture it.
   useEffect(() => {
-    if (!camOn) return;
+    if (!camOn || mode !== "auto") return;
     let prevBox: Box | null = null;
     let stable = 0;
     let misses = 0;
@@ -229,7 +231,7 @@ function ScanPage() {
       }
     }, 180);
     return () => clearInterval(t);
-  }, [camOn, shoot]);
+  }, [camOn, shoot, mode]);
 
   // Tap anywhere to capture right now (the detected card, or the middle of the view).
   function tapCapture() {
@@ -240,6 +242,22 @@ function ScanPage() {
     lastShotRef.current = frameSignature(v, rect);
     gateRef.current = gateShot(gateRef.current, Date.now());
     shoot(captureRegion(v, rect), false);
+  }
+
+  // Shutter: capture exactly what's inside the guide box (with a small margin).
+  function shutterCapture() {
+    const v = videoRef.current;
+    const g = guideRef.current;
+    if (!v || !v.videoWidth || !g) return;
+    const b = screenToBox(v, g.getBoundingClientRect());
+    const mx = b.w * 0.04, my = b.h * 0.04;
+    const box = {
+      x: Math.max(0, b.x - mx),
+      y: Math.max(0, b.y - my),
+      w: Math.min(1 - Math.max(0, b.x - mx), b.w + 2 * mx),
+      h: Math.min(1 - Math.max(0, b.y - my), b.h + 2 * my),
+    };
+    shoot(captureRegion(v, boxToVideoRect(v, box)), false);
   }
 
   async function onFiles(files: FileList | null) {
@@ -282,26 +300,56 @@ function ScanPage() {
           <video ref={videoRef} playsInline muted className={`h-full w-full object-cover ${camOn ? "" : "hidden"}`} />
           {camOn && (
             <>
-              {/* Tap anywhere to capture now */}
-              <button type="button" aria-label="Capture now" onClick={tapCapture} className="absolute inset-0" />
-              {overlay && (
-                <div
-                  className={`pointer-events-none absolute rounded-lg border-[3px] transition-all duration-150 ${scanState === "seen" ? "border-secondary" : "border-primary"}`}
-                  style={overlay}
-                />
+              {mode === "auto" ? (
+                <>
+                  {/* Tap anywhere to capture now */}
+                  <button type="button" aria-label="Capture now" onClick={tapCapture} className="absolute inset-0" />
+                  {overlay && (
+                    <div
+                      className={`pointer-events-none absolute rounded-lg border-[3px] transition-all duration-150 ${scanState === "seen" ? "border-secondary" : "border-primary"}`}
+                      style={overlay}
+                    />
+                  )}
+                </>
+              ) : (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-24">
+                  <div
+                    ref={guideRef}
+                    className="aspect-[63/88] w-[min(78vw,calc(62vh*63/88))] rounded-xl border-[3px] border-primary shadow-[0_0_0_9999px_color-mix(in_oklch,var(--ink)_45%,transparent)]"
+                  />
+                </div>
               )}
               {flash && <div className="absolute inset-0 bg-ink-foreground/60" />}
 
               {/* Top bar */}
               <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
-                <p className="flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-ink-foreground">
-                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" || scanState === "seen" ? "bg-secondary" : "bg-ink-foreground/50"}`} />
-                  {scanState === "steady" ? "Card found — hold…" : scanState === "reading" ? "Reading…" : scanState === "seen" ? "Got it — next card" : "Point at a card (or tap)"}
-                </p>
-                <Button size="sm" onClick={stopCam}>
+                <button
+                  type="button"
+                  onClick={() => setMode((m) => (m === "auto" ? "manual" : "auto"))}
+                  className="relative z-10 flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-ink-foreground"
+                >
+                  {mode === "auto" ? (
+                    <>
+                      <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" || scanState === "seen" ? "bg-secondary" : "bg-ink-foreground/50"}`} />
+                      {scanState === "steady" ? "Card found — hold…" : scanState === "reading" ? "Reading…" : scanState === "seen" ? "Got it — next card" : "Auto scan"} · switch
+                    </>
+                  ) : (
+                    <>Line up the card · Auto: off</>
+                  )}
+                </button>
+                <Button size="sm" onClick={stopCam} className="relative z-10">
                   Done{batch.length ? ` · ${batch.length}` : ""}
                 </Button>
               </div>
+
+              {mode === "manual" && (
+                <button
+                  type="button"
+                  aria-label="Take photo"
+                  onClick={shutterCapture}
+                  className="absolute bottom-32 left-1/2 z-10 size-20 -translate-x-1/2 rounded-full border-4 border-ink-foreground bg-primary shadow-hard active:scale-95 mb-[env(safe-area-inset-bottom)]"
+                />
+              )}
 
               {/* Captured badge */}
               {captured && (
