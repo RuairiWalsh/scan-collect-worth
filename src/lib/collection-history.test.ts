@@ -29,3 +29,16 @@ describe("collectionValueSeries", () => {
     expect(pts.map((p) => p.value)).toEqual([0, 0]);
   });
 });
+
+import { catalogValueEvents as cve, collectionValueSeries as cvs } from "./collection-history";
+describe("migrated history", () => {
+  it("scales market history to the copy's value and shows it before the add date", () => {
+    const ev = cve([{ id: "a", catalog_id: "c", est_value: 4 }], [
+      { catalog_id: "c", nm_price: 1, recorded_at: "2026-01-01T00:00:00Z" },
+      { catalog_id: "c", nm_price: 2, recorded_at: "2026-01-03T00:00:00Z" },
+    ]);
+    expect(ev.map((e) => e.est_value)).toEqual([2, 4]);
+    const pts = cvs([{ id: "a", quantity: 1, created_at: "2026-01-03T00:00:00Z" }], ev, new Date("2026-01-03T12:00:00Z"), { includePreAddHistory: true });
+    expect(pts.map((p) => p.value)).toEqual([2, 2, 4]);
+  });
+});
