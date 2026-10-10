@@ -9,7 +9,7 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 // Configuration
-const SITE_NAME = "Scan Collect Worth"
+const SITE_NAME = "Lymitz"
 const SENDER_DOMAIN = "notify.lymitz.com"
 const ROOT_DOMAIN = "lymitz.com"
 const FROM_DOMAIN = "notify.lymitz.com"
