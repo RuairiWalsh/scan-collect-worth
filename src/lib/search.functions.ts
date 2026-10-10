@@ -77,7 +77,8 @@ export const searchCards = createServerFn({ method: "POST" })
       // First time we see this card: pull its 180-day price history too.
       const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
       const withHistory = await catalogCardById(card.id, { history: true });
-      if (withHistory) await seedCatalogHistory(context.supabase, withHistory);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+      if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();

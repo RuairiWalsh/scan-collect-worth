@@ -55,7 +55,8 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         // First time we see this card: pull its 180-day price history too.
         const { seedCatalogHistory } = await import("@/server/prices.server");
         const withHistory = await catalogCardById(card.id, { history: true });
-        if (withHistory) await seedCatalogHistory(context.supabase, withHistory);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+        if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
       }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);
