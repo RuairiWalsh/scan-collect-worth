@@ -14,7 +14,7 @@ import { EMPTY_STAMP_FILTER, matchesStampFilter, type StampFilter } from "@/lib/
 import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coin-filters";
 import { QuickChips } from "@/components/QuickChips";
 import { useOfficialImages } from "@/hooks/use-official-images";
-import { foldersQuery, useCreateFolder } from "@/components/FolderPicker";
+import { foldersQuery, itemFoldersQuery, useCreateFolder } from "@/components/FolderPicker";
 
 type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
 
@@ -54,12 +54,13 @@ function CollectionPage() {
   const [q, setQ] = useState("");
   const [folder, setFolder] = useState<string>("all");
   const { data: folders = [] } = useQuery(foldersQuery());
+  const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const createFolder = useCreateFolder();
 
   const searching = q.trim().length > 0 || folder !== "all";
   const searched = useMemo(
-    () => items.filter((i) => (folder === "all" || i.folder_id === folder) && matchesCollectionQuery(i, q)),
-    [items, q, folder],
+    () => items.filter((i) => (folder === "all" || (itemFolders.get(i.id) ?? []).includes(folder)) && matchesCollectionQuery(i, q)),
+    [items, q, folder, itemFolders],
   );
   const total = items.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
   const byCat = CATEGORY_KEYS.map((k) => ({
@@ -193,7 +194,7 @@ function CollectionPage() {
 
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
         {[{ id: "all", name: "All items" }, ...folders].map((f) => {
-          const n = f.id === "all" ? items.length : items.filter((i) => i.folder_id === f.id).length;
+          const n = f.id === "all" ? items.length : items.filter((i) => (itemFolders.get(i.id) ?? []).includes(f.id)).length;
           const active = folder === f.id;
           return (
             <button
