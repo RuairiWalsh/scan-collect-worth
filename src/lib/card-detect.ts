@@ -63,8 +63,11 @@ export function detectCard(g: ArrayLike<number>, W: number, H: number): Box | nu
     }
     return out.sort((a, b) => c[b]! - c[a]!).slice(0, 14);
   };
-  const rows = peaks((y) => rp[y * (W + 1) + W]!, H, W * 0.12);
-  const cols = peaks((x) => cp[x * (H + 1) + H]!, W, H * 0.12);
+  // Raw (un-banded) counts break ties so the peak sits on the actual edge, not the band's rim.
+  const rawRow = new Float32Array(H), rawCol = new Float32Array(W);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { rawRow[y]! += eh[y * W + x]!; rawCol[x]! += ev[y * W + x]!; }
+  const rows = peaks((y) => rp[y * (W + 1) + W]! + rawRow[y]! * 0.01, H, W * 0.12);
+  const cols = peaks((x) => cp[x * (H + 1) + H]! + rawCol[x]! * 0.01, W, H * 0.12);
 
   const rowCov = (y: number, l: number, r: number) => (rp[y * (W + 1) + r]! - rp[y * (W + 1) + l]!) / (r - l);
   const colCov = (x: number, t: number, b: number) => (cp[x * (H + 1) + b]! - cp[x * (H + 1) + t]!) / (b - t);
