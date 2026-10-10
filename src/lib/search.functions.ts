@@ -138,11 +138,7 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
       const full = await catalogCardById(data.catalog_id, { history: true });
       if (full) {
         const db = (await adminDb()) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        // Seed skips when any row exists; clear the guard by seeding directly.
-        const n = await seedCatalogHistory(
-          { from: (t: string) => (t === "catalog_price_history" ? { ...db.from(t), select: () => ({ eq: () => ({ limit: async () => ({ data: [] }) }) }), upsert: (r: object[], o: object) => db.from(t).upsert(r, o) } : db.from(t)) } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
-          full,
-        );
+        const n = await seedCatalogHistory(db, full);
         if (n > 0) ({ data: rows } = await load());
       }
     }
