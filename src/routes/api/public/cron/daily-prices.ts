@@ -45,6 +45,7 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
               continue;
             }
             await seedCatalogHistory(supabaseAdmin, card);
+            const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
             const nm = nmVariantOf(card);
             const { officialCardImage } = await import("@/lib/card-artwork");
             const { error: upErr } = await supabaseAdmin.from("catalog_prices").upsert({
