@@ -192,9 +192,11 @@ function ScanPage() {
     const t = setInterval(() => {
       const v = videoRef.current;
       if (!v || !v.videoWidth) return;
+      const now = Date.now();
       const { g, W, H } = frameGray(v);
       const box = detectCard(g, W, H);
       if (!box) {
+        gateRef.current = gateTick(gateRef.current, false, null, now).state;
         if (++misses >= 2) { lastBoxRef.current = null; setOverlay(null); setScanState("searching"); }
         stable = 0; best = null; prevBox = null;
         return;
@@ -206,13 +208,17 @@ function ScanPage() {
       prevBox = box;
       const rect = boxToVideoRect(v, box);
       const sig = frameSignature(v, rect);
-      if (lastShotRef.current && sigDiff(sig, lastShotRef.current) < 12) { setScanState("seen"); best = null; return; }
+      const diff = lastShotRef.current ? sigDiff(sig, lastShotRef.current) : null;
+      const gate = gateTick(gateRef.current, true, diff, now);
+      gateRef.current = gate.state;
+      if (!gate.canShoot) { setScanState("seen"); best = null; stable = 0; return; }
       if (inFlight.current >= 4) { setScanState("reading"); return; }
       setScanState("steady");
       const score = sharpness(v, rect);
       if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
       if (stable >= 2) {
         lastShotRef.current = sig;
+        gateRef.current = gateShot(gateRef.current, now);
         stable = 0;
         const img = best.img;
         best = null;
