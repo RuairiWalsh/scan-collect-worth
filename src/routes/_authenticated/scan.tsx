@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { identifyItem } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
-import { captureVideo, fileToImages, frameSignature, sigContrast, sigDiff, usd } from "@/lib/image";
+import { captureRegion, fileToImages, frameSignature, guideToVideoRect, sharpness, sigContrast, sigDiff, usd } from "@/lib/image";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
@@ -31,6 +31,8 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
+  const [inFrame, setInFrame] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
@@ -53,9 +55,14 @@ function ScanPage() {
     setCamError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1440 } },
         audio: false,
       });
+      // Ask for continuous autofocus where the phone supports it.
+      const track = stream.getVideoTracks()[0];
+      try {
+        await track?.applyConstraints({ advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet] });
+      } catch { /* not supported */ }
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -63,11 +70,24 @@ function ScanPage() {
       }
       setCamOn(true);
     } catch (e) {
-      setCamError("Camera unavailable. Allow camera access, or upload photos instead.");
+      setCamError(
+        window.self !== window.top
+          ? "The camera is blocked inside this preview window. Open the scanner in its own tab to use live scan."
+          : "Camera unavailable. Allow camera access for this site in your browser settings, then try again.",
+      );
     }
   }
 
-  useEffect(() => () => stopCam(), [stopCam]);
+  useEffect(() => {
+    setInFrame(window.self !== window.top);
+    // Start straight away if camera permission was already granted.
+    navigator.permissions
+      ?.query({ name: "camera" as PermissionName })
+      .then((p) => { if (p.state === "granted") startCam(); })
+      .catch(() => {});
+    return () => stopCam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopCam]);
 
   const doPrice = useCallback(
     async (id: string) => {
@@ -115,6 +135,7 @@ function ScanPage() {
             condition: r.grader ? "graded" : defaultCondition(r.category),
             ai_confidence: r.confidence,
             thumbnail: img.thumb,
+            catalog_id: r.catalog_id ?? null,
           })
           .select("id")
           .single();
@@ -136,33 +157,43 @@ function ScanPage() {
     [identify, qc, doPrice],
   );
 
-  // Live scan: when the picture holds steady on something new, grab it automatically.
+  // Live scan: when a new card holds steady inside the guide, grab the sharpest frame automatically.
   useEffect(() => {
     if (!camOn) return;
     let prev: Float32Array | null = null;
     let lastShot: Float32Array | null = null;
     let steady = 0;
+    let best: { score: number; img: { full: string; thumb: string } } | null = null;
     const t = setInterval(() => {
       const v = videoRef.current;
-      if (!v || !v.videoWidth) return;
-      const sig = frameSignature(v);
+      const g = guideRef.current;
+      if (!v || !g || !v.videoWidth) return;
+      const rect = guideToVideoRect(v, g);
+      const sig = frameSignature(v, rect);
       const motion = prev ? sigDiff(sig, prev) : 99;
       prev = sig;
-      steady = motion < 6 ? steady + 1 : 0;
-      const isNew = !lastShot || sigDiff(sig, lastShot) > 18;
-      const hasDetail = sigContrast(sig) > 12;
+      steady = motion < 7 ? steady + 1 : 0;
+      if (steady === 0) best = null;
+      const isNew = !lastShot || sigDiff(sig, lastShot) > 16;
+      const hasDetail = sigContrast(sig) > 10;
       if (inFlight.current >= 3) { setScanState("reading"); return; }
-      if (!isNew || !hasDetail) { setScanState("searching"); return; }
+      if (!isNew || !hasDetail) { setScanState("searching"); best = null; return; }
       setScanState(steady >= 1 ? "steady" : "searching");
-      if (steady >= 3) {
+      if (steady >= 1) {
+        const score = sharpness(v, rect);
+        if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
+      }
+      if (steady >= 4 && best) {
         lastShot = sig;
         steady = 0;
+        const img = best.img;
+        best = null;
         setFlash(true);
         setTimeout(() => setFlash(false), 150);
         navigator.vibrate?.(30);
-        process(captureVideo(v), true);
+        process(img, true);
       }
-    }, 300);
+    }, 250);
     return () => clearInterval(t);
   }, [camOn, process]);
 
@@ -198,12 +229,18 @@ function ScanPage() {
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[1fr_420px]">
       {/* Scanner */}
       <section>
-        <div className="panel shadow-hard relative aspect-[4/3] overflow-hidden bg-ink">
+        <div className="panel shadow-hard relative aspect-[3/4] overflow-hidden bg-ink sm:aspect-[4/3]">
           <video ref={videoRef} playsInline muted className={`h-full w-full object-cover ${camOn ? "" : "hidden"}`} />
           {camOn && (
             <>
-              <div className="pointer-events-none absolute inset-[10%] rounded-lg border-2 border-dashed border-ink-foreground/70" />
-              <div className="animate-scanline pointer-events-none absolute inset-x-[10%] h-0.5 bg-primary shadow-[0_0_12px_2px_var(--primary)]" />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div
+                  ref={guideRef}
+                  className={`relative aspect-[63/88] h-[84%] max-w-[86%] rounded-xl border-[3px] shadow-[0_0_0_9999px_color-mix(in_oklab,var(--ink)_45%,transparent)] transition-colors ${scanState === "steady" ? "border-primary" : "border-ink-foreground/80"}`}
+                >
+                  <div className="animate-scanline absolute inset-x-0 h-0.5 bg-primary shadow-[0_0_12px_2px_var(--primary)]" />
+                </div>
+              </div>
               {flash && <div className="absolute inset-0 bg-ink-foreground/70" />}
             </>
           )}
@@ -211,22 +248,30 @@ function ScanPage() {
             <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center text-ink-foreground">
               <Camera className="size-10" />
               <p className="max-w-xs text-sm opacity-80">
-                {camError ?? "Start the camera, then pass items under it one at a time. Each one is picked up automatically and added to your batch."}
+                {camError ?? "No buttons to press — hover your phone over a card so it fills the outline, hold for a moment, and it's added to your batch automatically."}
               </p>
-              <Button onClick={startCam}>Start camera</Button>
+              {camError && inFrame ? (
+                <Button asChild>
+                  <a href={typeof window !== "undefined" ? window.location.href : "/scan"} target="_blank" rel="noreferrer">
+                    Open scanner in new tab
+                  </a>
+                </Button>
+              ) : (
+                <Button onClick={startCam}>{camError ? "Try again" : "Start live scan"}</Button>
+              )}
             </div>
           )}
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <Button variant="outline" onClick={() => fileRef.current?.click()}>
-            <ImagePlus /> Upload
+            <ImagePlus /> Upload photo
           </Button>
           <p className="flex items-center gap-2 text-sm font-semibold">
             {camOn ? (
               <>
                 <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-secondary animate-pulse" : "bg-muted-foreground"}`} />
-                {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Pass a card under the camera"}
+                {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Fit one card inside the outline"}
               </>
             ) : (
               <span className="text-muted-foreground">Live scan off</span>

@@ -48,14 +48,15 @@ export const usd = (n: number | null | undefined) =>
 
 /** Tiny grayscale fingerprint of a video frame for motion / change detection. */
 let sigCanvas: HTMLCanvasElement | null = null;
-export function frameSignature(video: HTMLVideoElement): Float32Array {
+export function frameSignature(video: HTMLVideoElement, r?: { x: number; y: number; w: number; h: number }): Float32Array {
   sigCanvas ??= document.createElement("canvas");
   sigCanvas.width = 32;
   sigCanvas.height = 24;
   const ctx = sigCanvas.getContext("2d", { willReadFrequently: true })!;
   // Only look at the framed centre area.
   const w = video.videoWidth, h = video.videoHeight;
-  ctx.drawImage(video, w * 0.1, h * 0.1, w * 0.8, h * 0.8, 0, 0, 32, 24);
+  const box = r ?? { x: w * 0.1, y: h * 0.1, w: w * 0.8, h: h * 0.8 };
+  ctx.drawImage(video, box.x, box.y, box.w, box.h, 0, 0, 32, 24);
   const d = ctx.getImageData(0, 0, 32, 24).data;
   const out = new Float32Array(32 * 24);
   for (let i = 0; i < out.length; i++) out[i] = (d[i * 4]! + d[i * 4 + 1]! + d[i * 4 + 2]!) / 3;
