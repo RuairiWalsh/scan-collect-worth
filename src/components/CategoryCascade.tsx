@@ -180,7 +180,7 @@ function Column({
   options: Option[];
   onPick: (key: string) => void;
   last?: boolean;
-  innerRef?: RefObject<HTMLDivElement | null>;
+  innerRef?: RefObject<HTMLDivElement | null> | undefined;
 }) {
   return (
     <div
