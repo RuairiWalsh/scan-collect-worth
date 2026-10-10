@@ -30,18 +30,24 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
 
         let updated = 0;
         let failed = 0;
+        const { seedCatalogHistory, nmVariantOf } = await import("@/server/prices.server");
         for (const id of ids) {
           try {
-            const card = await catalogCardById(id);
+            // Cards with no history yet get the 180-day backfill fetch.
+            const { data: hist } = await supabaseAdmin
+              .from("catalog_price_history")
+              .select("catalog_id")
+              .eq("catalog_id", id)
+              .limit(1);
+            const card = await catalogCardById(id, { history: !hist?.length });
             if (!card) {
               failed++;
               continue;
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+            await seedCatalogHistory(supabaseAdmin as any, card);
             const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
-            const nm =
-              variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
-              variants.find((v) => v.condition === "Near Mint") ??
-              variants[0];
+            const nm = nmVariantOf(card);
             const { officialCardImage } = await import("@/lib/card-artwork");
             const { error: upErr } = await supabaseAdmin.from("catalog_prices").upsert({
               catalog_id: card.id,
@@ -60,7 +66,10 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
               if (nm?.price != null) {
                 await supabaseAdmin
                   .from("catalog_price_history")
-                  .insert({ catalog_id: card.id, nm_price: nm.price });
+                  .upsert(
+                    { catalog_id: card.id, nm_price: nm.price },
+                    { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+                  );
               }
             }
           } catch {

@@ -68,10 +68,17 @@ export const searchCards = createServerFn({ method: "POST" })
       });
       await context.supabase.from("catalog_prices").upsert(row);
       if (row.nm_price != null) {
-        await context.supabase
-          .from("catalog_price_history")
-          .insert({ catalog_id: row.catalog_id, nm_price: row.nm_price });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
+        await (context.supabase as any).from("catalog_price_history").upsert(
+          { catalog_id: row.catalog_id, nm_price: row.nm_price },
+          { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+        );
       }
+      // First time we see this card: pull its 180-day price history too.
+      const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+      const withHistory = await catalogCardById(card.id, { history: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+      if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();

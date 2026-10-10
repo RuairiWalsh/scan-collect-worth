@@ -8,7 +8,12 @@ export type CatalogCard = {
   set_name?: string | null;
   number?: string | null;
   rarity?: string | null;
-  variants?: { condition?: string; printing?: string; price?: number }[];
+  variants?: {
+    condition?: string;
+    printing?: string;
+    price?: number;
+    priceHistory?: { p: number; t: number }[];
+  }[];
 };
 
 export type ScanGuess = {

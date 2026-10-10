@@ -1,0 +1,1 @@
+create unique index catalog_price_history_unique_point on public.catalog_price_history (catalog_id, recorded_at);

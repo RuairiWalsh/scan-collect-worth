@@ -198,8 +198,56 @@ export async function findCatalogCandidates(item: ScanGuess & { line: string | n
   return rankCandidates(item, cards);
 }
 
-export async function catalogCardById(id: string) {
-  return (await jtCards({ cardId: id }))[0] ?? null;
+export async function catalogCardById(id: string, opts?: { history?: boolean }) {
+  const params: Record<string, string> = { cardId: id };
+  if (opts?.history) params["priceHistoryDuration"] = "180d";
+  return (await jtCards(params))[0] ?? null;
+}
+
+/** Pick the near-mint, non-reverse variant (the one we track as nm_price). */
+export function nmVariantOf(card: CatalogCard) {
+  const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0 || (v.priceHistory?.length ?? 0) > 0);
+  return (
+    variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
+    variants.find((v) => v.condition === "Near Mint") ??
+    variants[0]
+  );
+}
+
+type HistoryInserter = {
+  from: (t: string) => {
+    upsert: (
+      rows: object[],
+      opts?: { onConflict?: string; ignoreDuplicates?: boolean },
+    ) => PromiseLike<unknown>;
+    select: (c: string) => {
+      eq: (c: string, v: string) => { limit: (n: number) => PromiseLike<{ data: unknown[] | null }> };
+    };
+  };
+};
+
+/** Seed catalog_price_history from a card fetched with priceHistoryDuration=180d.
+ *  Skips the fetch-level work when the card already has history rows. */
+export async function seedCatalogHistory(supabase: HistoryInserter, card: CatalogCard) {
+  const { data: existing } = await supabase
+    .from("catalog_price_history")
+    .select("catalog_id")
+    .eq("catalog_id", card.id)
+    .limit(1);
+  if (existing?.length) return 0;
+  const nm = nmVariantOf(card);
+  const points = (nm?.priceHistory ?? []).filter((pt) => typeof pt?.p === "number" && pt.p > 0 && pt.t > 0);
+  if (!points.length) return 0;
+  const rows = points.map((pt) => ({
+    catalog_id: card.id,
+    nm_price: pt.p,
+    recorded_at: new Date(pt.t * 1000).toISOString(),
+  }));
+  await supabase.from("catalog_price_history").upsert(rows, {
+    onConflict: "catalog_id,recorded_at",
+    ignoreDuplicates: true,
+  });
+  return rows.length;
 }
 
 /** Raw catalog search by name/number text (JustTCG `q` parameter). */

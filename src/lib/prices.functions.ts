@@ -46,10 +46,17 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         });
         if (nm?.price != null) {
-          await context.supabase
-            .from("catalog_price_history")
-            .insert({ catalog_id: card.id, nm_price: nm.price });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
+          await (context.supabase as any).from("catalog_price_history").upsert(
+            { catalog_id: card.id, nm_price: nm.price },
+            { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+          );
         }
+        // First time we see this card: pull its 180-day price history too.
+        const { seedCatalogHistory } = await import("@/server/prices.server");
+        const withHistory = await catalogCardById(card.id, { history: true });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+        if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
       }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);
@@ -81,4 +88,26 @@ export const pricingStatus = createServerFn({ method: "GET" })
   .handler(async () => {
     const { ebayConfigured, justtcgConfigured } = await import("@/server/prices.server");
     return { ebay: ebayConfigured(), justtcg: justtcgConfigured() };
+  });
+
+/** One-off: backfill 180-day price history for every catalog card that has none. */
+export const backfillCatalogHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+    const { data: cards } = await context.supabase.from("catalog_prices").select("catalog_id");
+    let seeded = 0;
+    let skipped = 0;
+    for (const c of cards ?? []) {
+      const card = await catalogCardById(c.catalog_id, { history: true });
+      if (!card) {
+        skipped++;
+        continue;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+      const n = await seedCatalogHistory(context.supabase as any, card);
+      if (n > 0) seeded++;
+      else skipped++;
+    }
+    return { total: cards?.length ?? 0, seeded, skipped };
   });
