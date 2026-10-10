@@ -104,6 +104,44 @@ export type Database = {
         }
         Relationships: []
       }
+      price_history: {
+        Row: {
+          est_value: number | null
+          id: string
+          item_id: string
+          price_high: number | null
+          price_low: number | null
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          est_value?: number | null
+          id?: string
+          item_id: string
+          price_high?: number | null
+          price_low?: number | null
+          recorded_at?: string
+          user_id?: string
+        }
+        Update: {
+          est_value?: number | null
+          id?: string
+          item_id?: string
+          price_high?: number | null
+          price_low?: number | null
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
