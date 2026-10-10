@@ -25,7 +25,7 @@ export async function identifyImage(image: string) {
       ],
       schemaName: "identification",
       schema,
-      effort: "medium",
+      effort: "low",
     });
 
     if (result.is_collectible && result.category === "cards") {
