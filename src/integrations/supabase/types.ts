@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalog_prices: {
+        Row: {
+          catalog_id: string
+          game: string | null
+          image: string | null
+          name: string
+          nm_price: number | null
+          number: string | null
+          rarity: string | null
+          set_name: string | null
+          updated_at: string
+          variants: Json
+        }
+        Insert: {
+          catalog_id: string
+          game?: string | null
+          image?: string | null
+          name: string
+          nm_price?: number | null
+          number?: string | null
+          rarity?: string | null
+          set_name?: string | null
+          updated_at?: string
+          variants?: Json
+        }
+        Update: {
+          catalog_id?: string
+          game?: string | null
+          image?: string | null
+          name?: string
+          nm_price?: number | null
+          number?: string | null
+          rarity?: string | null
+          set_name?: string | null
+          updated_at?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           ai_confidence: number | null
