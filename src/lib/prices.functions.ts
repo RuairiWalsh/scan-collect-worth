@@ -41,6 +41,14 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
       })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);
+    if (est) {
+      await context.supabase.from("price_history").insert({
+        item_id: data.id,
+        est_value: est.est,
+        price_low: est.low,
+        price_high: est.high,
+      });
+    }
     return { est, sources, ebayConfigured: ebayConfigured() };
   });
 
