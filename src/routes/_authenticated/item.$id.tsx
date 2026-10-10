@@ -102,8 +102,25 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const subs = TAXONOMY[cat].subcategories;
   const lines = f.subcategory ? subs[f.subcategory]?.lines ?? [] : [];
 
+  // Filing a card into a folder saves straight away — no need to press Save changes.
+  async function moveToFolder(v: string) {
+    const next = v || null;
+    const prev = f.folder_id ?? null;
+    setF((p) => ({ ...p, folder_id: next }));
+    const { error } = await supabase.from("items").update({ folder_id: next }).eq("id", item.id);
+    if (error) {
+      setF((p) => ({ ...p, folder_id: prev }));
+      toast.error(error.message);
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["item", item.id] });
+    qc.invalidateQueries({ queryKey: ["items"] });
+    toast.success(next ? "Moved to folder" : "Removed from folder");
+  }
+
   async function save() {
     setBusy(true);
+
     const { error } = await supabase
       .from("items")
       .update({
