@@ -114,10 +114,12 @@ function CollectionPage() {
     <div className="mx-auto max-w-6xl px-4 py-6">
       <section className="panel shadow-hard grid gap-6 p-6 md:grid-cols-[1.2fr_2fr]">
         <div>
-          <p className="tabular text-xs text-muted-foreground">TOTAL COLLECTION VALUE</p>
-          <p className="tabular mt-1 text-4xl font-bold md:text-5xl">{usd(total)}</p>
+          <p className="tabular text-xs text-muted-foreground">
+            {cat === "all" ? "TOTAL COLLECTION VALUE" : `${TAXONOMY[cat].label.toUpperCase()} VALUE`}
+          </p>
+          <p className="tabular mt-1 text-4xl font-bold md:text-5xl">{usd(cat === "all" ? total : filteredTotal)}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {items.reduce((s, i) => s + i.quantity, 0)} items
+            {(cat === "all" ? items : filtered).reduce((s, i) => s + i.quantity, 0)} items
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
