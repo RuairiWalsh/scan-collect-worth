@@ -50,6 +50,13 @@
       "when": 1791596909233,
       "tag": "0006_catalog_price_history",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791597120272,
+      "tag": "0007_catalog_price_history_unique_point",
+      "breakpoints": true
     }
   ]
 }
