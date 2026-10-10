@@ -42,3 +42,15 @@ describe("migrated history", () => {
     expect(pts.map((p) => p.value)).toEqual([2, 2, 4]);
   });
 });
+
+import { trimPresale } from "./collection-history";
+describe("trimPresale", () => {
+  it("drops a leading flat preorder run of 3+ points", () => {
+    const pts = [49.99, 49.99, 49.99, 5, 4].map((nm_price) => ({ nm_price }));
+    expect(trimPresale(pts).map((p) => p.nm_price)).toEqual([5, 4]);
+  });
+  it("keeps history that moves from the start", () => {
+    const pts = [3.82, 2.24, 2.2].map((nm_price) => ({ nm_price }));
+    expect(trimPresale(pts)).toHaveLength(3);
+  });
+});

@@ -59,6 +59,17 @@ export function collectionValueSeries(
   return points;
 }
 
+/**
+ * Drop pre-release placeholder prices: a card listed before release often sits
+ * at one flat preorder price for days. Trim that leading flat run (3+ points)
+ * so history starts when real sales begin.
+ */
+export function trimPresale<T extends { nm_price: number | null }>(sorted: T[]): T[] {
+  let run = 1;
+  while (run < sorted.length && sorted[run]!.nm_price === sorted[0]!.nm_price) run++;
+  return run >= 3 && run < sorted.length ? sorted.slice(run) : sorted;
+}
+
 export type CatalogPoint = { catalog_id: string; nm_price: number | null; recorded_at: string };
 
 /**
@@ -80,9 +91,10 @@ export function catalogValueEvents(
   const out: ValueEvent[] = [];
   for (const it of items) {
     if (!it.catalog_id || it.est_value == null) continue;
-    const list = byCard.get(it.catalog_id);
-    if (!list?.length) continue;
-    list.sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
+    const raw = byCard.get(it.catalog_id);
+    if (!raw?.length) continue;
+    raw.sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
+    const list = trimPresale(raw);
     const ratio = it.est_value / list[list.length - 1]!.nm_price!;
     for (const h of list) {
       out.push({ item_id: it.id, est_value: Math.round(h.nm_price! * ratio * 100) / 100, recorded_at: h.recorded_at });
