@@ -22,6 +22,7 @@ import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
 import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
+import { FolderPicker } from "@/components/FolderPicker";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -109,6 +110,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         category: f.category, subcategory: f.subcategory, line: f.line, name: f.name,
         set_name: f.set_name, number: f.number, year: f.year, variant: f.variant,
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
+        folder_id: f.folder_id ?? null,
         // Identity edited by hand → re-match the catalog card from the new details.
         ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
           ? { catalog_id: null, official_image: null }
@@ -257,6 +259,9 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               <Field label="Grade"><Input placeholder="10" value={str(f.grade)} onChange={(e) => set("grade", nul(e.target.value))} /></Field>
             </div>
           )}
+          <Field label="Folder">
+            <FolderPicker value={f.folder_id ?? ""} onChange={(v) => set("folder_id", v || null)} className="w-full" />
+          </Field>
           <Field label="Notes"><Textarea value={str(f.notes)} onChange={(e) => set("notes", nul(e.target.value))} /></Field>
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" onClick={del} className="text-destructive"><Trash2 /> Delete</Button>
