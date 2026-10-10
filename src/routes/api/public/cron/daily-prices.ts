@@ -80,24 +80,27 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
         // Re-value every pinned item from the fresh shared prices.
         const { data: items } = await supabaseAdmin
           .from("items")
-          .select("id, user_id, category, condition, catalog_id")
+          .select("id, user_id, category, condition, variant, catalog_id")
           .not("catalog_id", "is", null);
-        const { data: prices } = await supabaseAdmin.from("catalog_prices").select("catalog_id, nm_price");
-        const priceById = new Map((prices ?? []).map((p) => [p.catalog_id, p.nm_price]));
-        const { conditionFor } = await import("@/lib/taxonomy");
+        const { data: prices } = await supabaseAdmin.from("catalog_prices").select("catalog_id, variants, updated_at");
+        const priceById = new Map((prices ?? []).map((p) => [p.catalog_id, p]));
+        const { cardPriceSources, cardVariants } = await import("@/lib/card-pricing");
+        const { estimateValue } = await import("@/lib/pricing");
         let revalued = 0;
         for (const item of items ?? []) {
-          const nm = priceById.get(item.catalog_id!);
-          if (!nm) continue;
-          const mult = conditionFor(item.category, item.condition).mult;
-          const est = Math.round(nm * mult * 100) / 100;
+          if (!item.catalog_id || item.category !== "cards") continue;
+          const cached = priceById.get(item.catalog_id);
+          if (!cached) continue;
+          const sources = cardPriceSources(cardVariants(cached.variants), item.condition, item.variant);
+          const estimate = estimateValue(sources, 1);
+          const est = estimate?.est ?? null;
           const { error: itemErr } = await supabaseAdmin
             .from("items")
-            .update({ est_value: est, price_updated_at: new Date().toISOString() })
+            .update({ est_value: est, price_low: estimate?.low ?? null, price_high: estimate?.high ?? null, price_sources: sources, price_updated_at: cached.updated_at })
             .eq("id", item.id);
           if (!itemErr) {
             revalued++;
-            await supabaseAdmin.from("price_history").insert({
+            if (est != null) await supabaseAdmin.from("price_history").insert({
               item_id: item.id,
               user_id: item.user_id,
               est_value: est,

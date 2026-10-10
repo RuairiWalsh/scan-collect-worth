@@ -5,14 +5,18 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { catalogCardDetail } from "@/lib/search.functions";
 import { usd } from "@/lib/image";
 import { PriceSparkline } from "@/components/PriceSparkline";
+import { useState } from "react";
+import { ConditionSelect } from "@/components/ConditionSelect";
+import { ConditionPrices, VariantSelect } from "@/components/CardPricingControls";
+import { resolvePrinting, selectedCardVariant } from "@/lib/card-pricing";
 
 export const Route = createFileRoute("/_authenticated/card/$catalogId")({
   head: () => ({
     meta: [
       { title: "Card details & price history — Lymitz" },
-      { name: "description", content: "Full card artwork, near-mint price and price history." },
+      { name: "description", content: "Full card artwork, condition and variant market prices, and price history." },
       { property: "og:title", content: "Card details & price history — Lymitz" },
-      { property: "og:description", content: "Full card artwork, near-mint price and price history." },
+      { property: "og:description", content: "Full card artwork, condition and variant market prices, and price history." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -22,11 +26,19 @@ export const Route = createFileRoute("/_authenticated/card/$catalogId")({
 
 function CardPage() {
   const { catalogId } = Route.useParams();
+  const [condition, setCondition] = useState("raw_nm");
+  const [printing, setPrinting] = useState<string | null>(null);
   const fetchDetail = useServerFn(catalogCardDetail);
   const { data, isLoading } = useQuery({
     queryKey: ["catalog-card", catalogId],
     queryFn: () => fetchDetail({ data: { catalog_id: catalogId } }),
   });
+  const variants = data?.card?.variants ?? [];
+  const resolved = resolvePrinting(variants, printing);
+  const selected = selectedCardVariant(variants, condition, printing);
+  // Saved historical series is NM/base only; never relabel it as another quality.
+  const baseHistory = condition === "raw_nm" && resolved === resolvePrinting(variants, null);
+  const points = baseHistory ? (data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-24">
@@ -59,15 +71,21 @@ function CardPage() {
               .join(" · ")}
           </p>
           <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 shadow-[4px_4px_0_0_var(--foreground)]">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Near mint price</p>
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1"><p className="text-xs font-semibold">Variant</p><VariantSelect variants={variants} value={printing} onChange={setPrinting} /></div>
+              <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" value={condition} onChange={setCondition} /></div>
+            </div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
             <p className="font-display text-3xl font-black text-primary">
-              {data.card.nm_price != null ? usd(data.card.nm_price) : "—"}
+              {usd(selected?.price ?? null)}
             </p>
+            {!selected && <p className="text-xs text-muted-foreground">No market price for this condition and variant.</p>}
             <PriceSparkline
               tall
-              points={data.history.map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price }))}
-              emptyHint="No price history available for this card yet."
+              points={points}
+              emptyHint="No price history available for this condition and variant."
             />
+            <ConditionPrices variants={variants} printing={printing} />
           </div>
         </>
       )}

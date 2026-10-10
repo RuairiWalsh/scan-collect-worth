@@ -19,6 +19,8 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
+import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
+import { selectedCardVariant } from "@/lib/card-pricing";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -47,6 +49,7 @@ type HistoryPoint = { est_value: number | null; price_low: number | null; price_
 
 function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) {
   const [f, setF] = useState(item);
+  const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
@@ -90,6 +93,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
       toast.error("Saved, but price lookup failed.");
     }
     await qc.invalidateQueries({ queryKey: ["item", item.id] });
+    qc.invalidateQueries({ queryKey: ["price_history", item.id] });
     qc.invalidateQueries({ queryKey: ["items"] });
     setBusy(false);
     toast.success("Saved & repriced");
@@ -105,6 +109,9 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const mult = conditionFor(item.category, item.condition).mult;
   const str = (v: string | null) => v ?? "";
   const nul = (v: string) => (v.trim() ? v : null);
+  const identityUnchanged = f.category === item.category && f.name === item.name && f.number === item.number && f.set_name === item.set_name && f.line === item.line;
+  const exactPricing = f.category === "cards" && variants.length > 0 && identityUnchanged;
+  const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant)?.price ?? null : item.est_value;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -129,13 +136,15 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
           </div>
           <div className="panel shadow-hard p-4">
             <p className="tabular text-xs text-muted-foreground">ESTIMATED VALUE</p>
-            <p className="tabular text-3xl font-bold">{usd(item.est_value)}</p>
-            {item.price_low != null && item.price_high != null && item.price_low !== item.price_high && (
+            <p className="tabular text-3xl font-bold">{usd(selectedPrice)}</p>
+            {exactPricing && selectedPrice == null && <p className="text-xs text-muted-foreground">No market price for this condition and variant.</p>}
+            {!exactPricing && item.price_low != null && item.price_high != null && item.price_low !== item.price_high && (
               <p className="tabular text-xs text-muted-foreground">
                 range {usd(item.price_low)} – {usd(item.price_high)}
               </p>
             )}
             <PriceHistoryChart history={history} />
+            {exactPricing && <ConditionPrices variants={variants} printing={f.variant} />}
             <ul className="mt-4 space-y-2 text-sm">
               {sources.map((s) => (
                 <li key={s.source} className="flex items-center justify-between gap-2">
@@ -199,7 +208,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             <Field label="Year"><Input value={str(f.year)} onChange={(e) => set("year", nul(e.target.value))} /></Field>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Variant"><Input value={str(f.variant)} onChange={(e) => set("variant", nul(e.target.value))} /></Field>
+            <Field label="Variant">{f.category === "cards" ? <VariantSelect variants={identityUnchanged ? variants : []} value={f.variant} onChange={(v) => set("variant", v)} /> : <Input value={str(f.variant)} onChange={(e) => set("variant", nul(e.target.value))} />}</Field>
             <Field label="Condition">
               <ConditionSelect category={f.category} value={f.condition} onChange={(v) => set("condition", v)} />
             </Field>

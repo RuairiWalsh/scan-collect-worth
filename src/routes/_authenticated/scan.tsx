@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { useOfficialImages } from "@/hooks/use-official-images";
+import { ItemVariantSelect } from "@/components/CardPricingControls";
 
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
@@ -431,7 +432,8 @@ function ScanPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                {b.category === "cards" && <ItemVariantSelect catalogId={b.catalog_id} value={b.variant} onChange={(v) => updateItem(b.id, { variant: v }, true)} className="h-8 min-w-32 flex-1 text-xs" />}
                 <ConditionSelect
                   category={b.category}
                   value={b.condition}
