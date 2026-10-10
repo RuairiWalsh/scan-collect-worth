@@ -150,10 +150,17 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <Link to={item.status === "batch" ? "/scan" : "/collection"} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Back
-      </Link>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Link to={item.status === "batch" ? "/scan" : "/collection"} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" /> Back
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="tabular text-xs text-muted-foreground">FOLDER</span>
+          <FolderPicker value={f.folder_id ?? ""} onChange={moveToFolder} className="min-w-40" />
+        </div>
+      </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
+
         <div className="space-y-4">
           <div className="space-y-2">
             {item.category === "cards" && (
