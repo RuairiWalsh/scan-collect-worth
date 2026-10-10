@@ -1,10 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Loader2, SearchIcon } from "lucide-react";
-import { catalogPriceHistory, searchCards, type CatalogHistoryPoint, type SearchResult } from "@/lib/search.functions";
+import { ChevronRight, Loader2, SearchIcon } from "lucide-react";
+import { searchCards, type SearchResult } from "@/lib/search.functions";
 import { usd } from "@/lib/image";
-import { PriceSparkline } from "@/components/PriceSparkline";
 
 export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({
@@ -93,31 +92,9 @@ function SearchPage() {
 }
 
 function SearchResultCard({ result: r }: { result: SearchResult }) {
-  const [open, setOpen] = useState(false);
-  const [history, setHistory] = useState<CatalogHistoryPoint[] | null>(null);
-  const loadHistory = useServerFn(catalogPriceHistory);
-
-  async function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (next && history === null) {
-      try {
-        const { history: h } = await loadHistory({ data: { catalog_id: r.catalog_id } });
-        setHistory(h);
-      } catch {
-        setHistory([]);
-      }
-    }
-  }
-
   return (
     <li className="rounded-md border-2 border-foreground bg-card shadow-[4px_4px_0_0_var(--foreground)]">
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 p-3 text-left"
-      >
+      <Link to="/card/$catalogId" params={{ catalogId: r.catalog_id }} className="flex w-full items-center gap-3 p-3 text-left">
         {r.image ? (
           <img src={r.image} alt={r.name} className="h-20 w-14 rounded-sm border border-foreground object-cover" />
         ) : (
@@ -137,22 +114,8 @@ function SearchResultCard({ result: r }: { result: SearchResult }) {
           </p>
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground">near mint</p>
         </div>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <div className="border-t-2 border-foreground px-3 pb-3">
-          {history === null ? (
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading price history…
-            </div>
-          ) : (
-            <PriceSparkline
-              points={history.map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price }))}
-              emptyHint="No price history yet for this card — it builds up each day its price is checked."
-            />
-          )}
-        </div>
-      )}
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </Link>
     </li>
   );
 }
