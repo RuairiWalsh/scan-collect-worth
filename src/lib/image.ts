@@ -110,7 +110,7 @@ export function captureRegion(video: HTMLVideoElement, r: Rect) {
     ctx.drawImage(video, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
     return c.toDataURL("image/jpeg", quality);
   };
-  return { full: draw(1600, 0.9), thumb: draw(360, 0.75) };
+  return { full: draw(1280, 0.88), thumb: draw(360, 0.75) };
 }
 
 /** Focus score (variance of a Laplacian) of the guide region — higher is sharper. */
