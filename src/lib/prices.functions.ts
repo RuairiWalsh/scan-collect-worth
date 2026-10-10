@@ -104,7 +104,8 @@ export const backfillCatalogHistory = createServerFn({ method: "POST" })
         skipped++;
         continue;
       }
-      const n = await seedCatalogHistory(context.supabase, card);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+      const n = await seedCatalogHistory(context.supabase as any, card);
       if (n > 0) seeded++;
       else skipped++;
     }
