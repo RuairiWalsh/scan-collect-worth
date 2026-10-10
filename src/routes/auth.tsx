@@ -57,7 +57,14 @@ function AuthPage() {
     }
   }
 
-        <form onSubmit={submit} className="space-y-4">
+  return (
+    <div className="grid-paper flex min-h-screen items-center justify-center px-4">
+      <div className="panel shadow-hard w-full max-w-sm p-8">
+        <Link to="/" className="font-display text-xl font-black">
+          LYM<span className="text-primary">ITZ</span>
+        </Link>
+        <h1 className="mt-6 text-2xl font-extrabold">{mode === "in" ? "Welcome back" : "Open your vault"}</h1>
+        <form onSubmit={submit} className="mt-6 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
