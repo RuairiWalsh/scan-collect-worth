@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConditionSelect } from "@/components/ConditionSelect";
+import { ItemArtwork } from "@/components/ItemArtwork";
+import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -24,6 +26,8 @@ export const Route = createFileRoute("/_authenticated/item/$id")({
       { name: "description", content: "Edit details, condition and see price sources for this collectible." },
       { property: "og:title", content: "Item details — Lymitz" },
       { property: "og:description", content: "Edit details, condition and see price sources for this collectible." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ItemPage,
@@ -32,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/item/$id")({
 function ItemPage() {
   const { id } = Route.useParams();
   const { data: item } = useQuery(itemQuery(id));
+  useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   return <ItemEditor item={item} />;
 }
@@ -39,6 +44,7 @@ function ItemPage() {
 function ItemEditor({ item }: { item: Item }) {
   const [f, setF] = useState(item);
   const [busy, setBusy] = useState(false);
+  const [showScan, setShowScan] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -65,7 +71,7 @@ function ItemEditor({ item }: { item: Item }) {
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
         // Identity edited by hand → re-match the catalog card from the new details.
         ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
-          ? { catalog_id: null }
+          ? { catalog_id: null, official_image: null }
           : {}),
       })
       .eq("id", item.id);
@@ -103,8 +109,19 @@ function ItemEditor({ item }: { item: Item }) {
       </Link>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
         <div className="space-y-4">
-          <div className="panel overflow-hidden">
-            {item.thumbnail ? <img src={item.thumbnail} alt={item.name} className="w-full" /> : <div className="aspect-square bg-muted" />}
+          <div className="space-y-2">
+            {item.category === "cards" && (
+              <div className="flex gap-2" role="group" aria-label="Card images">
+                <Button size="sm" variant={showScan ? "outline" : "default"} aria-pressed={!showScan} onClick={() => setShowScan(false)}>Official image</Button>
+                <Button size="sm" variant={showScan ? "default" : "outline"} aria-pressed={showScan} disabled={!item.thumbnail} onClick={() => setShowScan(true)}>Your scan</Button>
+              </div>
+            )}
+            {showScan && item.thumbnail ? (
+              <img src={item.thumbnail} alt={`Your scan of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
+            ) : (
+              <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
+            )}
+            {item.category === "cards" && !showScan && !item.official_image && <p className="text-xs text-muted-foreground">Official image unavailable for this printing.</p>}
           </div>
           <div className="panel shadow-hard p-4">
             <p className="tabular text-xs text-muted-foreground">ESTIMATED VALUE</p>

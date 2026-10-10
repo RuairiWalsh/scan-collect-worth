@@ -12,6 +12,8 @@ import { captureRegion, fileToImages, frameSignature, guideToVideoRect, sharpnes
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
+import { ItemArtwork } from "@/components/ItemArtwork";
+import { useOfficialImages } from "@/hooks/use-official-images";
 
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
@@ -20,6 +22,8 @@ export const Route = createFileRoute("/_authenticated/scan")({
       { name: "description", content: "Scan cards, stamps and coins into a batch and review before saving." },
       { property: "og:title", content: "Live scanner — Lymitz" },
       { property: "og:description", content: "Scan cards, stamps and coins into a batch and review before saving." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: ScanPage,
@@ -44,6 +48,7 @@ function ScanPage() {
   const identify = useServerFn(identifyItem);
   const reprice = useServerFn(refreshItemPrice);
   const { data: batch = [] } = useQuery(itemsQuery("batch"));
+  useOfficialImages(batch);
 
   const stopCam = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -135,6 +140,7 @@ function ScanPage() {
             condition: r.grader ? "graded" : defaultCondition(r.category),
             ai_confidence: r.confidence,
             thumbnail: img.thumb,
+            official_image: r.official_image ?? null,
             catalog_id: r.catalog_id ?? null,
           })
           .select("id")
@@ -206,7 +212,7 @@ function ScanPage() {
     const identity = ["name", "number", "set_name", "line"].some((k) => k in patch);
     const { error } = await supabase
       .from("items")
-      .update(identity ? { ...patch, catalog_id: null } : patch)
+      .update(identity ? { ...patch, catalog_id: null, official_image: null } : patch)
       .eq("id", id);
     if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["items", "batch"] });
@@ -328,11 +334,9 @@ function ScanPage() {
           {batch.map((b) => (
             <li key={b.id} className="space-y-2 p-3">
               <div className="flex items-center gap-3">
-                {b.thumbnail ? (
-                  <img src={b.thumbnail} alt="" className="size-14 rounded border object-cover" />
-                ) : (
-                  <div className="size-14 rounded border bg-muted" />
-                )}
+                <Link to="/item/$id" params={{ id: b.id }} aria-label={`View ${b.name}`} className="shrink-0">
+                  <ItemArtwork item={b} className="h-20 w-14 rounded border" />
+                </Link>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{b.name}</p>
                   <p className="truncate text-xs text-muted-foreground">

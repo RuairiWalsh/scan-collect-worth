@@ -16,6 +16,7 @@ export type Identification = {
   confidence: number;
   printed_text?: string;
   catalog_id?: string | null;
+  official_image?: string | null;
 };
 
 export const identifyItem = createServerFn({ method: "POST" })

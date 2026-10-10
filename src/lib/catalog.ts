@@ -2,6 +2,8 @@
 
 export type CatalogCard = {
   id: string;
+  tcgplayerId?: string | number | null;
+  scryfallId?: string | null;
   name: string;
   set_name?: string | null;
   number?: string | null;
