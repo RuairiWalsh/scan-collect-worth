@@ -203,7 +203,11 @@ function ScanPage() {
   }
 
   async function updateItem(id: string, patch: Partial<Item>, repriceAfter = false) {
-    const { error } = await supabase.from("items").update(patch).eq("id", id);
+    const identity = ["name", "number", "set_name", "line"].some((k) => k in patch);
+    const { error } = await supabase
+      .from("items")
+      .update(identity ? { ...patch, catalog_id: null } : patch)
+      .eq("id", id);
     if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["items", "batch"] });
     if (repriceAfter) doPrice(id);
