@@ -284,7 +284,7 @@ function ScanPage() {
   async function commitAll() {
     const ids = batch.map((b) => b.id);
     if (!ids.length) return;
-    const { error } = await supabase.from("items").update({ status: "collection" }).in("id", ids);
+    const { error } = await supabase.from("items").update({ status: "collection", folder_id: folderId || null }).in("id", ids);
     if (error) { toast.error(error.message); return; }
     toast.success(`Added ${ids.length} item${ids.length > 1 ? "s" : ""} to your collection`);
     qc.invalidateQueries({ queryKey: ["items"] });
@@ -438,6 +438,10 @@ function ScanPage() {
           <Button size="sm" onClick={commitAll} disabled={!batch.length}>
             <CheckCheck /> Add to collection
           </Button>
+        </div>
+        <div className="flex items-center gap-2 border-b-2 border-ink px-4 py-2">
+          <label className="text-xs font-semibold text-muted-foreground">ADD TO FOLDER</label>
+          <FolderPicker value={folderId} onChange={setFolderId} className="flex-1" />
         </div>
         <ul className="flex-1 divide-y overflow-y-auto">
           {pending.map((p) => (
