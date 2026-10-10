@@ -167,47 +167,69 @@ function ScanPage() {
     [identify, qc, doPrice],
   );
 
-  // Live scan: when a new card holds steady inside the guide, grab the sharpest frame automatically.
+  const lastBoxRef = useRef<Box | null>(null);
+  const lastShotRef = useRef<Float32Array | null>(null);
+
+  const shoot = useCallback(
+    (img: { full: string; thumb: string }, auto: boolean) => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 120);
+      setCaptured({ thumb: img.thumb, at: Date.now() });
+      navigator.vibrate?.(30);
+      process(img, auto);
+    },
+    [process],
+  );
+
+  // Live scan: find a card-shaped rectangle anywhere in view; once it sits still for a moment, capture it.
   useEffect(() => {
     if (!camOn) return;
-    let prev: Float32Array | null = null;
-    let lastShot: Float32Array | null = null;
-    let steady = 0;
+    let prevBox: Box | null = null;
+    let stable = 0;
+    let misses = 0;
     let best: { score: number; img: { full: string; thumb: string } } | null = null;
     const t = setInterval(() => {
       const v = videoRef.current;
-      const g = guideRef.current;
-      if (!v || !g || !v.videoWidth) return;
-      const rect = guideToVideoRect(v, g);
-      const sig = frameSignature(v, rect);
-      const motion = prev ? sigDiff(sig, prev) : 99;
-      prev = sig;
-      // Forgiving thresholds: a normal hand hover counts as steady.
-      steady = motion < 14 ? steady + 1 : 0;
-      if (steady === 0) best = null;
-      const isNew = !lastShot || sigDiff(sig, lastShot) > 10;
-      const hasDetail = sigContrast(sig) > 6;
-      if (inFlight.current >= 4) { setScanState("reading"); return; }
-      if (!isNew || !hasDetail) { setScanState("searching"); best = null; return; }
-      setScanState(steady >= 1 ? "steady" : "searching");
-      if (steady >= 1) {
-        const score = sharpness(v, rect);
-        if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
+      if (!v || !v.videoWidth) return;
+      const { g, W, H } = frameGray(v);
+      const box = detectCard(g, W, H);
+      if (!box) {
+        if (++misses >= 2) { lastBoxRef.current = null; setOverlay(null); setScanState("searching"); }
+        stable = 0; best = null; prevBox = null;
+        return;
       }
-      if (steady >= 2 && best) {
-        lastShot = sig;
-        steady = 0;
+      misses = 0;
+      lastBoxRef.current = box;
+      setOverlay(boxToScreen(v, box));
+      stable = prevBox && iou(box, prevBox) > 0.75 ? stable + 1 : 0;
+      prevBox = box;
+      const rect = boxToVideoRect(v, box);
+      const sig = frameSignature(v, rect);
+      if (lastShotRef.current && sigDiff(sig, lastShotRef.current) < 12) { setScanState("seen"); best = null; return; }
+      if (inFlight.current >= 4) { setScanState("reading"); return; }
+      setScanState("steady");
+      const score = sharpness(v, rect);
+      if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
+      if (stable >= 2) {
+        lastShotRef.current = sig;
+        stable = 0;
         const img = best.img;
         best = null;
-        setFlash(true);
-        setTimeout(() => setFlash(false), 120);
-        setCaptured({ thumb: img.thumb, at: Date.now() });
-        navigator.vibrate?.(30);
-        process(img, true);
+        shoot(img, true);
       }
-    }, 250);
+    }, 180);
     return () => clearInterval(t);
-  }, [camOn, process]);
+  }, [camOn, shoot]);
+
+  // Tap anywhere to capture right now (the detected card, or the middle of the view).
+  function tapCapture() {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const box = lastBoxRef.current ?? { x: 0.12, y: 0.1, w: 0.76, h: 0.8 };
+    const rect = boxToVideoRect(v, box);
+    lastShotRef.current = frameSignature(v, rect);
+    shoot(captureRegion(v, rect), false);
+  }
 
   async function onFiles(files: FileList | null) {
     if (!files) return;
