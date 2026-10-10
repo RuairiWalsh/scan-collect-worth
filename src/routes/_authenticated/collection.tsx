@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ScanLine } from "lucide-react";
+import { ScanLine, Search, X } from "lucide-react";
 import { itemsQuery, collectionHistoryQuery, catalogHistoryForQuery } from "@/lib/items";
+import { matchesCollectionQuery } from "@/lib/collection-search";
 import { collectionValueSeries, catalogValueEvents } from "@/lib/collection-history";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { usd } from "@/lib/image";
@@ -49,15 +50,18 @@ function CollectionPage() {
   const [stamp, setStamp] = useState<StampFilter>({ ...EMPTY_STAMP_FILTER });
   const [year, setYear] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortKey>("added_desc");
+  const [q, setQ] = useState("");
 
+  const searching = q.trim().length > 0;
+  const searched = useMemo(() => items.filter((i) => matchesCollectionQuery(i, q)), [items, q]);
   const total = items.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
   const byCat = CATEGORY_KEYS.map((k) => ({
     k,
-    value: items.filter((i) => i.category === k).reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0),
-    count: items.filter((i) => i.category === k).reduce((s, i) => s + i.quantity, 0),
+    value: searched.filter((i) => i.category === k).reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0),
+    count: searched.filter((i) => i.category === k).reduce((s, i) => s + i.quantity, 0),
   }));
 
-  const filtered = items.filter(
+  const filtered = searched.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
       (cat === "stamps" ? matchesStampFilter(i, stamp) : cat === "coins" ? matchesCoinFilter(i, coin) : (sub === "all" || i.subcategory === sub) && (line === "all" || i.line === line)) &&
@@ -138,11 +142,17 @@ function CollectionPage() {
       <section className="panel shadow-hard grid gap-6 p-6 md:grid-cols-[1.2fr_2fr]">
         <div>
           <p className="tabular text-xs text-muted-foreground">
-            {cat === "all" ? "TOTAL COLLECTION VALUE" : `${TAXONOMY[cat].label.toUpperCase()} VALUE`}
+            {cat === "all"
+              ? searching
+                ? "VALUE OF MATCHES"
+                : "TOTAL COLLECTION VALUE"
+              : `${TAXONOMY[cat].label.toUpperCase()} VALUE`}
           </p>
-          <p className="tabular mt-1 text-4xl font-bold md:text-5xl">{usd(cat === "all" ? total : filteredTotal)}</p>
+          <p className="tabular mt-1 text-4xl font-bold md:text-5xl">
+            {usd(cat === "all" && !searching ? total : filteredTotal)}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {(cat === "all" ? items : filtered).reduce((s, i) => s + i.quantity, 0)} items
+            {(cat === "all" && !searching ? items : filtered).reduce((s, i) => s + i.quantity, 0)} items
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -173,6 +183,34 @@ function CollectionPage() {
           />
         </div>
       </section>
+
+      <div className="mt-5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setQ("");
+            }}
+            placeholder="Search your collection — name, set, number, year…"
+            aria-label="Search your collection"
+            className="w-full rounded-md border-2 border-border bg-card py-2.5 pl-9 pr-10 text-sm font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground focus:border-ink"
+          />
+          {searching && (
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => setQ("")}
+              aria-label="Clear search"
+              className="absolute right-1.5 top-1/2 size-7 -translate-y-1/2 p-0 text-muted-foreground hover:text-ink"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
+        </div>
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <label className="text-xs font-semibold text-muted-foreground">FILTER</label>
@@ -219,7 +257,7 @@ function CollectionPage() {
             </select>
           </>
         )}
-        {cat !== "all" && (
+        {(cat !== "all" || searching) && (
           <p className="tabular ml-auto text-xs font-semibold text-muted-foreground">
             {filtered.length} shown · {usd(filteredTotal)}
           </p>
@@ -238,11 +276,18 @@ function CollectionPage() {
         </div>
       ) : !shown.length ? (
         <div className="mt-10 flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-12 text-center">
-          <p className="text-lg font-semibold">Nothing matches that filter.</p>
-          <p className="text-sm text-muted-foreground">Try a different category, or show everything again.</p>
+          <p className="text-lg font-semibold">
+            {searching ? "Nothing in your collection matches that search." : "Nothing matches that filter."}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {searching
+              ? "Check the spelling, try fewer words, or show everything again."
+              : "Try a different category, or show everything again."}
+          </p>
           <Button
             variant="outline"
             onClick={() => {
+              setQ("");
               setCat("all");
               setSub("all");
               setLine("all");
