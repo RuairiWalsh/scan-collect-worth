@@ -55,7 +55,14 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
               updated_at: new Date().toISOString(),
             });
             if (upErr) failed++;
-            else updated++;
+            else {
+              updated++;
+              if (nm?.price != null) {
+                await supabaseAdmin
+                  .from("catalog_price_history")
+                  .insert({ catalog_id: card.id, nm_price: nm.price });
+              }
+            }
           } catch {
             failed++;
           }

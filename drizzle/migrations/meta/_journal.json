@@ -43,6 +43,13 @@
       "when": 1791596592071,
       "tag": "0005_cron_config_and_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791596909233,
+      "tag": "0006_catalog_price_history",
+      "breakpoints": true
     }
   ]
 }
