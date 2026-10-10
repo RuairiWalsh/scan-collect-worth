@@ -85,32 +85,74 @@ function SearchPage() {
 
       <ul className="mt-4 space-y-3">
         {results.map((r) => (
-          <li
-            key={r.catalog_id}
-            className="flex items-center gap-3 rounded-md border-2 border-foreground bg-card p-3 shadow-[4px_4px_0_0_var(--foreground)]"
-          >
-            {r.image ? (
-              <img src={r.image} alt={r.name} className="h-20 w-14 rounded-sm border border-foreground object-cover" />
-            ) : (
-              <div className="flex h-20 w-14 items-center justify-center rounded-sm border border-foreground bg-muted text-[10px] text-muted-foreground">
-                No image
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold">{r.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {[r.set_name, r.number ? `#${r.number}` : null, r.rarity].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="font-display text-lg font-black text-primary">
-                {r.nm_price != null ? usd(r.nm_price) : "—"}
-              </p>
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">near mint</p>
-            </div>
-          </li>
+          <SearchResultCard key={r.catalog_id} result={r} />
         ))}
       </ul>
     </main>
+  );
+}
+
+function SearchResultCard({ result: r }: { result: SearchResult }) {
+  const [open, setOpen] = useState(false);
+  const [history, setHistory] = useState<CatalogHistoryPoint[] | null>(null);
+  const loadHistory = useServerFn(catalogPriceHistory);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && history === null) {
+      try {
+        const { history: h } = await loadHistory({ data: { catalog_id: r.catalog_id } });
+        setHistory(h);
+      } catch {
+        setHistory([]);
+      }
+    }
+  }
+
+  return (
+    <li className="rounded-md border-2 border-foreground bg-card shadow-[4px_4px_0_0_var(--foreground)]">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-3 text-left"
+      >
+        {r.image ? (
+          <img src={r.image} alt={r.name} className="h-20 w-14 rounded-sm border border-foreground object-cover" />
+        ) : (
+          <div className="flex h-20 w-14 items-center justify-center rounded-sm border border-foreground bg-muted text-[10px] text-muted-foreground">
+            No image
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">{r.name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {[r.set_name, r.number ? `#${r.number}` : null, r.rarity].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-display text-lg font-black text-primary">
+            {r.nm_price != null ? usd(r.nm_price) : "—"}
+          </p>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">near mint</p>
+        </div>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="border-t-2 border-foreground px-3 pb-3">
+          {history === null ? (
+            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading price history…
+            </div>
+          ) : (
+            <PriceSparkline
+              points={history.map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price }))}
+              emptyHint="No price history yet for this card — it builds up each day its price is checked."
+            />
+          )}
+        </div>
+      )}
+    </li>
   );
 }
