@@ -10,6 +10,7 @@ import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
 import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, sharpness, sigDiff, usd } from "@/lib/image";
 import { detectCard, iou, type Box } from "@/lib/card-detect";
+import { gateShot, gateTick, initGate } from "@/lib/capture-gate";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
@@ -170,6 +171,7 @@ function ScanPage() {
 
   const lastBoxRef = useRef<Box | null>(null);
   const lastShotRef = useRef<Float32Array | null>(null);
+  const gateRef = useRef(initGate());
 
   const shoot = useCallback(
     (img: { full: string; thumb: string }, auto: boolean) => {
@@ -235,6 +237,7 @@ function ScanPage() {
     const box = lastBoxRef.current ?? { x: 0.12, y: 0.1, w: 0.76, h: 0.8 };
     const rect = boxToVideoRect(v, box);
     lastShotRef.current = frameSignature(v, rect);
+    gateRef.current = gateShot(gateRef.current, Date.now());
     shoot(captureRegion(v, rect), false);
   }
 
