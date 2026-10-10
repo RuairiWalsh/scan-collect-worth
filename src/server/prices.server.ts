@@ -162,30 +162,48 @@ export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
   const line = (item.line ?? "").toLowerCase();
   const game = Object.entries(JUSTTCG_GAMES).find(([k]) => line.includes(k))?.[1];
 
-  const params = new URLSearchParams({ name: item.name, limit: "5" });
+  const num = (item.number ?? "").split(/[;,]/)[0]!.split("/")[0]!.trim().replace(/^0+/, "");
+  const params = new URLSearchParams({ name: item.name, limit: "20" });
   if (game) params.set("game", game);
   if (item.set_name) params.set("set_name", item.set_name);
-  if (item.number) params.set("number", item.number.split("/")[0]!.trim());
+  if (num) params.set("number", num);
 
   const headers = { "x-api-key": key };
   let data = await getJson(`https://api.justtcg.com/v1/cards?${params}`, { headers });
   if (!data?.data?.length && (params.has("set_name") || params.has("number"))) {
-    const loose = new URLSearchParams({ name: item.name, limit: "5" });
+    const loose = new URLSearchParams({ name: item.name, limit: "20" });
     if (game) loose.set("game", game);
     data = await getJson(`https://api.justtcg.com/v1/cards?${loose}`, { headers });
   }
-  const card = data?.data?.[0];
-  const variants = (card?.variants ?? []) as {
+  const normNum = (s: unknown) => String(s ?? "").split("/")[0]!.trim().replace(/^0+/, "").toLowerCase();
+  const isSealed = (c: any) =>
+    /sealed|booster|box|pack|tin|bundle|collection/i.test(`${c?.rarity ?? ""} ${c?.name ?? ""}`) ||
+    (c?.variants ?? []).every((v: any) => /sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`));
+  let candidates = ((data?.data ?? []) as any[]).filter((c) => !isSealed(c));
+  // Must match the card number when we know it — never price a different card.
+  if (num) candidates = candidates.filter((c) => normNum(c.number) === num.toLowerCase());
+  if (item.set_name && candidates.length > 1) {
+    const s = item.set_name.toLowerCase();
+    const bySet = candidates.filter((c) => String(c.set_name ?? c.set ?? "").toLowerCase().includes(s));
+    if (bySet.length) candidates = bySet;
+  }
+  // Ambiguous (e.g. just "Pikachu" with no number) → no price rather than a wrong one.
+  if (candidates.length !== 1 && !(num && candidates.length)) return [];
+  const card = candidates[0];
+  const variants = ((card?.variants ?? []) as {
     condition?: string;
     printing?: string;
     price?: number;
-  }[];
+  }[]).filter((v) => !/sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`));
   if (!variants.length) return [];
 
   const wantFoil = item.variant?.toLowerCase().includes("foil") || item.variant?.toLowerCase().includes("holo");
-  const pool = variants.filter((v) =>
-    wantFoil ? /foil|holo/i.test(v.printing ?? "") : !/foil|holo/i.test(v.printing ?? ""),
-  );
+  const wantReverse = item.variant?.toLowerCase().includes("reverse");
+  const pool = variants.filter((v) => {
+    const p = v.printing ?? "";
+    if (wantReverse) return /reverse/i.test(p);
+    return wantFoil ? /foil|holo/i.test(p) && !/reverse/i.test(p) : !/foil|holo/i.test(p);
+  });
   const usable = (pool.length ? pool : variants).filter((v) => (v.price ?? 0) > 0);
   if (!usable.length) return [];
   // Prefer the variant matching the item's condition; otherwise Near Mint as reference.
