@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Shared catalog tables are read-only for users; writes go through the server admin client.
+const adminDb = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+
 export type SearchResult = {
   catalog_id: string;
   name: string;
@@ -66,10 +69,10 @@ export const searchCards = createServerFn({ method: "POST" })
         nm_price: row.nm_price,
         updated_at: row.updated_at,
       });
-      await context.supabase.from("catalog_prices").upsert(row);
+      await (await adminDb()).from("catalog_prices").upsert(row);
       if (row.nm_price != null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
-        await (context.supabase as any).from("catalog_price_history").upsert(
+        await ((await adminDb()) as any).from("catalog_price_history").upsert(
           { catalog_id: row.catalog_id, nm_price: row.nm_price },
           { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
         );
@@ -78,7 +81,7 @@ export const searchCards = createServerFn({ method: "POST" })
       const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
       const withHistory = await catalogCardById(card.id, { history: true });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-      if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
+      if (withHistory) await seedCatalogHistory((await adminDb()) as any, withHistory);
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();
