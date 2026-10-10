@@ -9,6 +9,17 @@ import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
+type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
+
+const SORTS: { key: SortKey; label: string }[] = [
+  { key: "added_desc", label: "Recently added" },
+  { key: "added_asc", label: "Oldest added" },
+  { key: "value_desc", label: "Value: high to low" },
+  { key: "value_asc", label: "Value: low to high" },
+  { key: "year_desc", label: "Release year: newest" },
+  { key: "year_asc", label: "Release year: oldest" },
+];
+
 export const Route = createFileRoute("/_authenticated/collection")({
   head: () => ({
     meta: [
@@ -29,6 +40,8 @@ function CollectionPage() {
   const [cat, setCat] = useState<CategoryKey | "all">("all");
   const [sub, setSub] = useState<string | "all">("all");
   const [line, setLine] = useState<string | "all">("all");
+  const [year, setYear] = useState<string | "all">("all");
+  const [sort, setSort] = useState<SortKey>("added_desc");
 
   const total = items.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
   const byCat = CATEGORY_KEYS.map((k) => ({
@@ -50,12 +63,46 @@ function CollectionPage() {
     [items, cat, sub],
   );
 
-  const shown = items.filter(
+  const filtered = items.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
       (sub === "all" || i.subcategory === sub) &&
-      (line === "all" || i.line === line),
+      (line === "all" || i.line === line) &&
+      (year === "all" || i.year === year),
   );
+
+  const years = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          filtered
+            .map((i) => i.year)
+            .filter(Boolean) as string[],
+        ),
+      ).sort((a, b) => Number(b) - Number(a)),
+    [filtered],
+  );
+
+  const shown = useMemo(() => {
+    const val = (i: (typeof items)[number]) => (i.est_value ?? 0) * i.quantity;
+    const added = (i: (typeof items)[number]) => new Date(i.created_at).getTime();
+    const yr = (i: (typeof items)[number]) => Number(i.year) || 0;
+    const sorted = [...filtered];
+    switch (sort) {
+      case "value_desc":
+        return sorted.sort((a, b) => val(b) - val(a));
+      case "value_asc":
+        return sorted.sort((a, b) => val(a) - val(b));
+      case "year_desc":
+        return sorted.sort((a, b) => yr(b) - yr(a) || val(b) - val(a));
+      case "year_asc":
+        return sorted.sort((a, b) => yr(a) - yr(b) || val(b) - val(a));
+      case "added_asc":
+        return sorted.sort((a, b) => added(a) - added(b));
+      default:
+        return sorted.sort((a, b) => added(b) - added(a));
+    }
+  }, [filtered, sort]);
 
   const chip = (active: boolean) =>
     `rounded-full border-2 px-3 py-1 text-xs font-semibold transition ${
@@ -80,6 +127,7 @@ function CollectionPage() {
                 setCat(cat === k ? "all" : k);
                 setSub("all");
                 setLine("all");
+                setYear("all");
               }}
               className={`rounded-md border-2 p-3 text-left transition ${cat === k ? "border-primary bg-primary/5" : "border-border hover:border-ink"}`}
             >
@@ -111,6 +159,34 @@ function CollectionPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <label className="text-xs font-semibold text-muted-foreground">SORT</label>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          className="rounded-md border-2 border-border bg-card px-2 py-1.5 text-xs font-semibold focus:border-ink focus:outline-none"
+        >
+          {SORTS.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+        {years.length > 1 && (
+          <>
+            <label className="ml-2 text-xs font-semibold text-muted-foreground">YEAR</label>
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="rounded-md border-2 border-border bg-card px-2 py-1.5 text-xs font-semibold focus:border-ink focus:outline-none"
+            >
+              <option value="all">All years</option>
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
 
       {isLoading ? (
         <p className="mt-10 text-center text-muted-foreground">Loading…</p>
