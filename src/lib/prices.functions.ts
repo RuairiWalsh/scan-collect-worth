@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// Shared catalog tables are read-only for users; writes go through the server admin client.
+const adminDb = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 import { estimateValue } from "@/lib/pricing";
 import type { Json } from "@/integrations/supabase/types";
 import { conditionFor } from "@/lib/taxonomy";
@@ -34,7 +37,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
           variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
           variants.find((v) => v.condition === "Near Mint") ??
           variants[0];
-        await context.supabase.from("catalog_prices").upsert({
+        await (await adminDb()).from("catalog_prices").upsert({
           catalog_id: card.id,
           name: card.name,
           set_name: card.set_name ?? null,
@@ -47,7 +50,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         });
         if (nm?.price != null) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
-          await (context.supabase as any).from("catalog_price_history").upsert(
+          await ((await adminDb()) as any).from("catalog_price_history").upsert(
             { catalog_id: card.id, nm_price: nm.price },
             { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
           );
@@ -56,7 +59,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         const { seedCatalogHistory } = await import("@/server/prices.server");
         const withHistory = await catalogCardById(card.id, { history: true });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-        if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
+        if (withHistory) await seedCatalogHistory((await adminDb()) as any, withHistory);
       }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);
@@ -105,7 +108,7 @@ export const backfillCatalogHistory = createServerFn({ method: "POST" })
         continue;
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-      const n = await seedCatalogHistory(context.supabase as any, card);
+      const n = await seedCatalogHistory((await adminDb()) as any, card);
       if (n > 0) seeded++;
       else skipped++;
     }

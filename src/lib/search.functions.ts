@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+// Shared catalog tables are read-only for users; writes go through the server admin client.
+const adminDb = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+
 export type SearchResult = {
   catalog_id: string;
   name: string;
@@ -66,10 +69,10 @@ export const searchCards = createServerFn({ method: "POST" })
         nm_price: row.nm_price,
         updated_at: row.updated_at,
       });
-      await context.supabase.from("catalog_prices").upsert(row);
+      await (await adminDb()).from("catalog_prices").upsert(row);
       if (row.nm_price != null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
-        await (context.supabase as any).from("catalog_price_history").upsert(
+        await ((await adminDb()) as any).from("catalog_price_history").upsert(
           { catalog_id: row.catalog_id, nm_price: row.nm_price },
           { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
         );
@@ -78,7 +81,7 @@ export const searchCards = createServerFn({ method: "POST" })
       const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
       const withHistory = await catalogCardById(card.id, { history: true });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-      if (withHistory) await seedCatalogHistory(context.supabase as any, withHistory);
+      if (withHistory) await seedCatalogHistory((await adminDb()) as any, withHistory);
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();
@@ -107,4 +110,41 @@ export const catalogPriceHistory = createServerFn({ method: "GET" })
       .order("recorded_at", { ascending: true })
       .limit(365);
     return { history: rows ?? [] };
+  });
+
+/** Full card view: shared catalog row + price history (loads 180 days on first view). */
+export const catalogCardDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { catalog_id: string }) => {
+    if (typeof input?.catalog_id !== "string" || !input.catalog_id) throw new Error("Invalid catalog id");
+    return { catalog_id: input.catalog_id };
+  })
+  .handler(async ({ data, context }): Promise<{ card: SearchResult | null; history: CatalogHistoryPoint[] }> => {
+    const load = () =>
+      context.supabase
+        .from("catalog_price_history")
+        .select("recorded_at, nm_price")
+        .eq("catalog_id", data.catalog_id)
+        .order("recorded_at", { ascending: true })
+        .limit(1000);
+    const { data: card } = await context.supabase
+      .from("catalog_prices")
+      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at")
+      .eq("catalog_id", data.catalog_id)
+      .maybeSingle();
+    let { data: rows } = await load();
+    if (card && (rows?.length ?? 0) < 2) {
+      const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+      const full = await catalogCardById(data.catalog_id, { history: true });
+      if (full) {
+        const db = (await adminDb()) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        // Seed skips when any row exists; clear the guard by seeding directly.
+        const n = await seedCatalogHistory(
+          { from: (t: string) => (t === "catalog_price_history" ? { ...db.from(t), select: () => ({ eq: () => ({ limit: async () => ({ data: [] }) }) }), upsert: (r: object[], o: object) => db.from(t).upsert(r, o) } : db.from(t)) } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+          full,
+        );
+        if (n > 0) ({ data: rows } = await load());
+      }
+    }
+    return { card: card ?? null, history: rows ?? [] };
   });

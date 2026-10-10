@@ -3,13 +3,13 @@ import { usd } from "@/lib/image";
 export type SparkPoint = { recorded_at: string; value: number | null };
 
 /** Compact price-history line chart shared by the item page and card search. */
-export function PriceSparkline({ points, emptyHint }: { points: SparkPoint[]; emptyHint: string }) {
+export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
   const pts = points.filter((p) => p.value != null);
   if (pts.length === 0) {
     return <p className="mt-4 text-xs text-muted-foreground">{emptyHint}</p>;
   }
   const W = 260,
-    H = 90,
+    H = tall ? 180 : 90,
     PAD = 6;
   const vals = pts.map((p) => p.value as number);
   const min = Math.min(...vals),

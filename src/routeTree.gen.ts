@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
+import { Route as AuthenticatedCardCatalogIdRouteImport } from './routes/_authenticated/card.$catalogId'
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 
@@ -47,6 +48,12 @@ const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCardCatalogIdRoute =
+  AuthenticatedCardCatalogIdRouteImport.update({
+    id: '/card/$catalogId',
+    path: '/card/$catalogId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedItemIdRoute = AuthenticatedItemIdRouteImport.update({
   id: '/item/$id',
   path: '/item/$id',
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/collection': typeof AuthenticatedCollectionRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
   '/collection': typeof AuthenticatedCollectionRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
@@ -85,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/_authenticated/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/collection'
     | '/scan'
     | '/search'
+    | '/card/$catalogId'
     | '/item/$id'
     | '/api/public/cron/daily-prices'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/collection'
     | '/scan'
     | '/search'
+    | '/card/$catalogId'
     | '/item/$id'
     | '/api/public/cron/daily-prices'
   id:
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/collection'
     | '/_authenticated/scan'
     | '/_authenticated/search'
+    | '/_authenticated/card/$catalogId'
     | '/_authenticated/item/$id'
     | '/api/public/cron/daily-prices'
   fileRoutesById: FileRoutesById
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/card/$catalogId': {
+      id: '/_authenticated/card/$catalogId'
+      path: '/card/$catalogId'
+      fullPath: '/card/$catalogId'
+      preLoaderRoute: typeof AuthenticatedCardCatalogIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/item/$id': {
       id: '/_authenticated/item/$id'
       path: '/item/$id'
@@ -191,6 +211,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
+  AuthenticatedCardCatalogIdRoute: typeof AuthenticatedCardCatalogIdRoute
   AuthenticatedItemIdRoute: typeof AuthenticatedItemIdRoute
 }
 
@@ -198,6 +219,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
+  AuthenticatedCardCatalogIdRoute: AuthenticatedCardCatalogIdRoute,
   AuthenticatedItemIdRoute: AuthenticatedItemIdRoute,
 }
 
