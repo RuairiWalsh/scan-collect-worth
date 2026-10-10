@@ -10,8 +10,8 @@ const printingKey = (s: string) => {
   if (["reverse", "reverseholo", "reverseholofoil", "reversefoil"].includes(n)) return "reverse";
   // Free-text scan descriptions ("Fireworks holofoil with stamp…") → classify by keyword.
   if (/reverse/.test(n)) return "reverse";
+  if (/nonholo|nonfoil|normal|regular/.test(n)) return "normal";
   if (/holo|foil/.test(n)) return "holo";
-  if (/nonholo|normal|regular/.test(n)) return "normal";
   return n;
 };
 export const CARD_CONDITIONS = [

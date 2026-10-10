@@ -24,3 +24,8 @@ describe("exact card quality and printing prices", () => {
   it("only offers printings belonging to the card", () => expect(availablePrintings(variants)).toEqual(["Normal", "Holofoil", "Reverse Holofoil"]));
   it("does not price graded cards from raw prices", () => expect(cardPriceSources(variants, "graded", "Normal")).toEqual([]));
 });
+import { resolvePrinting as rp } from "./card-pricing";
+test("free-text scan variant maps to holo printing", () => {
+  const v = [{ printing: "Normal", condition: "Near Mint", price: 1 }, { printing: "Holofoil", condition: "Near Mint", price: 2 }];
+  expect(rp(v as never, "Fireworks holofoil with a 30th stamp; appears unofficial")).toBe("Holofoil");
+});
