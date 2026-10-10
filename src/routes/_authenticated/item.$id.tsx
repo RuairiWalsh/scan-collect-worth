@@ -22,7 +22,7 @@ import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
 import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
-import { FolderPicker } from "@/components/FolderPicker";
+import { FolderPicker, itemFoldersQuery } from "@/components/FolderPicker";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -102,20 +102,21 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const subs = TAXONOMY[cat].subcategories;
   const lines = f.subcategory ? subs[f.subcategory]?.lines ?? [] : [];
 
-  // Filing a card into a folder saves straight away — no need to press Save changes.
-  async function moveToFolder(v: string) {
-    const next = v || null;
-    const prev = f.folder_id ?? null;
-    setF((p) => ({ ...p, folder_id: next }));
-    const { error } = await supabase.from("items").update({ folder_id: next }).eq("id", item.id);
-    if (error) {
-      setF((p) => ({ ...p, folder_id: prev }));
-      toast.error(error.message);
-      return;
+  // Folder tags save straight away — no need to press Save changes.
+  async function setFolders(ids: string[]) {
+    const prev = itemFolders.get(item.id) ?? [];
+    const added = ids.filter((id) => !prev.includes(id));
+    const removed = prev.filter((id) => !ids.includes(id));
+    if (removed.length) {
+      const { error } = await supabase.from("item_folders").delete().eq("item_id", item.id).in("folder_id", removed);
+      if (error) { toast.error(error.message); return; }
     }
-    await qc.invalidateQueries({ queryKey: ["item", item.id] });
-    qc.invalidateQueries({ queryKey: ["items"] });
-    toast.success(next ? "Moved to folder" : "Removed from folder");
+    if (added.length) {
+      const { error } = await supabase.from("item_folders").upsert(added.map((folder_id) => ({ item_id: item.id, folder_id })), { onConflict: "item_id,folder_id" });
+      if (error) { toast.error(error.message); return; }
+    }
+    await qc.invalidateQueries({ queryKey: ["item-folders"] });
+    toast.success("Folders updated");
   }
 
   async function save() {
