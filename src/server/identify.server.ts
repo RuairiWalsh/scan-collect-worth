@@ -3,7 +3,7 @@ import type { Identification } from "@/lib/scan.functions";
 import { identificationSchema as schema } from "@/lib/scan-schema";
 import { officialCardImage } from "@/lib/card-artwork";
 
-export async function identifyImage(image: string, strip?: string) {
+export async function identifyImage(image: string, strip?: string | undefined) {
   const stripInput = strip ? [{ type: "input_text", text: "Zoomed view of the bottom of the same card (collector number / set code):" }, { type: "input_image", image_url: strip, detail: "high" }] : [];
   const data = { image };
   const { streamJson, AiError } = await import("@/server/ai.server");

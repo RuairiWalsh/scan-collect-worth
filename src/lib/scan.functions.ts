@@ -21,7 +21,7 @@ export type Identification = {
 
 export const identifyItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { image: string; strip?: string }) => {
+  .inputValidator((input: { image: string; strip?: string | undefined }) => {
     if (input.strip !== undefined && (typeof input.strip !== "string" || !input.strip.startsWith("data:image/") || input.strip.length > 2_000_000))
       throw new Error("Invalid image");
     if (typeof input?.image !== "string" || !input.image.startsWith("data:image/"))
