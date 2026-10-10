@@ -227,14 +227,8 @@ type HistoryInserter = {
 };
 
 /** Seed catalog_price_history from a card fetched with priceHistoryDuration=180d.
- *  Skips the fetch-level work when the card already has history rows. */
+ *  Idempotent: the upsert ignores duplicates, so re-seeding is safe. */
 export async function seedCatalogHistory(supabase: HistoryInserter, card: CatalogCard) {
-  const { data: existing } = await supabase
-    .from("catalog_price_history")
-    .select("catalog_id")
-    .eq("catalog_id", card.id)
-    .limit(1);
-  if (existing?.length) return 0;
   const nm = nmVariantOf(card);
   const points = (nm?.priceHistory ?? []).filter((pt) => typeof pt?.p === "number" && pt.p > 0 && pt.t > 0);
   if (!points.length) return 0;
