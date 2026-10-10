@@ -32,6 +32,19 @@ export const priceHistoryQuery = (itemId: string) =>
     },
   });
 
+export const collectionHistoryQuery = () =>
+  queryOptions({
+    queryKey: ["collection_history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("price_history")
+        .select("item_id, est_value, recorded_at")
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
 export const itemQuery = (id: string) =>
   queryOptions({
     queryKey: ["item", id],
