@@ -153,6 +153,7 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
           </div>
         </>
       )}
+      {rangeBar}
     </div>
   );
 }
