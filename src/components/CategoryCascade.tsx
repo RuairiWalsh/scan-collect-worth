@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EMPTY_STAMP_FILTER, STAMP_LEVELS, matchesStampFilter, pickStampLevel, stampOptions, type StampFilter, type StampRow } from "@/lib/stamp-filters";
+import { COIN_LABELS, COIN_LEVELS, EMPTY_COIN_FILTER, coinOptions, matchesCoinFilter, pickCoinLevel, type CoinFilter, type CoinRow } from "@/lib/coin-filters";
 import { CATEGORY_KEYS, TAXONOMY, type CategoryKey } from "@/lib/taxonomy";
 
 export type FilterPath = { cat: CategoryKey | "all"; sub: string; line: string };
 
-type Row = StampRow;
+type Row = StampRow & CoinRow;
 
 type Option = { key: string; label: string; count: number; active: boolean };
 
@@ -18,13 +19,15 @@ type Props = {
   onChange: (next: FilterPath) => void;
   stamp: StampFilter;
   onStampChange: (next: StampFilter) => void;
+  coin: CoinFilter;
+  onCoinChange: (next: CoinFilter) => void;
 };
 
 /**
  * One dropdown that walks the taxonomy: Cards › TCG › Pokémon, Sports › Baseball, …
  * Picking a level keeps the panel open so you can drill one level deeper.
  */
-export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStampChange }: Props) {
+export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStampChange, coin, onCoinChange }: Props) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const deepest = useRef<HTMLDivElement>(null);
@@ -45,13 +48,13 @@ export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStam
     };
   }, [open]);
 
-  const showSub = cat !== "all" && cat !== "stamps";
+  const showSub = cat !== "all" && cat !== "stamps" && cat !== "coins";
   const showLine = showSub && sub !== "all";
 
   // On phones the panel scrolls sideways — keep the newest level in view.
   useEffect(() => {
     if (open) deepest.current?.scrollIntoView({ block: "nearest", inline: "end" });
-  }, [open, cat, sub, stamp]);
+  }, [open, cat, sub, stamp, coin]);
 
   const count = (f: Partial<FilterPath>) =>
     items.filter(
@@ -76,17 +79,18 @@ export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStam
     return [...tax, ...extra];
   }, [items, cat, sub, showLine]);
 
-  const shown = cat === "stamps" ? items.filter((item) => matchesStampFilter(item, stamp)).length : count({ cat, sub, line });
+  const shown = cat === "stamps" ? items.filter((item) => matchesStampFilter(item, stamp)).length : cat === "coins" ? items.filter((item) => matchesCoinFilter(item, coin)).length : count({ cat, sub, line });
 
   const path = useMemo(() => {
     if (cat === "all") return "All collectibles";
     const c = TAXONOMY[cat];
     if (cat === "stamps") return [c.label, ...STAMP_LEVELS.map((level) => stamp[level]).filter((v) => v !== "all")].join(" › ");
+    if (cat === "coins") return [c.label, ...COIN_LEVELS.map((level) => coin[level]).filter((v) => v !== "all")].join(" › ");
     if (sub === "all") return c.label;
     const s = c.subcategories[sub];
     const parts = [c.label, s?.label ?? sub, line === "all" ? null : line];
     return parts.filter(Boolean).join(" › ");
-  }, [cat, sub, line, stamp]);
+  }, [cat, sub, line, stamp, coin]);
 
   return (
     <div ref={box} className="relative">
@@ -109,7 +113,7 @@ export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStam
         <div className="absolute left-0 top-full z-30 mt-2 flex max-w-[92vw] overflow-x-auto rounded-md border-2 border-ink bg-card shadow-hard">
           <Column
             label="Category"
-            last={!showSub && cat !== "stamps"}
+            last={!showSub && cat !== "stamps" && cat !== "coins"}
             options={[
               { key: "all", label: "All collectibles", count: items.length, active: cat === "all" },
               ...CATEGORY_KEYS.map((k) => ({
@@ -122,6 +126,7 @@ export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStam
             onPick={(k) => {
               onChange({ cat: k as CategoryKey | "all", sub: "all", line: "all" });
               onStampChange({ ...EMPTY_STAMP_FILTER });
+              onCoinChange({ ...EMPTY_COIN_FILTER });
               if (k === "all") setOpen(false);
             }}
           />
@@ -143,6 +148,27 @@ export function CategoryCascade({ items, cat, sub, line, onChange, stamp, onStam
               onPick={(value) => {
                 onStampChange(pickStampLevel(stamp, level, value));
                 if (value === "all" || level === "subject") setOpen(false);
+              }}
+            />;
+          })}
+          {cat === "coins" && COIN_LEVELS.map((level, index) => {
+            if (COIN_LEVELS.slice(0, index).some((parent) => coin[parent] === "all")) return null;
+            const isLast = index === COIN_LEVELS.length - 1 || coin[level] === "all";
+            const parent = { ...EMPTY_COIN_FILTER };
+            for (const key of COIN_LEVELS.slice(0, index)) parent[key] = coin[key];
+            const coinCount = (filter: CoinFilter) => items.filter((item) => matchesCoinFilter(item, filter)).length;
+            return <Column
+              key={level}
+              label={COIN_LABELS[level].label}
+              last={isLast}
+              innerRef={isLast ? deepest : undefined}
+              options={[
+                { key: "all", label: COIN_LABELS[level].all, count: coinCount(parent), active: coin[level] === "all" },
+                ...coinOptions(items, coin, level).map((value) => ({ key: value, label: value, count: coinCount({ ...parent, [level]: value }), active: coin[level] === value })),
+              ]}
+              onPick={(value) => {
+                onCoinChange(pickCoinLevel(coin, level, value));
+                if (value === "all" || level === "issue") setOpen(false);
               }}
             />;
           })}

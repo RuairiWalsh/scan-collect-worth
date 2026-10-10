@@ -8,6 +8,7 @@ import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/t
 import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { EMPTY_STAMP_FILTER, matchesStampFilter, type StampFilter } from "@/lib/stamp-filters";
+import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coin-filters";
 import { CategoryCascade } from "@/components/CategoryCascade";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
@@ -42,6 +43,7 @@ function CollectionPage() {
   const [cat, setCat] = useState<CategoryKey | "all">("all");
   const [sub, setSub] = useState<string | "all">("all");
   const [line, setLine] = useState<string | "all">("all");
+  const [coin, setCoin] = useState<CoinFilter>({ ...EMPTY_COIN_FILTER });
   const [stamp, setStamp] = useState<StampFilter>({ ...EMPTY_STAMP_FILTER });
   const [year, setYear] = useState<string | "all">("all");
   const [sort, setSort] = useState<SortKey>("added_desc");
@@ -56,7 +58,7 @@ function CollectionPage() {
   const filtered = items.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
-      (cat === "stamps" ? matchesStampFilter(i, stamp) : (sub === "all" || i.subcategory === sub) && (line === "all" || i.line === line)) &&
+      (cat === "stamps" ? matchesStampFilter(i, stamp) : cat === "coins" ? matchesCoinFilter(i, coin) : (sub === "all" || i.subcategory === sub) && (line === "all" || i.line === line)) &&
       (year === "all" || i.year === year),
   );
 
@@ -115,6 +117,7 @@ function CollectionPage() {
                 setLine("all");
                 setYear("all");
                 setStamp({ ...EMPTY_STAMP_FILTER });
+                setCoin({ ...EMPTY_COIN_FILTER });
               }}
               className={`rounded-md border-2 p-3 text-left transition ${cat === k ? "border-primary bg-primary/5" : "border-border hover:border-ink"}`}
             >
@@ -134,6 +137,8 @@ function CollectionPage() {
           sub={sub}
           line={line}
           stamp={stamp}
+          coin={coin}
+          onCoinChange={(next) => { setCoin(next); setYear("all"); }}
           onStampChange={(next) => { setStamp(next); setYear("all"); }}
           onChange={(next) => {
             setCat(next.cat);
@@ -141,6 +146,7 @@ function CollectionPage() {
             setLine(next.line);
             setYear("all");
                 setStamp({ ...EMPTY_STAMP_FILTER });
+                setCoin({ ...EMPTY_COIN_FILTER });
           }}
         />
         <label className="ml-2 text-xs font-semibold text-muted-foreground">SORT</label>
@@ -197,6 +203,7 @@ function CollectionPage() {
               setLine("all");
               setYear("all");
                 setStamp({ ...EMPTY_STAMP_FILTER });
+                setCoin({ ...EMPTY_COIN_FILTER });
             }}
           >
             Show everything
