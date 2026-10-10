@@ -3,7 +3,7 @@ import { officialCardImage } from "./card-artwork";
 
 describe("exact catalog artwork", () => {
   it("uses the matched card's product ID, not its name", () => {
-    expect(officialCardImage({ id: "pikachu-sv151", name: "Pikachu", tcgplayerId: "502563" })).toBe("https://tcgplayer-cdn.tcgplayer.com/product/502563_1000w.jpg");
+    expect(officialCardImage({ id: "pikachu-sv151", name: "Pikachu", tcgplayerId: "517033" })).toBe("https://tcgplayer-cdn.tcgplayer.com/product/517033_in_1000x1000.jpg");
   });
   it("does not invent an image when the exact card has no image identifier", () => {
     expect(officialCardImage({ id: "unknown", name: "Pikachu" })).toBeNull();

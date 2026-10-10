@@ -7,5 +7,5 @@ export function officialCardImage(card: CatalogCard): string | null {
     return `https://api.scryfall.com/cards/${scryfallId}?format=image&version=large`;
   }
   const productId = String(card.tcgplayerId ?? "");
-  return /^[1-9]\d*$/.test(productId) ? `https://tcgplayer-cdn.tcgplayer.com/product/${productId}_1000w.jpg` : null;
+  return /^[1-9]\d*$/.test(productId) ? `https://tcgplayer-cdn.tcgplayer.com/product/${productId}_in_1000x1000.jpg` : null;
 }
