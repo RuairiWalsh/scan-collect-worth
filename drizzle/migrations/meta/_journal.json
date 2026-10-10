@@ -64,6 +64,13 @@
       "when": 1791670882379,
       "tag": "0008_folders",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791671603209,
+      "tag": "0009_item_folders_multi_tags",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,23 @@ export const foldersQuery = () =>
     },
   });
 
+/** item_id -> folder_ids map for every item the signed-in user has tagged. */
+export const itemFoldersQuery = () =>
+  queryOptions({
+    queryKey: ["item-folders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("item_folders").select("item_id, folder_id");
+      if (error) throw error;
+      const map = new Map<string, string[]>();
+      for (const row of data) {
+        const list = map.get(row.item_id) ?? [];
+        list.push(row.folder_id);
+        map.set(row.item_id, list);
+      }
+      return map;
+    },
+  });
+
 export function useCreateFolder() {
   const qc = useQueryClient();
   return async (): Promise<string | null> => {
@@ -25,39 +42,54 @@ export function useCreateFolder() {
   };
 }
 
-/** Folder dropdown with a "New folder…" option. value "" = no folder. */
+/**
+ * Multi-select folder tags: an item can live in as many folders as you like.
+ * Tapping a chip toggles it; "+ New" creates a folder and selects it.
+ */
 export function FolderPicker({
   value,
   onChange,
-  noneLabel = "No folder",
   className = "",
 }: {
-  value: string;
-  onChange: (id: string) => void;
-  noneLabel?: string;
+  value: string[];
+  onChange: (ids: string[]) => void;
   className?: string;
 }) {
   const { data: folders = [] } = useQuery(foldersQuery());
   const create = useCreateFolder();
+  const toggle = (id: string) =>
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   return (
-    <select
-      aria-label="Folder"
-      value={value}
-      onChange={async (e) => {
-        if (e.target.value === "__new") {
+    <div className={`flex flex-wrap gap-1.5 ${className}`} role="group" aria-label="Folders">
+      {folders.map((f) => {
+        const active = value.includes(f.id);
+        return (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => toggle(f.id)}
+            aria-pressed={active}
+            className={`shrink-0 rounded-full border-2 px-3 py-1 text-xs font-bold transition ${
+              active ? "border-ink bg-ink text-background" : "border-border bg-card hover:border-ink"
+            }`}
+          >
+            📁 {f.name}
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        onClick={async () => {
           const id = await create();
-          if (id) onChange(id);
-          return;
-        }
-        onChange(e.target.value);
-      }}
-      className={`h-9 rounded-md border-2 border-border bg-card px-2 text-sm font-semibold ${className}`}
-    >
-      <option value="">{noneLabel}</option>
-      {folders.map((f) => (
-        <option key={f.id} value={f.id}>{f.name}</option>
-      ))}
-      <option value="__new">+ New folder…</option>
-    </select>
+          if (id) onChange([...value, id]);
+        }}
+        className="shrink-0 rounded-full border-2 border-dashed border-border px-3 py-1 text-xs font-bold text-muted-foreground hover:border-ink"
+      >
+        + New folder
+      </button>
+      {folders.length === 0 && value.length === 0 && (
+        <span className="self-center text-xs text-muted-foreground">No folders yet — create one to tag this.</span>
+      )}
+    </div>
   );
 }

@@ -118,6 +118,42 @@ export type Database = {
         }
         Relationships: []
       }
+      item_folders: {
+        Row: {
+          created_at: string
+          folder_id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          folder_id: string
+          item_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          folder_id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_folders_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_folders_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           ai_confidence: number | null
