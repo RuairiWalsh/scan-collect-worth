@@ -175,6 +175,18 @@ export function boxToVideoRect(video: HTMLVideoElement, b: { x: number; y: numbe
 }
 
 /** Normalised box → on-screen position (percent of the video element) for an object-cover video. */
+/** Inverse of boxToScreen: an on-screen element rect → normalized video box. */
+export function screenToBox(video: HTMLVideoElement, el: DOMRect) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const vr = video.getBoundingClientRect();
+  const scale = Math.max(vr.width / vw, vr.height / vh);
+  const offX = (vw * scale - vr.width) / 2, offY = (vh * scale - vr.height) / 2;
+  const x = (el.left - vr.left + offX) / (vw * scale), y = (el.top - vr.top + offY) / (vh * scale);
+  const w = el.width / (vw * scale), h = el.height / (vh * scale);
+  const cx = Math.max(0, x), cy = Math.max(0, y);
+  return { x: cx, y: cy, w: Math.min(1 - cx, w), h: Math.min(1 - cy, h) };
+}
+
 export function boxToScreen(video: HTMLVideoElement, b: { x: number; y: number; w: number; h: number }) {
   const vw = video.videoWidth, vh = video.videoHeight;
   const vr = video.getBoundingClientRect();
