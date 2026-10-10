@@ -16,6 +16,7 @@ export async function streamJson<T>(opts: {
   content: Record<string, unknown>[];
   schemaName: string;
   schema: Record<string, unknown>;
+  effort?: "low" | "medium" | "high";
 }): Promise<T> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AiError("AI is not configured.", 401);
@@ -33,7 +34,7 @@ export async function streamJson<T>(opts: {
       input: [{ role: "user", content: opts.content }],
       stream: true,
       store: false,
-      reasoning: { effort: "low", summary: "auto" },
+      reasoning: { effort: opts.effort ?? "low", summary: "auto" },
       include: ["reasoning.encrypted_content"],
       text: {
         format: { type: "json_schema", name: opts.schemaName, strict: true, schema: opts.schema },
