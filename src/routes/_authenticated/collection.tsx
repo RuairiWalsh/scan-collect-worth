@@ -101,14 +101,29 @@ function CollectionPage() {
 
   const { data: historyRows = [] } = useQuery(collectionHistoryQuery());
   const filteredIds = useMemo(() => new Set(filtered.map((i) => i.id)), [filtered]);
-  const series = useMemo(
-    () =>
-      collectionValueSeries(
-        filtered.map((i) => ({ id: i.id, quantity: i.quantity, created_at: i.created_at })),
-        historyRows.filter((r) => filteredIds.has(r.item_id)),
-      ),
-    [filtered, historyRows, filteredIds],
-  );
+  const series = useMemo(() => {
+    // Every item's current value counts as a known price point, so items priced
+    // without a recorded snapshot still contribute to the chart.
+    const events = [
+      ...historyRows.filter((r) => filteredIds.has(r.item_id)),
+      ...filtered
+        .filter((i) => i.est_value != null)
+        .map((i) => ({ item_id: i.id, est_value: i.est_value, recorded_at: i.price_updated_at ?? i.created_at })),
+    ];
+    const pts = collectionValueSeries(
+      filtered.map((i) => ({ id: i.id, quantity: i.quantity, created_at: i.created_at })),
+      events,
+    );
+    // A brand-new collection has a single day; draw it as a flat line from the first add to now.
+    if (pts.length === 1 && filtered.length) {
+      const first = filtered.reduce((m, i) => (i.created_at < m ? i.created_at : m), filtered[0]!.created_at);
+      return [
+        { recorded_at: first, value: pts[0]!.value },
+        { recorded_at: new Date().toISOString(), value: pts[0]!.value },
+      ];
+    }
+    return pts;
+  }, [filtered, historyRows, filteredIds]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
