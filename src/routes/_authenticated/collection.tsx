@@ -13,6 +13,7 @@ import { ItemArtwork } from "@/components/ItemArtwork";
 import { EMPTY_STAMP_FILTER, matchesStampFilter, type StampFilter } from "@/lib/stamp-filters";
 import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coin-filters";
 import { CategoryCascade } from "@/components/CategoryCascade";
+import { QuickChips } from "@/components/QuickChips";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
 type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
@@ -263,6 +264,32 @@ function CollectionPage() {
           </p>
         )}
       </div>
+
+      {cat !== "all" && (
+        <div className="mt-2">
+          <QuickChips
+            items={items}
+            cat={cat}
+            sub={sub}
+            line={line}
+            stamp={stamp}
+            coin={coin}
+            onCardsChange={(nextSub, nextLine) => {
+              setSub(nextSub);
+              setLine(nextLine);
+              setYear("all");
+            }}
+            onStampChange={(next) => {
+              setStamp(next);
+              setYear("all");
+            }}
+            onCoinChange={(next) => {
+              setCoin(next);
+              setYear("all");
+            }}
+          />
+        </div>
+      )}
 
       {isLoading ? (
         <p className="mt-10 text-center text-muted-foreground">Loading…</p>
