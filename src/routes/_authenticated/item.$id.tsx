@@ -20,7 +20,7 @@ import { ItemArtwork } from "@/components/ItemArtwork";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
-import { selectedCardVariant } from "@/lib/card-pricing";
+import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
 
 export const Route = createFileRoute("/_authenticated/item/$id")({
   head: () => ({
@@ -105,13 +105,13 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
     navigate({ to: item.status === "batch" ? "/scan" : "/collection" });
   }
 
-  const sources = (item.price_sources as unknown as PriceSource[]) ?? [];
   const mult = conditionFor(item.category, item.condition).mult;
   const str = (v: string | null) => v ?? "";
   const nul = (v: string) => (v.trim() ? v : null);
   const identityUnchanged = f.category === item.category && f.name === item.name && f.number === item.number && f.set_name === item.set_name && f.line === item.line;
   const exactPricing = f.category === "cards" && variants.length > 0 && identityUnchanged;
   const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant)?.price ?? null : item.est_value;
+  const sources = exactPricing ? cardPriceSources(variants, f.condition, f.variant) : (item.price_sources as unknown as PriceSource[]) ?? [];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">

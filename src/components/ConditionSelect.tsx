@@ -15,7 +15,7 @@ export function ConditionSelect({
   const list = CONDITIONS[(category as CategoryKey) in CONDITIONS ? (category as CategoryKey) : "cards"];
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className={className}>
+      <SelectTrigger className={className} aria-label="Condition">
         <SelectValue placeholder="Condition" />
       </SelectTrigger>
       <SelectContent>
