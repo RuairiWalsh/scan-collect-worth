@@ -7,6 +7,7 @@ import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { CategoryCascade } from "@/components/CategoryCascade";
 import { useOfficialImages } from "@/hooks/use-official-images";
 
 type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
@@ -50,19 +51,6 @@ function CollectionPage() {
     count: items.filter((i) => i.category === k).reduce((s, i) => s + i.quantity, 0),
   }));
 
-  const lines = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          items
-            .filter((i) => (cat === "all" || i.category === cat) && (sub === "all" || i.subcategory === sub))
-            .map((i) => i.line)
-            .filter(Boolean) as string[],
-        ),
-      ),
-    [items, cat, sub],
-  );
-
   const filtered = items.filter(
     (i) =>
       (cat === "all" || i.category === cat) &&
@@ -104,10 +92,7 @@ function CollectionPage() {
     }
   }, [filtered, sort]);
 
-  const chip = (active: boolean) =>
-    `rounded-full border-2 px-3 py-1 text-xs font-semibold transition ${
-      active ? "border-ink bg-ink text-ink-foreground" : "border-border bg-card hover:border-ink"
-    }`;
+  const filteredTotal = filtered.reduce((s, i) => s + (i.est_value ?? 0) * i.quantity, 0);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -139,29 +124,21 @@ function CollectionPage() {
         </div>
       </section>
 
-      {cat !== "all" && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          <button className={chip(sub === "all")} onClick={() => { setSub("all"); setLine("all"); }}>
-            All {TAXONOMY[cat].label}
-          </button>
-          {Object.entries(TAXONOMY[cat].subcategories).map(([k, v]) => (
-            <button key={k} className={chip(sub === k)} onClick={() => { setSub(k); setLine("all"); }}>
-              {v.label}
-            </button>
-          ))}
-        </div>
-      )}
-      {cat !== "all" && lines.length > 1 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <button className={chip(line === "all")} onClick={() => setLine("all")}>All lines</button>
-          {lines.map((l) => (
-            <button key={l} className={chip(line === l)} onClick={() => setLine(l)}>{l}</button>
-          ))}
-        </div>
-      )}
-
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <label className="text-xs font-semibold text-muted-foreground">SORT</label>
+        <label className="text-xs font-semibold text-muted-foreground">FILTER</label>
+        <CategoryCascade
+          items={items}
+          cat={cat}
+          sub={sub}
+          line={line}
+          onChange={(next) => {
+            setCat(next.cat);
+            setSub(next.sub);
+            setLine(next.line);
+            setYear("all");
+          }}
+        />
+        <label className="ml-2 text-xs font-semibold text-muted-foreground">SORT</label>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
@@ -186,6 +163,11 @@ function CollectionPage() {
             </select>
           </>
         )}
+        {cat !== "all" && (
+          <p className="tabular ml-auto text-xs font-semibold text-muted-foreground">
+            {filtered.length} shown · {usd(filteredTotal)}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
@@ -196,6 +178,22 @@ function CollectionPage() {
           <p className="text-sm text-muted-foreground">Scan your first card, stamp or coin to get started.</p>
           <Button asChild>
             <Link to="/scan"><ScanLine /> Open scanner</Link>
+          </Button>
+        </div>
+      ) : !shown.length ? (
+        <div className="mt-10 flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-12 text-center">
+          <p className="text-lg font-semibold">Nothing matches that filter.</p>
+          <p className="text-sm text-muted-foreground">Try a different category, or show everything again.</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setCat("all");
+              setSub("all");
+              setLine("all");
+              setYear("all");
+            }}
+          >
+            Show everything
           </Button>
         </div>
       ) : (
