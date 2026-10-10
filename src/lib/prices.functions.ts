@@ -48,8 +48,15 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         if (nm?.price != null) {
           await context.supabase
             .from("catalog_price_history")
-            .insert({ catalog_id: card.id, nm_price: nm.price });
+            .upsert(
+              { catalog_id: card.id, nm_price: nm.price },
+              { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+            );
         }
+        // First time we see this card: pull its 180-day price history too.
+        const { seedCatalogHistory } = await import("@/server/prices.server");
+        const withHistory = await catalogCardById(card.id, { history: true });
+        if (withHistory) await seedCatalogHistory(context.supabase, withHistory);
       }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);

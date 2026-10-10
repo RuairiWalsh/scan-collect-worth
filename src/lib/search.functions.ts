@@ -70,8 +70,15 @@ export const searchCards = createServerFn({ method: "POST" })
       if (row.nm_price != null) {
         await context.supabase
           .from("catalog_price_history")
-          .insert({ catalog_id: row.catalog_id, nm_price: row.nm_price });
+          .upsert(
+            { catalog_id: row.catalog_id, nm_price: row.nm_price },
+            { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
+          );
       }
+      // First time we see this card: pull its 180-day price history too.
+      const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
+      const withHistory = await catalogCardById(card.id, { history: true });
+      if (withHistory) await seedCatalogHistory(context.supabase, withHistory);
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();
