@@ -45,6 +45,11 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
           nm_price: nm?.price ?? null,
           updated_at: new Date().toISOString(),
         });
+        if (nm?.price != null) {
+          await context.supabase
+            .from("catalog_price_history")
+            .insert({ catalog_id: card.id, nm_price: nm.price });
+        }
       }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);

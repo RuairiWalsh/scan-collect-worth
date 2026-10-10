@@ -67,6 +67,11 @@ export const searchCards = createServerFn({ method: "POST" })
         updated_at: row.updated_at,
       });
       await context.supabase.from("catalog_prices").upsert(row);
+      if (row.nm_price != null) {
+        await context.supabase
+          .from("catalog_price_history")
+          .insert({ catalog_id: row.catalog_id, nm_price: row.nm_price });
+      }
     }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();
