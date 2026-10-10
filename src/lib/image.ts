@@ -135,3 +135,43 @@ export function sharpness(video: HTMLVideoElement, r: Rect): number {
   const m = sum / n;
   return sq / n - m * m;
 }
+
+/** Small grayscale copy of the whole frame for card detection. */
+let detCanvas: HTMLCanvasElement | null = null;
+export function frameGray(video: HTMLVideoElement, W = 160) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const H = Math.max(40, Math.round((W * vh) / vw));
+  detCanvas ??= document.createElement("canvas");
+  detCanvas.width = W;
+  detCanvas.height = H;
+  const ctx = detCanvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(video, 0, 0, W, H);
+  const d = ctx.getImageData(0, 0, W, H).data;
+  const g = new Float32Array(W * H);
+  for (let i = 0; i < g.length; i++) g[i] = (d[i * 4]! + d[i * 4 + 1]! + d[i * 4 + 2]!) / 3;
+  return { g, W, H };
+}
+
+/** Normalised box → video pixels, with a small margin so card edges aren't clipped. */
+export function boxToVideoRect(video: HTMLVideoElement, b: { x: number; y: number; w: number; h: number }, margin = 0.04): Rect {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  let x = (b.x - b.w * margin) * vw, y = (b.y - b.h * margin) * vh;
+  let w = b.w * (1 + 2 * margin) * vw, h = b.h * (1 + 2 * margin) * vh;
+  x = Math.max(0, x); y = Math.max(0, y);
+  w = Math.min(vw - x, w); h = Math.min(vh - y, h);
+  return { x, y, w, h };
+}
+
+/** Normalised box → on-screen position (percent of the video element) for an object-cover video. */
+export function boxToScreen(video: HTMLVideoElement, b: { x: number; y: number; w: number; h: number }) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const vr = video.getBoundingClientRect();
+  const scale = Math.max(vr.width / vw, vr.height / vh);
+  const offX = (vw * scale - vr.width) / 2, offY = (vh * scale - vr.height) / 2;
+  return {
+    left: b.x * vw * scale - offX,
+    top: b.y * vh * scale - offY,
+    width: b.w * vw * scale,
+    height: b.h * vh * scale,
+  };
+}
