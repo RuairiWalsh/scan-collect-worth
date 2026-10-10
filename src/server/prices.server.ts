@@ -1,6 +1,7 @@
 // Server-only price sources.
 import { trimmedMedian, type PriceSource } from "@/lib/pricing";
 import { conditionFor } from "@/lib/taxonomy";
+import { cardPriceSources, cardVariants } from "@/lib/card-pricing";
 import { confidentMatch, parseNumber, rankCandidates, type CatalogCard, type ScanGuess } from "@/lib/catalog";
 
 export type PricedItem = {
@@ -252,40 +253,7 @@ export async function jtSearch(query: string, game?: string): Promise<CatalogCar
 }
 
 function priceFromCard(card: CatalogCard, item: PricedItem): PriceSource[] {
-  const variants = (card.variants ?? []).filter(
-    (v) => !/sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`),
-  );
-  if (!variants.length) return [];
-  const vt = (item.variant ?? "").toLowerCase();
-  const wantReverse = vt.includes("reverse");
-  const wantFoil = !wantReverse && (vt.includes("foil") || vt.includes("holo"));
-  const wantFirst = vt.includes("1st");
-  const pool = variants.filter((v) => {
-    const p = v.printing ?? "";
-    if (wantReverse) return /reverse/i.test(p);
-    if (wantFirst) return /1st/i.test(p);
-    if (wantFoil) return /foil|holo/i.test(p) && !/reverse/i.test(p);
-    return true;
-  });
-  const usable = (pool.length ? pool : variants).filter((v) => (v.price ?? 0) > 0);
-  if (!usable.length) return [];
-  const condLabel = item.category === "cards" ? conditionFor("cards", item.condition).label : "";
-  const nm = usable.filter((v) => v.condition === "Near Mint");
-  // With no printing preference, the base (non-reverse) printing is the usual one.
-  const nmBase = nm.find((v) => !/reverse/i.test(v.printing ?? "")) ?? nm[0];
-  const match =
-    usable.find((v) => v.condition?.toLowerCase() === condLabel.toLowerCase() && (!nmBase || v.printing === nmBase.printing)) ??
-    nmBase ??
-    usable[0]!;
-  const isNm = match.condition === "Near Mint";
-  return [
-    {
-      source: "justtcg",
-      label: `JustTCG · ${card.set_name ?? ""} ${card.number ?? ""} (${match.condition ?? "market"}${match.printing ? `, ${match.printing}` : ""})`.replace(/\s+/g, " "),
-      price: match.price!,
-      kind: isNm ? "reference" : "market",
-    },
-  ];
+  return cardPriceSources(cardVariants(card.variants), item.condition, item.variant);
 }
 
 /** JustTCG — multi-game TCG pricing. Exact catalog card when known, otherwise a strict match. */
@@ -299,6 +267,7 @@ export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
 }
 
 export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
+  if (item.category === "cards" && justtcgConfigured()) return justtcg(item);
   const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   const line = (item.line ?? "").toLowerCase();
   if (item.category === "cards") {

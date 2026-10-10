@@ -8,6 +8,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { conditionFor } from "@/lib/taxonomy";
 import { officialCardImage } from "@/lib/card-artwork";
 import { confidentMatch } from "@/lib/catalog";
+import { cardPriceSources, cardVariants } from "@/lib/card-pricing";
 
 export const refreshItemPrice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -24,15 +25,22 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
       .single();
     if (error || !item) throw new Error("Item not found");
 
-    const sources = await collectPrices(item);
+    // Editing quality/printing uses the shared variants, with no provider request.
+    const { data: cached } = item.category === "cards" && item.catalog_id
+      ? await context.supabase.from("catalog_prices").select("variants, updated_at").eq("catalog_id", item.catalog_id).maybeSingle()
+      : { data: null };
+    const hasCache = cached && cardVariants(cached.variants).length > 0;
+    const sources = hasCache
+      ? cardPriceSources(cardVariants(cached.variants), item.condition, item.variant)
+      : await collectPrices(item);
     let artwork: { official_image: string | null; catalog_id: string } | undefined;
-    if (item.category === "cards") {
+    if (item.category === "cards" && !hasCache) {
       const { catalogCardById, findCatalogCandidates } = await import("@/server/prices.server");
       const card = item.catalog_id ? await catalogCardById(item.catalog_id) : confidentMatch(await findCatalogCandidates(item));
       if (card) {
         if (!item.official_image) artwork = { official_image: officialCardImage(card), catalog_id: card.id };
         // Keep the shared price table warm so searches and nightly refreshes are cheap.
-        const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+        const variants = cardVariants(card.variants);
         const nm =
           variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
           variants.find((v) => v.condition === "Near Mint") ??
@@ -71,7 +79,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         price_low: est?.low ?? null,
         price_high: est?.high ?? null,
         price_sources: sources as unknown as Json,
-        price_updated_at: new Date().toISOString(),
+        price_updated_at: hasCache ? cached.updated_at : new Date().toISOString(),
       })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);

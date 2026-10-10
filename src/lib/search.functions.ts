@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { cardVariants, type CardVariant } from "@/lib/card-pricing";
 
 // Shared catalog tables are read-only for users; writes go through the server admin client.
 const adminDb = async () => (await import("@/integrations/supabase/client.server")).supabaseAdmin;
@@ -43,7 +44,7 @@ export const searchCards = createServerFn({ method: "POST" })
     const cards = (await jtSearch(q)).filter((c) => !isSealedProduct(c)).slice(0, 20);
     const results: SearchResult[] = [];
     for (const card of cards) {
-      const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+      const variants = cardVariants(card.variants);
       const nm =
         variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
         variants.find((v) => v.condition === "Near Mint") ??
@@ -119,7 +120,7 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
     if (typeof input?.catalog_id !== "string" || !input.catalog_id) throw new Error("Invalid catalog id");
     return { catalog_id: input.catalog_id };
   })
-  .handler(async ({ data, context }): Promise<{ card: SearchResult | null; history: CatalogHistoryPoint[] }> => {
+  .handler(async ({ data, context }): Promise<{ card: (SearchResult & { variants: CardVariant[] }) | null; history: CatalogHistoryPoint[] }> => {
     const load = () =>
       context.supabase
         .from("catalog_price_history")
@@ -129,7 +130,7 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
         .limit(1000);
     const { data: card } = await context.supabase
       .from("catalog_prices")
-      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at")
+      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at, variants")
       .eq("catalog_id", data.catalog_id)
       .maybeSingle();
     let { data: rows } = await load();
@@ -142,5 +143,5 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
         if (n > 0) ({ data: rows } = await load());
       }
     }
-    return { card: card ?? null, history: rows ?? [] };
+    return { card: card ? { ...card, variants: cardVariants(card.variants) } : null, history: rows ?? [] };
   });
