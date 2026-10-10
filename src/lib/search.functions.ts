@@ -133,7 +133,7 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
       .eq("catalog_id", data.catalog_id)
       .maybeSingle();
     let { data: rows } = await load();
-    if (card && (rows?.length ?? 0) < 2) {
+    if (card && (rows?.length ?? 0) < 100) {
       const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
       const full = await catalogCardById(data.catalog_id, { history: true });
       if (full) {
