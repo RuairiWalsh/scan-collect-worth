@@ -14,7 +14,9 @@ function dailyShuffle<T>(rows: T[], seed: number): T[] {
   for (let i = out.length - 1; i > 0; i--) {
     s = (s * 1103515245 + 12345) % 2147483648;
     const j = s % (i + 1);
-    [out[i], out[j]] = [out[j], out[i]];
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
   }
   return out;
 }
