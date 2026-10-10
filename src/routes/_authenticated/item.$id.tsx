@@ -5,7 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { itemQuery, priceHistoryQuery, type Item } from "@/lib/items";
+import { itemQuery, priceHistoryQuery, catalogHistoryForQuery, type Item } from "@/lib/items";
+import { trimPresale } from "@/lib/collection-history";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import type { PriceSource } from "@/lib/pricing";
@@ -40,9 +41,23 @@ function ItemPage() {
   const { id } = Route.useParams();
   const { data: item } = useQuery(itemQuery(id));
   const { data: history } = useQuery(priceHistoryQuery(id));
+  const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
-  return <ItemEditor item={item} history={history ?? []} />;
+  // Matched cards: use the card's full market history, scaled to this copy's condition/printing.
+  let points: HistoryPoint[] = history ?? [];
+  if (item.catalog_id && market && market.length > 1) {
+    const sorted = trimPresale([...market].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at)));
+    const latest = [...sorted].reverse().find((p) => p.nm_price != null)?.nm_price ?? null;
+    const ratio = latest && item.est_value != null ? item.est_value / latest : 1;
+    points = sorted.map((p) => ({
+      est_value: p.nm_price == null ? null : Math.round(p.nm_price * ratio * 100) / 100,
+      price_low: null,
+      price_high: null,
+      recorded_at: p.recorded_at,
+    }));
+  }
+  return <ItemEditor item={item} history={points} />;
 }
 
 type HistoryPoint = { est_value: number | null; price_low: number | null; price_high: number | null; recorded_at: string };
