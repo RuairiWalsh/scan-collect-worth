@@ -32,6 +32,9 @@ export function availablePrintings(variants: CardVariant[]) {
 }
 export function printingLabel(printing: string) {
   const key = printingKey(printing);
+  const lang = printing.match(/-\s*(japanese|korean|chinese)\s*$/i)?.[1];
+  const base = key === "normal" ? "Normal" : key === "holo" ? "Holo" : key === "reverse" ? "Reverse Holo" : null;
+  if (lang && base) return `${base} (${lang[0]!.toUpperCase()}${lang.slice(1).toLowerCase()})`;
   return key === "normal" ? "Normal" : key === "holo" ? "Holo" : key === "reverse" ? "Reverse Holo" : printing;
 }
 export function resolvePrinting(variants: CardVariant[], requested: string | null | undefined) {

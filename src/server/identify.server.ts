@@ -17,6 +17,7 @@ export async function identifyImage(image: string, strip?: string | undefined) {
         "Magic: collector number and 3-letter set code bottom-left. Yu-Gi-Oh!: set code like LOB-EN001 under the artwork, right side. One Piece/Lorcana/Digimon: code bottom-right.",
         "Sports: player name, brand (Topps, Panini, Upper Deck…), year from the copyright line, card number on the back or corner.",
         "Copy the number exactly as printed into `number` (keep leading zeros and the /total). If you can't read it, use null — do not guess numbers.",
+        "Non-English cards (e.g. Japanese): set `language` accordingly, but write `name` and `set_name` as the official ENGLISH names (e.g. ピカチュウ → Pikachu) so the catalog can match; copy the number exactly as printed.",
         "If it's packaging (box, pack, tin) rather than a single card, set is_collectible false.",
         "Use confidence below 0.5 when the text is unreadable.",
       ].join("\n"),
@@ -78,6 +79,9 @@ export async function identifyImage(image: string, strip?: string | undefined) {
           card = shortlist[0]!.card;
         }
         if (card) {
+          // Keep the language in the saved variant so the Japanese printing is priced and shown.
+          const lang = result.language && result.language !== "English" ? result.language : null;
+          if (lang && !new RegExp(lang, "i").test(result.variant ?? "")) result.variant = [result.variant, lang].filter(Boolean).join(" ");
           result.name = baseName(card.name) || result.name;
           result.set_name = card.set_name ?? result.set_name;
           result.number = card.number ?? result.number;

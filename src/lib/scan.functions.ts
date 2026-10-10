@@ -11,6 +11,7 @@ export type Identification = {
   number: string | null;
   year: string | null;
   variant: string | null;
+  language?: string | null;
   grader: string | null;
   grade: string | null;
   confidence: number;

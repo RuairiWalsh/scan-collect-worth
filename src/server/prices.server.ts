@@ -184,8 +184,11 @@ async function jtCards(params: Record<string, string>): Promise<CatalogCard[]> {
 }
 
 /** Catalog cards that could be the scanned card, best first. Uses as few API calls as possible. */
-export async function findCatalogCandidates(item: ScanGuess & { line: string | null }) {
-  const game = justtcgGame(item.line);
+export async function findCatalogCandidates(item: ScanGuess & { line: string | null; language?: string | null }) {
+  const japanese = /japan/i.test(item.language ?? "");
+  let game = justtcgGame(item.line);
+  // Japanese Pokémon cards live in their own JustTCG catalog.
+  if (japanese && game === "pokemon") game = "pokemon-japan";
   const base: Record<string, string> = { q: item.name, limit: "20" };
   if (game) base["game"] = game;
   const printed = (item.number ?? "").split(/[;,]/)[0]!.trim();
@@ -196,6 +199,12 @@ export async function findCatalogCandidates(item: ScanGuess & { line: string | n
     if (!cards.length && parsed.total) cards = await jtCards({ ...base, number: parsed.num });
   }
   if (!cards.length) cards = await jtCards(base);
+  // Other games mix languages in one catalog: prefer entries that have the scanned language.
+  const lang = item.language && item.language !== "Other" ? item.language.toLowerCase() : null;
+  if (lang && game !== "pokemon-japan") {
+    const same = cards.filter((c) => (c.variants ?? []).some((v) => String((v as { language?: string }).language ?? "english").toLowerCase() === lang || new RegExp(lang, "i").test(v.printing ?? "")));
+    if (same.length) cards = same;
+  }
   return rankCandidates(item, cards);
 }
 
