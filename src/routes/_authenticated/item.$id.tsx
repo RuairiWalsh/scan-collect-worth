@@ -102,8 +102,25 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const subs = TAXONOMY[cat].subcategories;
   const lines = f.subcategory ? subs[f.subcategory]?.lines ?? [] : [];
 
+  // Filing a card into a folder saves straight away — no need to press Save changes.
+  async function moveToFolder(v: string) {
+    const next = v || null;
+    const prev = f.folder_id ?? null;
+    setF((p) => ({ ...p, folder_id: next }));
+    const { error } = await supabase.from("items").update({ folder_id: next }).eq("id", item.id);
+    if (error) {
+      setF((p) => ({ ...p, folder_id: prev }));
+      toast.error(error.message);
+      return;
+    }
+    await qc.invalidateQueries({ queryKey: ["item", item.id] });
+    qc.invalidateQueries({ queryKey: ["items"] });
+    toast.success(next ? "Moved to folder" : "Removed from folder");
+  }
+
   async function save() {
     setBusy(true);
+
     const { error } = await supabase
       .from("items")
       .update({
@@ -150,10 +167,17 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <Link to={item.status === "batch" ? "/scan" : "/collection"} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" /> Back
-      </Link>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Link to={item.status === "batch" ? "/scan" : "/collection"} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" /> Back
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="tabular text-xs text-muted-foreground">FOLDER</span>
+          <FolderPicker value={f.folder_id ?? ""} onChange={moveToFolder} className="min-w-40" />
+        </div>
+      </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
+
         <div className="space-y-4">
           <div className="space-y-2">
             {item.category === "cards" && (
@@ -259,9 +283,6 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               <Field label="Grade"><Input placeholder="10" value={str(f.grade)} onChange={(e) => set("grade", nul(e.target.value))} /></Field>
             </div>
           )}
-          <Field label="Folder">
-            <FolderPicker value={f.folder_id ?? ""} onChange={(v) => set("folder_id", v || null)} className="w-full" />
-          </Field>
           <Field label="Notes"><Textarea value={str(f.notes)} onChange={(e) => set("notes", nul(e.target.value))} /></Field>
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" onClick={del} className="text-destructive"><Trash2 /> Delete</Button>
