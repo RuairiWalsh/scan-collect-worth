@@ -43,7 +43,6 @@ function ItemPage() {
   const { data: item } = useQuery(itemQuery(id));
   const { data: history } = useQuery(priceHistoryQuery(id));
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
-  const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   // Matched cards: use the card's full market history, scaled to this copy's condition/printing.
