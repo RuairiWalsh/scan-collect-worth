@@ -46,8 +46,9 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
           updated_at: new Date().toISOString(),
         });
         if (nm?.price != null) {
-          await context.supabase.from("catalog_price_history").upsert(
-            { catalog_id: card.id, nm_price: nm.price } as never,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
+          await (context.supabase as any).from("catalog_price_history").upsert(
+            { catalog_id: card.id, nm_price: nm.price },
             { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
           );
         }

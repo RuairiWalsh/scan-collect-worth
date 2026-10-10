@@ -68,8 +68,9 @@ export const searchCards = createServerFn({ method: "POST" })
       });
       await context.supabase.from("catalog_prices").upsert(row);
       if (row.nm_price != null) {
-        await context.supabase.from("catalog_price_history").upsert(
-          { catalog_id: row.catalog_id, nm_price: row.nm_price } as never,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client upsert hits TS2589
+        await (context.supabase as any).from("catalog_price_history").upsert(
+          { catalog_id: row.catalog_id, nm_price: row.nm_price },
           { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
         );
       }
