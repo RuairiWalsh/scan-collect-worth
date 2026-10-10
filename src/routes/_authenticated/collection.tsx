@@ -127,6 +127,7 @@ function CollectionPage() {
                 setCat(cat === k ? "all" : k);
                 setSub("all");
                 setLine("all");
+                setYear("all");
               }}
               className={`rounded-md border-2 p-3 text-left transition ${cat === k ? "border-primary bg-primary/5" : "border-border hover:border-ink"}`}
             >
@@ -158,6 +159,34 @@ function CollectionPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        <label className="text-xs font-semibold text-muted-foreground">SORT</label>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          className="rounded-md border-2 border-border bg-card px-2 py-1.5 text-xs font-semibold focus:border-ink focus:outline-none"
+        >
+          {SORTS.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+        {years.length > 1 && (
+          <>
+            <label className="ml-2 text-xs font-semibold text-muted-foreground">YEAR</label>
+            <select
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="rounded-md border-2 border-border bg-card px-2 py-1.5 text-xs font-semibold focus:border-ink focus:outline-none"
+            >
+              <option value="all">All years</option>
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
 
       {isLoading ? (
         <p className="mt-10 text-center text-muted-foreground">Loading…</p>
