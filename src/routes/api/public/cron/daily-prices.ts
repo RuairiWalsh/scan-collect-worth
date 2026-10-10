@@ -46,7 +46,8 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
             await seedCatalogHistory(supabaseAdmin as any, card);
-            const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+            const { cardVariants } = await import("@/lib/card-pricing");
+            const variants = cardVariants(card.variants);
             const nm = nmVariantOf(card);
             const { officialCardImage } = await import("@/lib/card-artwork");
             const { error: upErr } = await supabaseAdmin.from("catalog_prices").upsert({

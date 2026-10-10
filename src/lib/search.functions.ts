@@ -44,7 +44,7 @@ export const searchCards = createServerFn({ method: "POST" })
     const cards = (await jtSearch(q)).filter((c) => !isSealedProduct(c)).slice(0, 20);
     const results: SearchResult[] = [];
     for (const card of cards) {
-      const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+      const variants = cardVariants(card.variants);
       const nm =
         variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
         variants.find((v) => v.condition === "Near Mint") ??

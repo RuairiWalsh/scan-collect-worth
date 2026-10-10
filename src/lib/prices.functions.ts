@@ -40,7 +40,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
       if (card) {
         if (!item.official_image) artwork = { official_image: officialCardImage(card), catalog_id: card.id };
         // Keep the shared price table warm so searches and nightly refreshes are cheap.
-        const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+        const variants = cardVariants(card.variants);
         const nm =
           variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
           variants.find((v) => v.condition === "Near Mint") ??
