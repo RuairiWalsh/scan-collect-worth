@@ -44,6 +44,7 @@ export type Condition = { key: string; label: string; mult: number };
 export const CONDITIONS: Record<CategoryKey, Condition[]> = {
   cards: [
     { key: "raw_nm", label: "Near Mint", mult: 1 },
+    { key: "raw_mint", label: "Mint", mult: 1 },
     { key: "raw_lp", label: "Lightly Played", mult: 0.85 },
     { key: "raw_mp", label: "Moderately Played", mult: 0.7 },
     { key: "raw_hp", label: "Heavily Played", mult: 0.5 },
@@ -76,7 +77,7 @@ export function defaultCondition(cat: CategoryKey): string {
 
 export function conditionFor(cat: string, key: string): Condition {
   const list = CONDITIONS[(cat as CategoryKey) in CONDITIONS ? (cat as CategoryKey) : "cards"];
-  return list.find((c) => c.key === key) ?? list[0]!;
+  return list.find((c) => c.key === key) ?? list[0] ?? { key: "raw_nm", label: "Near Mint", mult: 1 };
 }
 
 export function categoryLabel(cat: string, sub?: string | null) {
