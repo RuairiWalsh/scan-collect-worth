@@ -43,6 +43,7 @@ function ItemPage() {
   const { data: item } = useQuery(itemQuery(id));
   const { data: history } = useQuery(priceHistoryQuery(id));
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
+  const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   // Matched cards: use the card's full market history, scaled to this copy's condition/printing.
@@ -128,7 +129,6 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         category: f.category, subcategory: f.subcategory, line: f.line, name: f.name,
         set_name: f.set_name, number: f.number, year: f.year, variant: f.variant,
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
-        folder_id: f.folder_id ?? null,
         // Identity edited by hand → re-match the catalog card from the new details.
         ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
           ? { catalog_id: null, official_image: null }
@@ -172,9 +172,9 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         <Link to={item.status === "batch" ? "/scan" : "/collection"} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-4" /> Back
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="tabular text-xs text-muted-foreground">FOLDER</span>
-          <FolderPicker value={f.folder_id ?? ""} onChange={moveToFolder} className="min-w-40" />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="tabular text-xs text-muted-foreground">FOLDERS</span>
+          <FolderPicker value={itemFolders.get(item.id) ?? []} onChange={setFolders} />
         </div>
       </div>
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
