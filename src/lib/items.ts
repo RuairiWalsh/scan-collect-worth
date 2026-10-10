@@ -45,6 +45,27 @@ export const collectionHistoryQuery = () =>
     },
   });
 
+export const catalogHistoryForQuery = (ids: string[]) =>
+  queryOptions({
+    queryKey: ["catalog_history_for", [...ids].sort()],
+    queryFn: async () => {
+      const rows = await Promise.all(
+        ids.map(async (id) => {
+          const { data, error } = await supabase
+            .from("catalog_price_history")
+            .select("catalog_id, nm_price, recorded_at")
+            .eq("catalog_id", id)
+            .order("recorded_at", { ascending: true })
+            .limit(1000);
+          if (error) throw error;
+          return data;
+        }),
+      );
+      return rows.flat();
+    },
+    enabled: ids.length > 0,
+  });
+
 export const itemQuery = (id: string) =>
   queryOptions({
     queryKey: ["item", id],

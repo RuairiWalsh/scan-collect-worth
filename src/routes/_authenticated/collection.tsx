@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ScanLine } from "lucide-react";
-import { itemsQuery, collectionHistoryQuery } from "@/lib/items";
-import { collectionValueSeries } from "@/lib/collection-history";
+import { itemsQuery, collectionHistoryQuery, catalogHistoryForQuery } from "@/lib/items";
+import { collectionValueSeries, catalogValueEvents } from "@/lib/collection-history";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { usd } from "@/lib/image";
 import { CATEGORY_KEYS, TAXONOMY, conditionFor, type CategoryKey } from "@/lib/taxonomy";
@@ -101,10 +101,16 @@ function CollectionPage() {
 
   const { data: historyRows = [] } = useQuery(collectionHistoryQuery());
   const filteredIds = useMemo(() => new Set(filtered.map((i) => i.id)), [filtered]);
+  const catalogIds = useMemo(
+    () => [...new Set(items.map((i) => i.catalog_id).filter((x): x is string => !!x))],
+    [items],
+  );
+  const { data: catalogRows = [] } = useQuery(catalogHistoryForQuery(catalogIds));
   const series = useMemo(() => {
     // Every item's current value counts as a known price point, so items priced
     // without a recorded snapshot still contribute to the chart.
     const events = [
+      ...catalogValueEvents(filtered, catalogRows),
       ...historyRows.filter((r) => filteredIds.has(r.item_id)),
       ...filtered
         .filter((i) => i.est_value != null)
@@ -113,6 +119,8 @@ function CollectionPage() {
     const pts = collectionValueSeries(
       filtered.map((i) => ({ id: i.id, quantity: i.quantity, created_at: i.created_at })),
       events,
+      new Date(),
+      { includePreAddHistory: true },
     );
     // A brand-new collection has a single day; draw it as a flat line from the first add to now.
     if (pts.length === 1 && filtered.length) {
@@ -123,7 +131,7 @@ function CollectionPage() {
       ];
     }
     return pts;
-  }, [filtered, historyRows, filteredIds]);
+  }, [filtered, historyRows, filteredIds, catalogRows]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
