@@ -142,6 +142,13 @@ function CollectionPage() {
             </button>
           ))}
         </div>
+        <div className="md:col-span-2">
+          <PriceSparkline
+            tall
+            points={series}
+            emptyHint="No value history yet — prices are recorded when items are added and on each daily refresh."
+          />
+        </div>
       </section>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
