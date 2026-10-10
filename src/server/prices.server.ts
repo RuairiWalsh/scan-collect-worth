@@ -216,8 +216,13 @@ export function nmVariantOf(card: CatalogCard) {
 
 type HistoryInserter = {
   from: (t: string) => {
-    upsert: (rows: unknown, opts?: unknown) => PromiseLike<unknown>;
-    select: (c: string) => { eq: (c: string, v: string) => { limit: (n: number) => PromiseLike<{ data: unknown[] | null }> } };
+    upsert: (
+      rows: object[],
+      opts?: { onConflict?: string; ignoreDuplicates?: boolean },
+    ) => PromiseLike<unknown>;
+    select: (c: string) => {
+      eq: (c: string, v: string) => { limit: (n: number) => PromiseLike<{ data: unknown[] | null }> };
+    };
   };
 };
 
