@@ -3,7 +3,8 @@ import type { Identification } from "@/lib/scan.functions";
 import { identificationSchema as schema } from "@/lib/scan-schema";
 import { officialCardImage } from "@/lib/card-artwork";
 
-export async function identifyImage(image: string) {
+export async function identifyImage(image: string, strip?: string) {
+  const stripInput = strip ? [{ type: "input_text", text: "Zoomed view of the bottom of the same card (collector number / set code):" }, { type: "input_image", image_url: strip, detail: "high" }] : [];
   const data = { image };
   const { streamJson, AiError } = await import("@/server/ai.server");
   try {
@@ -22,6 +23,7 @@ export async function identifyImage(image: string) {
       content: [
         { type: "input_text", text: "Identify this collectible." },
         { type: "input_image", image_url: data.image, detail: "high" },
+        ...stripInput,
       ],
       schemaName: "identification",
       schema,
@@ -32,10 +34,21 @@ export async function identifyImage(image: string) {
       const { justtcgConfigured, findCatalogCandidates } = await import("@/server/prices.server");
       if (justtcgConfigured()) {
         const { confidentMatch, baseName } = await import("@/lib/catalog");
+        // Number unreadable → one quick focused read of the zoomed strip before searching.
+        if (!result.number && strip) {
+          const read = await streamJson<{ number: string | null }>({
+            instructions: "Read the collector number exactly as printed (e.g. 025/165, SWSH020, LOB-EN001). Return null if not legible.",
+            content: [{ type: "input_image", image_url: strip, detail: "high" }],
+            schemaName: "number_read",
+            schema: { type: "object", additionalProperties: false, required: ["number"], properties: { number: { type: ["string", "null"] } } },
+          }).catch(() => ({ number: null }));
+          if (read.number) result.number = read.number;
+        }
         const ranked = await findCatalogCandidates(result);
         let card = confidentMatch(ranked);
         // Several plausible printings → let the AI compare them against the photo.
-        const shortlist = ranked.filter((r) => r.score > 0).slice(0, 12);
+        const positive = ranked.filter((r) => r.score > 0);
+        const shortlist = (positive.length ? positive : ranked).slice(0, 20);
         if (!card && shortlist.length > 1) {
           const pick = await streamJson<{ index: number }>({
             instructions:
@@ -50,6 +63,7 @@ export async function identifyImage(image: string) {
                     .join("\n"),
               },
               { type: "input_image", image_url: data.image, detail: "high" },
+              ...stripInput,
             ],
             schemaName: "catalog_pick",
             schema: {

@@ -120,12 +120,12 @@ function ScanPage() {
   );
 
   const process = useCallback(
-    async (img: { full: string; thumb: string }, auto = false) => {
+    async (img: { full: string; thumb: string; strip?: string }, auto = false) => {
       const tempId = crypto.randomUUID();
       setPending((p) => [{ id: tempId, thumb: img.thumb }, ...p]);
       inFlight.current++;
       try {
-        const res = await identify({ data: { image: img.full } });
+        const res = await identify({ data: { image: img.full, strip: img.strip } });
         if (!res.ok) throw new Error(res.error);
         const r = res.result;
         if (!r.is_collectible) throw new Error("No collectible found in that shot.");
@@ -174,7 +174,7 @@ function ScanPage() {
   const gateRef = useRef(initGate());
 
   const shoot = useCallback(
-    (img: { full: string; thumb: string }, auto: boolean) => {
+    (img: { full: string; thumb: string; strip?: string }, auto: boolean) => {
       setFlash(true);
       setTimeout(() => setFlash(false), 120);
       setCaptured({ thumb: img.thumb, at: Date.now() });
@@ -190,7 +190,7 @@ function ScanPage() {
     let prevBox: Box | null = null;
     let stable = 0;
     let misses = 0;
-    let best: { score: number; img: { full: string; thumb: string } } | null = null;
+    let best: { score: number; img: { full: string; thumb: string; strip?: string } } | null = null;
     const t = setInterval(() => {
       const v = videoRef.current;
       if (!v || !v.videoWidth) return;
