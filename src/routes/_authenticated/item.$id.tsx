@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { itemQuery, type Item } from "@/lib/items";
+import { itemQuery, priceHistoryQuery, type Item } from "@/lib/items";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
 import type { PriceSource } from "@/lib/pricing";
@@ -36,12 +36,15 @@ export const Route = createFileRoute("/_authenticated/item/$id")({
 function ItemPage() {
   const { id } = Route.useParams();
   const { data: item } = useQuery(itemQuery(id));
+  const { data: history } = useQuery(priceHistoryQuery(id));
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
-  return <ItemEditor item={item} />;
+  return <ItemEditor item={item} history={history ?? []} />;
 }
 
-function ItemEditor({ item }: { item: Item }) {
+type HistoryPoint = { est_value: number | null; price_low: number | null; price_high: number | null; recorded_at: string };
+
+function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) {
   const [f, setF] = useState(item);
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
@@ -131,6 +134,7 @@ function ItemEditor({ item }: { item: Item }) {
                 range {usd(item.price_low)} – {usd(item.price_high)}
               </p>
             )}
+            <PriceHistoryChart history={history} />
             <ul className="mt-4 space-y-2 text-sm">
               {sources.map((s) => (
                 <li key={s.source} className="flex items-center justify-between gap-2">
@@ -215,6 +219,51 @@ function ItemEditor({ item }: { item: Item }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PriceHistoryChart({ history }: { history: HistoryPoint[] }) {
+  const pts = history.filter((h) => h.est_value != null);
+  if (pts.length === 0) {
+    return <p className="mt-4 text-xs text-muted-foreground">No price history yet — refresh the price to start tracking.</p>;
+  }
+  const W = 260, H = 90, PAD = 6;
+  const vals = pts.map((p) => p.est_value as number);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  const x = (i: number) => PAD + (i / Math.max(1, pts.length - 1)) * (W - PAD * 2);
+  const y = (v: number) => H - PAD - ((v - min) / span) * (H - PAD * 2);
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.est_value as number).toFixed(1)}`).join(" ");
+  const first = pts[0]!, last = pts[pts.length - 1]!;
+  const delta = (last.est_value as number) - (first.est_value as number);
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return (
+    <div className="mt-4">
+      <div className="flex items-baseline justify-between">
+        <p className="tabular text-xs text-muted-foreground">PRICE HISTORY</p>
+        {pts.length > 1 && (
+          <p className={`tabular text-xs font-semibold ${delta > 0 ? "text-secondary" : delta < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+            {delta > 0 ? "+" : ""}{usd(delta)} since {fmtDate(first.recorded_at)}
+          </p>
+        )}
+      </div>
+      {pts.length === 1 ? (
+        <p className="mt-1 text-xs text-muted-foreground">First recorded {fmtDate(first.recorded_at)} — refresh again later to see the trend.</p>
+      ) : (
+        <>
+          <svg viewBox={`0 0 ${W} ${H}`} className="mt-1 w-full" role="img" aria-label="Price history chart">
+            <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            {pts.map((p, i) => (
+              <circle key={p.recorded_at} cx={x(i)} cy={y(p.est_value as number)} r="3" fill="var(--primary)" stroke="var(--background)" strokeWidth="1.5" />
+            ))}
+          </svg>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>{fmtDate(first.recorded_at)}</span>
+            <span>{fmtDate(last.recorded_at)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

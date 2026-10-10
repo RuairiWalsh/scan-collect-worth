@@ -18,6 +18,20 @@ export const itemsQuery = (status: "batch" | "collection") =>
     },
   });
 
+export const priceHistoryQuery = (itemId: string) =>
+  queryOptions({
+    queryKey: ["price_history", itemId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("price_history")
+        .select("est_value, price_low, price_high, recorded_at")
+        .eq("item_id", itemId)
+        .order("recorded_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
 export const itemQuery = (id: string) =>
   queryOptions({
     queryKey: ["item", id],
