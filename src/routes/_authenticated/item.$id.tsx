@@ -65,6 +65,7 @@ type HistoryPoint = { est_value: number | null; price_low: number | null; price_
 
 function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) {
   const [f, setF] = useState(item);
+  const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
