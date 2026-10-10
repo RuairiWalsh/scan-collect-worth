@@ -82,3 +82,22 @@ export const searchCards = createServerFn({ method: "POST" })
     });
     return { results: merged.slice(0, 20), source: "live" };
   });
+
+export type CatalogHistoryPoint = { recorded_at: string; nm_price: number | null };
+
+/** Price history for a shared catalog card (near-mint price over time). */
+export const catalogPriceHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { catalog_id: string }) => {
+    if (typeof input?.catalog_id !== "string" || !input.catalog_id) throw new Error("Invalid catalog id");
+    return { catalog_id: input.catalog_id };
+  })
+  .handler(async ({ data, context }): Promise<{ history: CatalogHistoryPoint[] }> => {
+    const { data: rows } = await context.supabase
+      .from("catalog_price_history")
+      .select("recorded_at, nm_price")
+      .eq("catalog_id", data.catalog_id)
+      .order("recorded_at", { ascending: true })
+      .limit(365);
+    return { history: rows ?? [] };
+  });
