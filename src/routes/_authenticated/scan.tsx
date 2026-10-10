@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { identifyItem } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
-import { captureRegion, fileToImages, frameSignature, guideToVideoRect, sharpness, sigContrast, sigDiff, usd } from "@/lib/image";
+import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, sharpness, sigDiff, usd } from "@/lib/image";
+import { detectCard, iou, type Box } from "@/lib/card-detect";
 import { categoryLabel, defaultCondition } from "@/lib/taxonomy";
 import { Button } from "@/components/ui/button";
 import { ConditionSelect } from "@/components/ConditionSelect";
@@ -35,13 +36,13 @@ function ScanPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const guideRef = useRef<HTMLDivElement>(null);
   const [inFrame, setInFrame] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
   const [captured, setCaptured] = useState<{ thumb: string; at: number } | null>(null);
-  const [scanState, setScanState] = useState<"searching" | "steady" | "reading">("searching");
+  const [scanState, setScanState] = useState<"searching" | "steady" | "reading" | "seen">("searching");
+  const [overlay, setOverlay] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const inFlight = useRef(0);
   const [pending, setPending] = useState<Pending[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
@@ -167,47 +168,69 @@ function ScanPage() {
     [identify, qc, doPrice],
   );
 
-  // Live scan: when a new card holds steady inside the guide, grab the sharpest frame automatically.
+  const lastBoxRef = useRef<Box | null>(null);
+  const lastShotRef = useRef<Float32Array | null>(null);
+
+  const shoot = useCallback(
+    (img: { full: string; thumb: string }, auto: boolean) => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 120);
+      setCaptured({ thumb: img.thumb, at: Date.now() });
+      navigator.vibrate?.(30);
+      process(img, auto);
+    },
+    [process],
+  );
+
+  // Live scan: find a card-shaped rectangle anywhere in view; once it sits still for a moment, capture it.
   useEffect(() => {
     if (!camOn) return;
-    let prev: Float32Array | null = null;
-    let lastShot: Float32Array | null = null;
-    let steady = 0;
+    let prevBox: Box | null = null;
+    let stable = 0;
+    let misses = 0;
     let best: { score: number; img: { full: string; thumb: string } } | null = null;
     const t = setInterval(() => {
       const v = videoRef.current;
-      const g = guideRef.current;
-      if (!v || !g || !v.videoWidth) return;
-      const rect = guideToVideoRect(v, g);
-      const sig = frameSignature(v, rect);
-      const motion = prev ? sigDiff(sig, prev) : 99;
-      prev = sig;
-      // Forgiving thresholds: a normal hand hover counts as steady.
-      steady = motion < 14 ? steady + 1 : 0;
-      if (steady === 0) best = null;
-      const isNew = !lastShot || sigDiff(sig, lastShot) > 10;
-      const hasDetail = sigContrast(sig) > 6;
-      if (inFlight.current >= 4) { setScanState("reading"); return; }
-      if (!isNew || !hasDetail) { setScanState("searching"); best = null; return; }
-      setScanState(steady >= 1 ? "steady" : "searching");
-      if (steady >= 1) {
-        const score = sharpness(v, rect);
-        if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
+      if (!v || !v.videoWidth) return;
+      const { g, W, H } = frameGray(v);
+      const box = detectCard(g, W, H);
+      if (!box) {
+        if (++misses >= 2) { lastBoxRef.current = null; setOverlay(null); setScanState("searching"); }
+        stable = 0; best = null; prevBox = null;
+        return;
       }
-      if (steady >= 2 && best) {
-        lastShot = sig;
-        steady = 0;
+      misses = 0;
+      lastBoxRef.current = box;
+      setOverlay(boxToScreen(v, box));
+      stable = prevBox && iou(box, prevBox) > 0.75 ? stable + 1 : 0;
+      prevBox = box;
+      const rect = boxToVideoRect(v, box);
+      const sig = frameSignature(v, rect);
+      if (lastShotRef.current && sigDiff(sig, lastShotRef.current) < 12) { setScanState("seen"); best = null; return; }
+      if (inFlight.current >= 4) { setScanState("reading"); return; }
+      setScanState("steady");
+      const score = sharpness(v, rect);
+      if (!best || score > best.score) best = { score, img: captureRegion(v, rect) };
+      if (stable >= 2) {
+        lastShotRef.current = sig;
+        stable = 0;
         const img = best.img;
         best = null;
-        setFlash(true);
-        setTimeout(() => setFlash(false), 120);
-        setCaptured({ thumb: img.thumb, at: Date.now() });
-        navigator.vibrate?.(30);
-        process(img, true);
+        shoot(img, true);
       }
-    }, 250);
+    }, 180);
     return () => clearInterval(t);
-  }, [camOn, process]);
+  }, [camOn, shoot]);
+
+  // Tap anywhere to capture right now (the detected card, or the middle of the view).
+  function tapCapture() {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const box = lastBoxRef.current ?? { x: 0.12, y: 0.1, w: 0.76, h: 0.8 };
+    const rect = boxToVideoRect(v, box);
+    lastShotRef.current = frameSignature(v, rect);
+    shoot(captureRegion(v, rect), false);
+  }
 
   async function onFiles(files: FileList | null) {
     if (!files) return;
@@ -249,21 +272,21 @@ function ScanPage() {
           <video ref={videoRef} playsInline muted className={`h-full w-full object-cover ${camOn ? "" : "hidden"}`} />
           {camOn && (
             <>
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-28">
+              {/* Tap anywhere to capture now */}
+              <button type="button" aria-label="Capture now" onClick={tapCapture} className="absolute inset-0" />
+              {overlay && (
                 <div
-                  ref={guideRef}
-                  className={`relative aspect-[63/88] h-[72%] max-w-[82%] rounded-xl border-[3px] shadow-[0_0_0_9999px_color-mix(in_oklab,var(--ink)_40%,transparent)] transition-colors ${scanState === "steady" ? "border-primary" : "border-ink-foreground/80"}`}
-                >
-                  <div className="animate-scanline absolute inset-x-0 h-0.5 bg-primary shadow-[0_0_12px_2px_var(--primary)]" />
-                </div>
-              </div>
+                  className={`pointer-events-none absolute rounded-lg border-[3px] transition-all duration-150 ${scanState === "seen" ? "border-secondary" : "border-primary"}`}
+                  style={overlay}
+                />
+              )}
               {flash && <div className="absolute inset-0 bg-ink-foreground/60" />}
 
               {/* Top bar */}
               <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4 pt-[max(1rem,env(safe-area-inset-top))]">
                 <p className="flex items-center gap-2 rounded-full bg-ink/70 px-3 py-1.5 text-sm font-semibold text-ink-foreground">
-                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" ? "bg-secondary animate-pulse" : "bg-ink-foreground/50"}`} />
-                  {scanState === "steady" ? "Hold still…" : scanState === "reading" ? "Reading…" : "Fit a card in the outline"}
+                  <span className={`size-2.5 rounded-full ${scanState === "steady" ? "bg-primary animate-pulse" : scanState === "reading" || scanState === "seen" ? "bg-secondary" : "bg-ink-foreground/50"}`} />
+                  {scanState === "steady" ? "Card found — hold…" : scanState === "reading" ? "Reading…" : scanState === "seen" ? "Got it — next card" : "Point at a card (or tap)"}
                 </p>
                 <Button size="sm" onClick={stopCam}>
                   Done{batch.length ? ` · ${batch.length}` : ""}
