@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
+import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +46,12 @@ const AuthenticatedItemIdRoute = AuthenticatedItemIdRouteImport.update({
   path: '/item/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicCronDailyPricesRoute =
+  ApiPublicCronDailyPricesRouteImport.update({
+    id: '/api/public/cron/daily-prices',
+    path: '/api/public/cron/daily-prices',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/collection': typeof AuthenticatedCollectionRoute
   '/scan': typeof AuthenticatedScanRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/collection': typeof AuthenticatedCollectionRoute
   '/scan': typeof AuthenticatedScanRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +77,25 @@ export interface FileRoutesById {
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/collection' | '/scan' | '/item/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/collection'
+    | '/scan'
+    | '/item/$id'
+    | '/api/public/cron/daily-prices'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/collection' | '/scan' | '/item/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/collection'
+    | '/scan'
+    | '/item/$id'
+    | '/api/public/cron/daily-prices'
   id:
     | '__root__'
     | '/'
@@ -82,12 +104,14 @@ export interface FileRouteTypes {
     | '/_authenticated/collection'
     | '/_authenticated/scan'
     | '/_authenticated/item/$id'
+    | '/api/public/cron/daily-prices'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -134,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedItemIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/cron/daily-prices': {
+      id: '/api/public/cron/daily-prices'
+      path: '/api/public/cron/daily-prices'
+      fullPath: '/api/public/cron/daily-prices'
+      preLoaderRoute: typeof ApiPublicCronDailyPricesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -157,6 +188,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

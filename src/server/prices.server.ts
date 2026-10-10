@@ -202,6 +202,13 @@ export async function catalogCardById(id: string) {
   return (await jtCards({ cardId: id }))[0] ?? null;
 }
 
+/** Raw catalog search by name/number text (JustTCG `q` parameter). */
+export async function jtSearch(query: string, game?: string): Promise<CatalogCard[]> {
+  const params: Record<string, string> = { q: query, limit: "20" };
+  if (game) params["game"] = game;
+  return jtCards(params);
+}
+
 function priceFromCard(card: CatalogCard, item: PricedItem): PriceSource[] {
   const variants = (card.variants ?? []).filter(
     (v) => !/sealed/i.test(`${v.condition ?? ""} ${v.printing ?? ""}`),

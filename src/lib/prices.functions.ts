@@ -23,10 +23,29 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
 
     const sources = await collectPrices(item);
     let artwork: { official_image: string | null; catalog_id: string } | undefined;
-    if (item.category === "cards" && !item.official_image) {
+    if (item.category === "cards") {
       const { catalogCardById, findCatalogCandidates } = await import("@/server/prices.server");
       const card = item.catalog_id ? await catalogCardById(item.catalog_id) : confidentMatch(await findCatalogCandidates(item));
-      if (card) artwork = { official_image: officialCardImage(card), catalog_id: card.id };
+      if (card) {
+        if (!item.official_image) artwork = { official_image: officialCardImage(card), catalog_id: card.id };
+        // Keep the shared price table warm so searches and nightly refreshes are cheap.
+        const variants = (card.variants ?? []).filter((v) => (v.price ?? 0) > 0);
+        const nm =
+          variants.find((v) => v.condition === "Near Mint" && !/reverse/i.test(v.printing ?? "")) ??
+          variants.find((v) => v.condition === "Near Mint") ??
+          variants[0];
+        await context.supabase.from("catalog_prices").upsert({
+          catalog_id: card.id,
+          name: card.name,
+          set_name: card.set_name ?? null,
+          number: card.number ?? null,
+          rarity: card.rarity ?? null,
+          image: officialCardImage(card),
+          variants,
+          nm_price: nm?.price ?? null,
+          updated_at: new Date().toISOString(),
+        });
+      }
     }
     const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);
     const { error: upErr } = await context.supabase
