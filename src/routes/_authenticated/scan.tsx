@@ -17,6 +17,7 @@ import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { ItemVariantSelect } from "@/components/CardPricingControls";
+import { FolderPicker } from "@/components/FolderPicker";
 
 export const Route = createFileRoute("/_authenticated/scan")({
   head: () => ({
@@ -49,6 +50,7 @@ function ScanPage() {
   const guideRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"manual" | "auto">("manual");
   const [pending, setPending] = useState<Pending[]>([]);
+  const [folderId, setFolderId] = useState("");
   const [pricing, setPricing] = useState<Set<string>>(new Set());
   const qc = useQueryClient();
   const identify = useServerFn(identifyItem);
