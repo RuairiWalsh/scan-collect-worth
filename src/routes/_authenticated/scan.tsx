@@ -315,7 +315,7 @@ function ScanPage() {
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-24">
                   <div
                     ref={guideRef}
-                    className="aspect-[63/88] w-[min(78vw,calc(62vh*63/88))] rounded-xl border-[3px] border-primary shadow-[0_0_0_9999px_hsl(0_0%_0%/0.45)]"
+                    className="aspect-[63/88] w-[min(78vw,calc(62vh*63/88))] rounded-xl border-[3px] border-primary shadow-[0_0_0_9999px_color-mix(in_oklch,var(--ink)_45%,transparent)]"
                   />
                 </div>
               )}
