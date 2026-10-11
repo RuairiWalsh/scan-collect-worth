@@ -97,8 +97,8 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
 export const pricingStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { ebayConfigured, justtcgConfigured } = await import("@/server/prices.server");
-    return { ebay: ebayConfigured(), justtcg: justtcgConfigured() };
+    const { ebayConfigured, justtcgConfigured, testEbayAuth } = await import("@/server/prices.server");
+    return { ebay: ebayConfigured(), ebayAuthOk: await testEbayAuth(), justtcg: justtcgConfigured() };
   });
 
 /** One-off: backfill 180-day price history for every catalog card that has none. */
