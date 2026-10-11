@@ -36,7 +36,7 @@ function SportsImageReview() {
     return data;
   } });
   const review = useMutation({ mutationFn: async ({ key, approve }: { key: string; approve: boolean }) => {
-    const { error } = await supabase.rpc("admin_review_image", { _key: key, _approve: approve, _note: notes[key] || undefined });
+    const { error } = await supabase.rpc("admin_review_image", { _key: key, _approve: approve, ...(notes[key] ? { _note: notes[key] } : {}) });
     if (error) throw error;
   }, onSuccess: (_data, action) => {
     toast.success(action.approve ? "Image approved" : "Image rejected");
@@ -52,9 +52,9 @@ function SportsImageReview() {
     {queue.data?.length === 0 && <p className="py-8 text-muted-foreground">No {status} sports-card images.</p>}
     <div className="grid gap-5 md:grid-cols-2">{queue.data?.map(row => {
       const metadata = row.card_metadata && typeof row.card_metadata === "object" && !Array.isArray(row.card_metadata) ? row.card_metadata : {};
-      const name = String(metadata.name || "Sports card");
+      const name = String(metadata["name"] || "Sports card");
       return <article key={row.card_key} className="panel space-y-3 p-4">
-        <h2 className="text-lg font-bold">{name}</h2><p className="text-sm text-muted-foreground">{[metadata.year, metadata.set_name, metadata.number, metadata.variant].filter(Boolean).join(" · ")}</p>
+        <h2 className="text-lg font-bold">{name}</h2><p className="text-sm text-muted-foreground">{[metadata["year"], metadata["set_name"], metadata["number"], metadata["variant"]].filter(Boolean).join(" · ")}</p>
         <div className="grid grid-cols-2 gap-3">{[["Original scan", row.original_scan], ["CardSight image", row.image]].map(([label, image]) => <figure key={label}><figcaption className="mb-2 text-xs font-bold">{label}</figcaption>{image ? <img src={image} alt={`${name} — ${label}`} className="aspect-[2/3] w-full object-contain bg-muted" /> : <div className="aspect-[2/3] bg-muted" />}</figure>)}</div>
         <label className="block text-sm font-semibold">Review note<textarea value={notes[row.card_key] ?? row.review_note ?? ""} maxLength={1000} onChange={event => setNotes(prev => ({ ...prev, [row.card_key]: event.target.value }))} className="mt-1 min-h-20 w-full border border-border bg-background p-2 font-normal" /></label>
         <div className="flex flex-wrap gap-2"><Button disabled={review.isPending || status === "approved"} onClick={() => review.mutate({ key: row.card_key, approve: true })}><Check />Approve</Button><Button variant="outline" disabled={review.isPending || status === "rejected"} onClick={() => review.mutate({ key: row.card_key, approve: false })}><X />Reject</Button></div>
