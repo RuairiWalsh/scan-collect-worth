@@ -78,6 +78,13 @@
       "when": 1791679867778,
       "tag": "0010_roles_merchants_listings",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791680672839,
+      "tag": "0011_listing_lots_photos",
+      "breakpoints": true
     }
   ]
 }
