@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
+import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
 import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
@@ -46,6 +47,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
   id: '/collection',
   path: '/collection',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLotRoute = AuthenticatedLotRouteImport.update({
+  id: '/lot',
+  path: '/lot',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
+  '/lot': typeof AuthenticatedLotRoute
   '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
+  '/lot': typeof AuthenticatedLotRoute
   '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
+  '/_authenticated/lot': typeof AuthenticatedLotRoute
   '/_authenticated/market': typeof AuthenticatedMarketRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/collection'
+    | '/lot'
     | '/market'
     | '/scan'
     | '/search'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/collection'
+    | '/lot'
     | '/market'
     | '/scan'
     | '/search'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/collection'
+    | '/_authenticated/lot'
     | '/_authenticated/market'
     | '/_authenticated/scan'
     | '/_authenticated/search'
@@ -236,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/collection'
       fullPath: '/collection'
       preLoaderRoute: typeof AuthenticatedCollectionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/lot': {
+      id: '/_authenticated/lot'
+      path: '/lot'
+      fullPath: '/lot'
+      preLoaderRoute: typeof AuthenticatedLotRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/market': {
@@ -307,6 +326,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
+  AuthenticatedLotRoute: typeof AuthenticatedLotRoute
   AuthenticatedMarketRoute: typeof AuthenticatedMarketRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
@@ -318,6 +338,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
+  AuthenticatedLotRoute: AuthenticatedLotRoute,
   AuthenticatedMarketRoute: AuthenticatedMarketRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,

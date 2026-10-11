@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { conditionFor } from "@/lib/taxonomy";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -96,16 +97,7 @@ function MerchantListings() {
       return data;
     },
   });
-  const [prices, setPrices] = useState<Record<string, string>>({});
   const invalidate = () => { qc.invalidateQueries({ queryKey: ["my-listings"] }); qc.invalidateQueries({ queryKey: ["market"] }); };
-  const list = useMutation({
-    mutationFn: async ({ itemId, price }: { itemId: string; price: number }) => {
-      const { error } = await supabase.from("listings").insert({ item_id: itemId, price });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Listed for sale"); invalidate(); },
-    onError: (e) => toast.error((e as Error).message),
-  });
   const unlist = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("listings").update({ status: "removed" }).eq("id", id);
@@ -116,35 +108,26 @@ function MerchantListings() {
   });
   const byItem = new Map(listings.map((l) => [l.item_id, l]));
 
+  const listedItems = items.filter((it) => byItem.has(it.id));
   return (
     <div className="mt-6 space-y-3">
-      <p className="text-sm text-muted-foreground">{listings.length} item{listings.length === 1 ? "" : "s"} listed. Set a price and tap List to put an item on the market.</p>
-      {items.length === 0 && <p className="text-muted-foreground">Your collection is empty — scan something first.</p>}
-      {items.map((it) => {
-        const l = byItem.get(it.id);
-        const val = prices[it.id] ?? (it.est_value ? String(it.est_value) : "");
+      <p className="text-sm text-muted-foreground">
+        {listings.length} item{listings.length === 1 ? "" : "s"} listed. To list more, open your{" "}
+        <Link to="/collection" className="font-semibold text-primary underline">collection</Link> and tap "Select items to list".
+      </p>
+      {listedItems.map((it) => {
+        const l = byItem.get(it.id)!;
         return (
           <div key={it.id} className="panel flex items-center gap-3 p-3">
-            <div className="w-14 shrink-0"><ItemArtwork item={it} /></div>
+            <ItemArtwork item={it} className="aspect-[63/88] w-14 shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold">{it.name}</div>
               <div className="truncate text-xs text-muted-foreground">
-                {[it.set_name, it.number && `#${it.number}`].filter(Boolean).join(" · ")} · Est. {it.est_value != null ? usd(it.est_value) : "—"}
+                {conditionFor(it.category, it.condition).label} · Market {it.est_value != null ? usd(it.est_value) : "—"}
               </div>
             </div>
-            {l ? (
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold">{usd(Number(l.price))}</span>
-                <Button size="sm" variant="outline" onClick={() => unlist.mutate(l.id)}>Unlist</Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Input aria-label={`Price for ${it.name}`} className="w-24" inputMode="decimal" placeholder="$"
-                  value={val} onChange={(e) => setPrices({ ...prices, [it.id]: e.target.value })} />
-                <Button size="sm" disabled={!(Number(val) > 0) || list.isPending}
-                  onClick={() => list.mutate({ itemId: it.id, price: Math.round(Number(val) * 100) / 100 })}>List</Button>
-              </div>
-            )}
+            <span className="tabular font-extrabold">{usd(Number(l.price))}</span>
+            <Button size="sm" variant="outline" onClick={() => unlist.mutate(l.id)}>Unlist</Button>
           </div>
         );
       })}

@@ -255,11 +255,37 @@ export type Database = {
           },
         ]
       }
+      listing_lots: {
+        Row: {
+          created_at: string
+          id: string
+          seller_id: string
+          status: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          seller_id?: string
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          seller_id?: string
+          status?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
       listings: {
         Row: {
           created_at: string
           id: string
           item_id: string
+          lot_id: string | null
+          photos: string[]
           price: number
           seller_id: string
           status: string
@@ -269,6 +295,8 @@ export type Database = {
           created_at?: string
           id?: string
           item_id: string
+          lot_id?: string | null
+          photos?: string[]
           price: number
           seller_id?: string
           status?: string
@@ -278,6 +306,8 @@ export type Database = {
           created_at?: string
           id?: string
           item_id?: string
+          lot_id?: string | null
+          photos?: string[]
           price?: number
           seller_id?: string
           status?: string
@@ -289,6 +319,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "listing_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -436,6 +473,7 @@ export type Database = {
           listing_id: string
           name: string
           number: string
+          photos: string[]
           price: number
           seller_id: string
           set_name: string
