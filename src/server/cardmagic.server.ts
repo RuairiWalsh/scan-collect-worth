@@ -8,7 +8,8 @@ export async function tcgGraphImage(item: CardImageIdentity): Promise<string | n
   if (!key || !game || !item.name || !item.number) return null;
   const params = new URLSearchParams({ game, name: tcgGraphName(item.name), collectorNumber: item.number.split("/")[0]?.trim() || item.number, language: tcgGraphLanguage(item.language), limit: "50" });
   const res = await fetch(`https://api.tcggraph.com/v1/cards?${params}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) return null;
+  // Rate limits and outages are not "no image": throw so the miss is not cached and the lookup retries.
+  if (!res.ok) throw new Error(`TCGGraph lookup failed (${res.status})`);
   const body = await res.json() as { data?: TcgGraphCard[] };
   return pickTcgGraphImage(body.data ?? [], item.number, item.set_name);
 }
@@ -86,10 +87,13 @@ export async function cachedTcgGraphImages(ids: string[]): Promise<Map<string, s
     if (r.tcggraph_image) out.set(r.catalog_id, r.tcggraph_image);
     else if (tcgGraphGame(r.game ?? r.catalog_id) && (!r.tcggraph_checked_at || Date.parse(r.tcggraph_checked_at) < Date.now() - RECHECK_MS)) stale.push(r);
   }
-  for (let i = 0; i < stale.length; i += 5) {
-    await Promise.all(stale.slice(i, i + 5).map(async r => {
+  // TCGGraph allows 60 requests/minute; cap each call and stop at the first failure (usually a rate limit).
+  let failed = false;
+  const batch = stale.slice(0, 40);
+  for (let i = 0; i < batch.length && !failed; i += 5) {
+    await Promise.all(batch.slice(i, i + 5).map(async r => {
       const image = await tcgGraphImage({ line: r.game ?? r.catalog_id, name: r.name, number: r.number, set_name: r.set_name, language: (r.game ?? r.catalog_id).startsWith("pokemon-japan") ? "ja" : "en" }).catch(() => undefined);
-      if (image === undefined) return; // network failure: retry next time
+      if (image === undefined) { failed = true; return; } // rate limit / network failure: retry next time
       await db.from("catalog_prices").update({ tcggraph_image: image, tcggraph_checked_at: new Date().toISOString() }).eq("catalog_id", r.catalog_id);
       if (image) { out.set(r.catalog_id, image); await db.from("items").update({ product_image: image }).eq("catalog_id", r.catalog_id); }
     }));
