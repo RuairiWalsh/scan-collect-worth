@@ -2,15 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ScanLine, Layers, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { tickerCards, type TickerCard } from "@/lib/ticker.functions";
-import hero from "@/assets/hero.jpg";
+import hero from "@/assets/celebration-pikachu.jpg.asset.json";
+import { featuredCard } from "@/lib/featured-card.functions";
 
 export const Route = createFileRoute("/")({
   // A failed price lookup must never blank the landing page — fall back to the sample ticker.
   loader: async () => {
     try {
-      return await tickerCards();
+      const [cards, featured] = await Promise.all([tickerCards().catch(() => [] as TickerCard[]), featuredCard().catch(() => null)]);
+      return { cards, featured };
     } catch {
-      return [] as TickerCard[];
+      return { cards: [] as TickerCard[], featured: null };
     }
   },
   head: () => ({
@@ -47,7 +49,10 @@ function tickerLabel(c: TickerCard): string {
 }
 
 function Index() {
-  const cards = Route.useLoaderData();
+  const data = Route.useLoaderData();
+  // Hot updates can retain the previous array-only loader result until revalidation.
+  const cards: TickerCard[] = Array.isArray(data) ? data : data?.cards ?? [];
+  const featured = Array.isArray(data) ? null : data?.featured ?? null;
   const items = cards.length > 0 ? cards.map(tickerLabel) : FALLBACK_TICKER;
   return (
     <div className="min-h-screen bg-background">
@@ -101,8 +106,16 @@ function Index() {
             ))}
           </div>
         </div>
-        <div className="panel shadow-hard overflow-hidden">
-          <img src={hero} alt="Trading cards, a stamp and a coin under a scanner" className="aspect-[4/5] w-full object-cover" width={1024} height={1280} />
+        <div>
+          <img src={hero.url} alt="Official Pikachu 036/128 — ME: 30th Celebration Pokémon card" className="mx-auto h-auto w-full max-w-sm object-contain" width={733} height={1024} />
+          <div className="mt-5 flex items-end justify-between gap-4 border-t-2 border-ink pt-4">
+            <div>
+              <p className="font-display text-lg font-bold">Pikachu · 036/128</p>
+              <p className="text-sm text-muted-foreground">ME: 30th Celebration · Near Mint · Holofoil</p>
+              <p className="mt-1 text-xs text-muted-foreground">JustTCG · Updated {featured?.updatedAt ? new Date(featured.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "—"}</p>
+            </div>
+            <p className="tabular shrink-0 text-3xl font-bold">{featured?.price != null ? `$${featured.price.toFixed(2)}` : "—"}<span className="ml-1 text-xs font-normal text-muted-foreground">USD</span></p>
+          </div>
         </div>
       </main>
     </div>

@@ -99,6 +99,13 @@
       "when": 1791681744161,
       "tag": "0013_merchant_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791736790521,
+      "tag": "0014_public_featured_card_price",
+      "breakpoints": true
     }
   ]
 }
