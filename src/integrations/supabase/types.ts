@@ -209,6 +209,8 @@ export type Database = {
           provider_card_id: string | null
           rarity: string | null
           set_name: string | null
+          tcggraph_checked_at: string | null
+          tcggraph_image: string | null
           updated_at: string
           variants: Json
         }
@@ -228,6 +230,8 @@ export type Database = {
           provider_card_id?: string | null
           rarity?: string | null
           set_name?: string | null
+          tcggraph_checked_at?: string | null
+          tcggraph_image?: string | null
           updated_at?: string
           variants?: Json
         }
@@ -247,6 +251,8 @@ export type Database = {
           provider_card_id?: string | null
           rarity?: string | null
           set_name?: string | null
+          tcggraph_checked_at?: string | null
+          tcggraph_image?: string | null
           updated_at?: string
           variants?: Json
         }
