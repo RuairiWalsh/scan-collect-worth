@@ -38,8 +38,6 @@ export const searchCards = createServerFn({ method: "POST" })
       .order("updated_at", { ascending: false })
       .limit(20);
 
-    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const fresh = (cached ?? []).filter((c) => c.updated_at && Date.parse(c.updated_at) > dayAgo);
     const { catalogProductImages } = await import("@/server/cardmagic.server");
     const withProductImages = async (rows: SearchResult[]) => {
       const images = await catalogProductImages(context.supabase, rows.map(r => r.catalog_id));
@@ -47,7 +45,7 @@ export const searchCards = createServerFn({ method: "POST" })
     };
     if (cached?.length) return { results: await withProductImages(cached), source: "cache" };
 
-    // Miss (or stale): ask JustTCG and save what we find.
+    // Cache miss: ask JustTCG and save what we find.
     const { jtSearch } = await import("@/server/prices.server");
     const { officialCardImage } = await import("@/lib/card-artwork");
     const { isSealedProduct } = await import("@/lib/catalog");

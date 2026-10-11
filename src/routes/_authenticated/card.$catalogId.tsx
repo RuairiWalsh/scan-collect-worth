@@ -81,7 +81,7 @@ function CardPage() {
             </div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
             {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed auction sales · USD</p>}
-            {data.card.price_status === "failed" && <p className="text-xs text-destructive">Latest price check unavailable; showing the last saved price.</p>}
+            {data.card.price_status === "failed" && <p className="text-xs text-destructive">{variants.length ? "Latest price check unavailable; showing the last saved price." : "No exact price match available yet; daily checks will retry."}</p>}
             {data.card.price_status === "pending" && <p className="text-xs text-muted-foreground">Awaiting daily price check.</p>}
             {data.card.price_status === "no_comps" && <p className="text-xs text-muted-foreground">No matching sale prices available yet.</p>}
             <p className="font-display text-3xl font-black text-primary">
