@@ -2,8 +2,9 @@
 import type { Identification } from "@/lib/scan.functions";
 import { identificationSchema as schema } from "@/lib/scan-schema";
 
-export async function identifyImage(image: string, strip?: string | undefined) {
+export async function identifyImage(image: string, strip?: string | undefined, back?: string | undefined) {
   const stripInput = strip ? [{ type: "input_text", text: "Zoomed view of the bottom of the same card (collector number / set code):" }, { type: "input_image", image_url: strip, detail: "high" }] : [];
+  const backInput = back ? [{ type: "input_text", text: "Back of this same card. Use its printed card number, copyright year and set details to identify the front precisely:" }, { type: "input_image", image_url: back, detail: "high" }] : [];
   const data = { image };
   const { streamJson, AiError } = await import("@/server/ai.server");
   try {
@@ -24,6 +25,7 @@ export async function identifyImage(image: string, strip?: string | undefined) {
         { type: "input_text", text: "Identify this collectible." },
         { type: "input_image", image_url: data.image, detail: "high" },
         ...stripInput,
+        ...backInput,
       ],
       schemaName: "identification",
       schema,
@@ -64,6 +66,7 @@ export async function identifyImage(image: string, strip?: string | undefined) {
               },
               { type: "input_image", image_url: data.image, detail: "high" },
               ...stripInput,
+              ...backInput,
             ],
             schemaName: "catalog_pick",
             schema: {

@@ -29,12 +29,89 @@ export type Database = {
         }
         Relationships: []
       }
+      card_image_import_pairs: {
+        Row: {
+          back_path: string
+          card_key: string | null
+          error: string | null
+          front_path: string
+          id: string
+          import_id: string
+          metadata: Json
+          pair_index: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          back_path: string
+          card_key?: string | null
+          error?: string | null
+          front_path: string
+          id?: string
+          import_id: string
+          metadata?: Json
+          pair_index: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          back_path?: string
+          card_key?: string | null
+          error?: string | null
+          front_path?: string
+          id?: string
+          import_id?: string
+          metadata?: Json
+          pair_index?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_image_import_pairs_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "card_image_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_image_imports: {
+        Row: {
+          created_at: string
+          file_hash: string
+          file_name: string
+          id: string
+          page_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_hash: string
+          file_name: string
+          id?: string
+          page_count: number
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          file_hash?: string
+          file_name?: string
+          id?: string
+          page_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       card_product_images: {
         Row: {
+          back_image: string | null
+          back_storage_path: string | null
           card_key: string
           card_metadata: Json
           catalog_id: string | null
           claim_id: string
+          front_storage_path: string | null
           image: string | null
           original_scan: string | null
           review_note: string | null
@@ -47,10 +124,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          back_image?: string | null
+          back_storage_path?: string | null
           card_key: string
           card_metadata?: Json
           catalog_id?: string | null
           claim_id: string
+          front_storage_path?: string | null
           image?: string | null
           original_scan?: string | null
           review_note?: string | null
@@ -63,10 +143,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          back_image?: string | null
+          back_storage_path?: string | null
           card_key?: string
           card_metadata?: Json
           catalog_id?: string | null
           claim_id?: string
+          front_storage_path?: string | null
           image?: string | null
           original_scan?: string | null
           review_note?: string | null

@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminImagesRouteImport } from './routes/_authenticated/admin-images'
+import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin-import'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
@@ -24,6 +25,7 @@ import { Route as AuthenticatedCardCatalogIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
 import { Route as ApiPublicEbayAccountDeletionRouteImport } from './routes/api/public/ebay-account-deletion'
 import { Route as ApiPublicEbayTestRouteImport } from './routes/api/public/ebay-test'
+import { Route as ApiPublicCardImagesKeyRouteImport } from './routes/api/public/card-images.$key'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -56,6 +58,12 @@ const AuthenticatedAdminImagesRoute =
   AuthenticatedAdminImagesRouteImport.update({
     id: '/admin-images',
     path: '/admin-images',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminImportRoute =
+  AuthenticatedAdminImportRouteImport.update({
+    id: '/admin-import',
+    path: '/admin-import',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
@@ -105,6 +113,11 @@ const ApiPublicEbayTestRoute = ApiPublicEbayTestRouteImport.update({
   path: '/api/public/ebay-test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCardImagesKeyRoute = ApiPublicCardImagesKeyRouteImport.update({
+  id: '/api/public/card-images/$key',
+  path: '/api/public/card-images/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronDailyPricesRoute =
   ApiPublicCronDailyPricesRouteImport.update({
     id: '/api/public/cron/daily-prices',
@@ -128,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
+  '/admin-import': typeof AuthenticatedAdminImportRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -137,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
+  '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -147,6 +162,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
+  '/admin-import': typeof AuthenticatedAdminImportRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -156,6 +172,7 @@ export interface FileRoutesByTo {
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
+  '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -168,6 +185,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/admin-images': typeof AuthenticatedAdminImagesRoute
+  '/_authenticated/admin-import': typeof AuthenticatedAdminImportRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/lot': typeof AuthenticatedLotRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
@@ -177,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
+  '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -189,6 +208,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/admin-images'
+    | '/admin-import'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -198,6 +218,7 @@ export interface FileRouteTypes {
     | '/item/$id'
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
+    | '/api/public/card-images/$key'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -208,6 +229,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/admin-images'
+    | '/admin-import'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -217,6 +239,7 @@ export interface FileRouteTypes {
     | '/item/$id'
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
+    | '/api/public/card-images/$key'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -228,6 +251,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/admin-images'
+    | '/_authenticated/admin-import'
     | '/_authenticated/collection'
     | '/_authenticated/lot'
     | '/_authenticated/scan'
@@ -237,6 +261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/item/$id'
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
+    | '/api/public/card-images/$key'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -249,6 +274,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicEbayAccountDeletionRoute: typeof ApiPublicEbayAccountDeletionRoute
   ApiPublicEbayTestRoute: typeof ApiPublicEbayTestRoute
+  ApiPublicCardImagesKeyRoute: typeof ApiPublicCardImagesKeyRoute
   ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -296,6 +322,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-images'
       fullPath: '/admin-images'
       preLoaderRoute: typeof AuthenticatedAdminImagesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin-import': {
+      id: '/_authenticated/admin-import'
+      path: '/admin-import'
+      fullPath: '/admin-import'
+      preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/collection': {
@@ -361,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEbayTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/card-images/$key': {
+      id: '/api/public/card-images/$key'
+      path: '/api/public/card-images/$key'
+      fullPath: '/api/public/card-images/$key'
+      preLoaderRoute: typeof ApiPublicCardImagesKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/daily-prices': {
       id: '/api/public/cron/daily-prices'
       path: '/api/public/cron/daily-prices'
@@ -388,6 +428,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAdminImagesRoute: typeof AuthenticatedAdminImagesRoute
+  AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedLotRoute: typeof AuthenticatedLotRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
@@ -400,6 +441,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAdminImagesRoute: AuthenticatedAdminImagesRoute,
+  AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedLotRoute: AuthenticatedLotRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
@@ -420,6 +462,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicEbayAccountDeletionRoute: ApiPublicEbayAccountDeletionRoute,
   ApiPublicEbayTestRoute: ApiPublicEbayTestRoute,
+  ApiPublicCardImagesKeyRoute: ApiPublicCardImagesKeyRoute,
   ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

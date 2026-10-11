@@ -10,6 +10,9 @@
 <!-- LOVABLE:END -->
 
 ## Architecture
+- Bulk scanner PDFs render one pair at a time in the browser via dynamically loaded PDF.js and upload lossless page images to private storage; durable import/pair rows support reselection and resume without repeating identification.
+- Admin scanner imports identify both sides without CardMagic, publish only confident exact identities, and auto-approve after server-side role checks; ambiguous pairs require manual identity confirmation and never retain an uncertain catalog match.
+- Scanner image delivery checks approved-cache anonymous RLS before reading private storage; front/back images stay in storage rather than large database data URLs.
 - Admin image review lives on the dedicated /admin-images page, linked from /admin, to keep the overview focused on stats and user management.
 - The front-screen featured card reads only its exact catalog entry through anonymous column-scoped access and is always included in shared daily cache refreshes even if nobody owns it, avoiding provider calls for visitors.
 - Exact card quality/printing selection lives in src/lib/card-pricing.ts and is shared by editing, search details, and nightly revaluation; missing provider combinations return no price, never a near-mint multiplier fallback.
