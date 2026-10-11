@@ -125,9 +125,9 @@ function SellerOrders() {
   const { data: orders = [], isLoading } = useQuery(myOrdersQuery);
   const [filter, setFilter] = useState<"open" | "shipped" | "all">("open");
   const update = useMutation({
-    mutationFn: async (v: { id: string; status: OrderStatus; carrier?: string; tracking?: string }) => {
+    mutationFn: async (v: { id: string; status: OrderStatus; carrier?: string | undefined; tracking?: string | undefined }) => {
       const { error } = await supabase.rpc("merchant_update_order", {
-        _id: v.id, _status: v.status, _carrier: v.carrier ?? undefined, _tracking: v.tracking ?? undefined,
+        _id: v.id, _status: v.status, ...(v.carrier ? { _carrier: v.carrier } : {}), ...(v.tracking ? { _tracking: v.tracking } : {}),
       });
       if (error) throw error;
     },
