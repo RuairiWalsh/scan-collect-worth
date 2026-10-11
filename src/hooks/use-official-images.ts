@@ -9,7 +9,7 @@ export function useOfficialImages(items: Item[]) {
   const sync = useServerFn(syncOfficialImages);
   const qc = useQueryClient();
   useEffect(() => {
-    const missing = items.filter((item) => item.category === "cards" && item.catalog_id && !item.official_image && !attempted.current.has(`${item.id}:${item.catalog_id}`)).slice(0, 50);
+    const missing = items.filter((item) => item.category === "cards" && !item.official_image && !attempted.current.has(`${item.id}:${item.catalog_id}`)).slice(0, 50);
     if (!missing.length) return;
     missing.forEach((item) => attempted.current.add(`${item.id}:${item.catalog_id}`));
     sync({ data: { ids: missing.map((item) => item.id) } }).then(() => {
