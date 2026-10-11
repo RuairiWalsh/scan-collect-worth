@@ -148,6 +148,13 @@
       "when": 1791752940633,
       "tag": "0020_track_reviewed_import_catalog_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791755180503,
+      "tag": "0021_auto_approve_card_images",
+      "breakpoints": true
     }
   ]
 }

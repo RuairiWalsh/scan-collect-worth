@@ -13,7 +13,6 @@
 - Bulk scanner PDFs render one pair at a time in the browser via dynamically loaded PDF.js and upload lossless page images to private storage; durable import/pair rows support reselection and resume without repeating identification. SSR-reachable PDF helpers use normal filenames, never *.client.*, with browser APIs and PDF.js imports inside event-invoked functions to satisfy import protection.
 - Every scanner pair waits for explicit admin match confirmation before publishing unchanged scans. Corrected details are rematched server-side to prevent wrong-card prices.
 - Scanner image delivery checks approved-cache anonymous RLS before reading private storage; front/back images stay in storage rather than large database data URLs.
-- Admin image review lives on the dedicated /admin-images page, linked from /admin, to keep the overview focused on stats and user management.
 - The front-screen featured card reads only its exact catalog entry through anonymous column-scoped access and is always included in shared daily cache refreshes even if nobody owns it, avoiding provider calls for visitors.
 - Exact card quality/printing selection lives in src/lib/card-pricing.ts and is shared by editing, search details, and nightly revaluation; missing provider combinations return no price, never a near-mint multiplier fallback.
 - Server functions live in src/lib/*.functions.ts; server-only helpers in src/server/*.server.ts (src/server is blocked from client bundles).
