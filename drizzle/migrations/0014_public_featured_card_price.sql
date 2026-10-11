@@ -1,0 +1,2 @@
+GRANT SELECT (catalog_id, name, set_name, number, nm_price, updated_at, variants) ON public.catalog_prices TO anon;
+CREATE POLICY "Public featured Pikachu price" ON public.catalog_prices FOR SELECT TO anon USING (catalog_id = 'pokemon-me-30th-celebration-pikachu-036-128-pikachu-rare');
