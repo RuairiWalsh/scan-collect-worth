@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Front-screen 30th Celebration Pikachu artwork and current cached price
+- [x] Front-screen 30th Celebration Pikachu artwork and current cached price
 
 - [x] Filter chips always visible below collection search bar
 - [x] Folders are multi-select tags
