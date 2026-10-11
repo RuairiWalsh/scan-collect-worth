@@ -6,8 +6,11 @@ const GAMES: Record<string, string> = {
   "one piece": "one-piece", lorcana: "disney-lorcana", "disney lorcana": "disney-lorcana",
 };
 
+const SLUGS: Record<string, string> = { "pokemon-japan": "pokemon", "one-piece-card-game": "one-piece", "yugioh": "yugioh", "magic-the-gathering": "magic-the-gathering", "disney-lorcana": "disney-lorcana", "pokemon": "pokemon", "star-wars-unlimited": "star-wars-unlimited", "digimon-card-game": "digimon", "dragon-ball-super-fusion-world": "dragon-ball-super" };
+
 export function tcgGraphGame(line?: string | null): string | null {
-  return GAMES[(line ?? "").trim().toLowerCase()] ?? null;
+  const l = (line ?? "").trim().toLowerCase();
+  return GAMES[l] ?? SLUGS[l] ?? null;
 }
 
 export function tcgGraphLanguage(language?: string | null): string {

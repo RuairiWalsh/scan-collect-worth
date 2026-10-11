@@ -19,6 +19,8 @@ export const featuredCard = createServerFn({ method: "GET" }).handler(async () =
     .select("catalog_id,name,set_name,number,updated_at,variants")
     .eq("catalog_id", FEATURED_CARD_ID).maybeSingle();
   if (error || !data) return null;
+  const { cachedTcgGraphImages } = await import("@/server/cardmagic.server");
+  const tcg = (await cachedTcgGraphImages([FEATURED_CARD_ID]).catch(() => null))?.get(FEATURED_CARD_ID);
   const { data: artwork } = await db.from("card_product_images").select("image").eq("catalog_id", FEATURED_CARD_ID).eq("status", "ready").eq("review_status", "approved").limit(1).maybeSingle();
-  return { name: String(data.name), setName: String(data.set_name), price: featuredCardPrice(data.variants), updatedAt: data.updated_at as string | null, image: artwork?.image as string | null ?? null };
+  return { name: String(data.name), setName: String(data.set_name), price: featuredCardPrice(data.variants), updatedAt: data.updated_at as string | null, image: tcg ?? (artwork?.image as string | null) ?? null };
 });
