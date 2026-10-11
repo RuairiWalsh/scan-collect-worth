@@ -28,3 +28,5 @@
 - Roles live only in public.user_roles, checked via public.has_role(); admin actions and cross-user reads (stats, user list, marketplace view of private items) go through SECURITY DEFINER SQL functions that verify the caller's role — never client-side flags.
 - Route loaders must never throw: wrap data lookups in try/catch and return an empty fallback, because a rejected loader renders the router error boundary and blanks the whole page.
 - Merchant order status changes go only through public.merchant_update_order (SECURITY DEFINER; transitions mirrored in src/lib/orders.ts, tested); orders has no client insert/update policy so future checkout and shipping webhooks write server-side.
+
+- CardSight AI (src/server/cardsight.server.ts, pure matcher in src/lib/cardsight.ts, tested) supplies official artwork for cards without a JustTCG catalog match — sports and non-TCG. Images are fetched server-side with CARDSIGHT_API_KEY and stored as data URIs in items.official_image.
