@@ -57,6 +57,25 @@ function AuthPage() {
     }
   }
 
+  async function sendReset() {
+    if (!email) {
+      toast.error("Enter your email first.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Check your email for a reset link.");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="grid-paper flex min-h-screen items-center justify-center px-4">
       <div className="panel shadow-hard w-full max-w-sm p-8">
@@ -76,6 +95,16 @@ function AuthPage() {
           <Button type="submit" className="w-full" disabled={busy}>
             {mode === "in" ? "Sign in" : "Create account"}
           </Button>
+          {mode === "in" && (
+            <button
+              type="button"
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+              onClick={sendReset}
+              disabled={busy}
+            >
+              Forgot password?
+            </button>
+          )}
         </form>
         <button
           className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
