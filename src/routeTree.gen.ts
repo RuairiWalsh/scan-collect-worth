@@ -20,6 +20,7 @@ import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedCardCatalogIdRouteImport } from './routes/_authenticated/card.$catalogId'
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
+import { Route as ApiPublicEbayTestRouteImport } from './routes/api/public/ebay-test'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -79,6 +80,11 @@ const AuthenticatedItemIdRoute = AuthenticatedItemIdRouteImport.update({
   path: '/item/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicEbayTestRoute = ApiPublicEbayTestRouteImport.update({
+  id: '/api/public/ebay-test',
+  path: '/api/public/ebay-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronDailyPricesRoute =
   ApiPublicCronDailyPricesRouteImport.update({
     id: '/api/public/cron/daily-prices',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
+    | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
+    | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sell'
     | '/_authenticated/card/$catalogId'
     | '/_authenticated/item/$id'
+    | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicEbayTestRoute: typeof ApiPublicEbayTestRoute
   ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedItemIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/ebay-test': {
+      id: '/api/public/ebay-test'
+      path: '/api/public/ebay-test'
+      fullPath: '/api/public/ebay-test'
+      preLoaderRoute: typeof ApiPublicEbayTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/daily-prices': {
       id: '/api/public/cron/daily-prices'
       path: '/api/public/cron/daily-prices'
@@ -334,6 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicEbayTestRoute: ApiPublicEbayTestRoute,
   ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
