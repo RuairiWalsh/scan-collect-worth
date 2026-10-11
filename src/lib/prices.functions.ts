@@ -29,9 +29,9 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
     const { data: cached } = item.category === "cards" && item.catalog_id
       ? await context.supabase.from("catalog_prices").select("variants, updated_at").eq("catalog_id", item.catalog_id).maybeSingle()
       : { data: null };
-    const hasCache = cached && cardVariants(cached.variants).length > 0;
+    const hasCache = Boolean(cached);
     const sources = hasCache
-      ? cardPriceSources(cardVariants(cached.variants), item.condition, item.variant)
+      ? cardPriceSources(cardVariants(cached?.variants), item.condition, item.variant, item.grader, item.grade)
       : await collectPrices(item);
     let artwork: { official_image: string | null; catalog_id: string } | undefined;
     if (item.category === "cards" && !hasCache) {
@@ -79,7 +79,7 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
         price_low: est?.low ?? null,
         price_high: est?.high ?? null,
         price_sources: sources as unknown as Json,
-        price_updated_at: hasCache ? cached.updated_at : new Date().toISOString(),
+        price_updated_at: hasCache ? cached?.updated_at ?? null : new Date().toISOString(),
       })
       .eq("id", data.id);
     if (upErr) throw new Error(upErr.message);

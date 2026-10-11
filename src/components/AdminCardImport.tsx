@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 type Batch = Database["public"]["Tables"]["card_image_imports"]["Row"];
 type Pair = Database["public"]["Tables"]["card_image_import_pairs"]["Row"];
 type Details = { name: string; set_name: string; number: string; year: string; line: string; subcategory: "tcg" | "sports" | "nonsport"; variant: string; language: string };
-const labels: Record<string, string> = { approved: "Approved", needs_details: "Needs details", failed: "Failed", pending: "Pending", duplicate: "Duplicate" };
+const labels: Record<string, string> = { approved: "Added to card database", needs_details: "Awaiting review", failed: "Failed", pending: "Pending", duplicate: "Duplicate" };
 
 export function AdminCardImport() {
   const startImport = useServerFn(beginCardImport);
@@ -135,7 +135,8 @@ export function AdminCardImport() {
     setSaving(true);
     try {
       await confirm({ data: { pairId: editing.id, ...details } });
-      toast.success("Scanner images approved"); setEditing(null);
+      toast.success("Card added to the database and daily price updates"); setEditing(null);
+      qc.invalidateQueries({ queryKey: ["catalog-card"] });
       await loadStatuses(editing.import_id);
       qc.invalidateQueries({ queryKey: ["admin-import-pairs"] }); qc.invalidateQueries({ queryKey: ["admin-images"] });
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save details."); }
@@ -158,7 +159,7 @@ export function AdminCardImport() {
       {batch && <>
         <div className="flex flex-wrap items-center gap-2 text-sm"><FileText className="size-4" /><span className="break-all font-semibold">{batch.file_name}</span><span className="text-muted-foreground">{batch.page_count.toLocaleString()} pages · {total.toLocaleString()} cards</span></div>
         <progress className="h-2 w-full accent-primary" max={Math.max(total, 1)} value={progress.saved} aria-label="Cards imported" />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">{[["Saved", progress.saved], ["Approved", progress.approved], ["Needs details", progress.details], ["Failed", progress.failed]].map(([label, value]) => <div key={label}><p className="text-xs font-semibold text-muted-foreground">{label}</p><p className="font-display text-2xl font-black">{value}</p></div>)}</div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">{[["Saved", progress.saved], ["Published cards", progress.approved], ["Awaiting review", progress.details], ["Failed", progress.failed]].map(([label, value]) => <div key={label}><p className="text-xs font-semibold text-muted-foreground">{label}</p><p className="font-display text-2xl font-black">{value}</p></div>)}</div>
       </>}
       {preview && <div className="flex gap-4">{(["front", "back"] as const).map(side => <figure key={side} className="w-36"><img src={preview[side]} alt={`First card ${side}`} className="aspect-[5/7] w-full border border-border bg-muted object-contain" /><figcaption className="mt-1 text-xs text-muted-foreground">{side === "front" ? "Page 1 · Front" : "Page 2 · Back"}</figcaption></figure>)}</div>}
     </section>
@@ -174,14 +175,15 @@ export function AdminCardImport() {
           return <article key={row.id} className="flex flex-wrap items-center gap-4 border-b border-border pb-3">
             <div className="flex gap-2">{[row.front_path, row.back_path].map((path, i) => <img key={path} src={images.data?.get(path) ?? undefined} alt={`Card ${row.pair_index + 1} ${i ? "back" : "front"}`} className="h-24 w-16 bg-muted object-contain" loading="lazy" />)}</div>
             <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">Card {row.pair_index + 1} · Pages {row.pair_index * 2 + 1}–{row.pair_index * 2 + 2}</p><h3 className="break-words font-bold">{typeof metadata["name"] === "string" ? metadata["name"] : "Scanned card"}</h3><p className="text-xs text-muted-foreground">{[metadata["set_name"], metadata["number"], metadata["year"]].filter(v => typeof v === "string").join(" · ")}</p><p className="mt-1 text-sm font-semibold">{labels[row.status] ?? row.status}</p>{row.error && <p className="mt-1 text-xs text-destructive">{row.error}</p>}</div>
-            {row.status === "needs_details" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Confirm details</Button>}
+            {row.status === "needs_details" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Review card match</Button>}
           </article>;
         })}</div>
         <div className="flex items-center justify-end gap-3"><Button variant="outline" size="icon" aria-label="Previous cards" disabled={pageIndex === 0} onClick={() => setPageIndex(p => p - 1)}><ChevronLeft /></Button><span className="text-sm">Page {pageIndex + 1}</span><Button variant="outline" size="icon" aria-label="Next cards" disabled={(pairs.data?.length ?? 0) < 50} onClick={() => setPageIndex(p => p + 1)}><ChevronRight /></Button></div>
       </>}
     </section>
-    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Confirm card details</DialogTitle></DialogHeader>
-      <form onSubmit={saveDetails} className="space-y-4"><div className="grid grid-cols-2 gap-3">{(["name", "set_name", "number", "year", "line", "variant", "language"] as const).map(key => <label key={key} className="space-y-1 text-xs font-semibold">{{name:"Card / player name",set_name:"Set",number:"Card number",year:"Year",line:"Game / sport",variant:"Variant",language:"Language"}[key]}<Input required={key !== "variant"} value={details[key]} onChange={e => setDetails(d => ({ ...d, [key]: e.target.value }))} /></label>)}<label className="space-y-1 text-xs font-semibold">Category<select className="block h-9 w-full rounded-md border border-input bg-background px-2" value={details.subcategory} onChange={e => { const v = e.target.value; if (v === "sports" || v === "tcg" || v === "nonsport") setDetails(d => ({ ...d, subcategory: v })); }}><option value="sports">Sports</option><option value="tcg">TCG</option><option value="nonsport">Non-sport</option></select></label></div><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Approve images"}</Button></form>
+    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Review card match</DialogTitle></DialogHeader>
+      {editing && <div className="grid grid-cols-2 gap-3">{[editing.front_path, editing.back_path].map((path, i) => <a key={path} href={images.data?.get(path) ?? undefined} target="_blank" rel="noreferrer"><img src={images.data?.get(path) ?? undefined} alt={`Review ${i ? "back" : "front"}`} className="h-64 w-full bg-muted object-contain" /></a>)}</div>}
+      <form onSubmit={saveDetails} className="space-y-4"><div className="grid grid-cols-2 gap-3">{(["name", "set_name", "number", "year", "line", "variant", "language"] as const).map(key => <label key={key} className="space-y-1 text-xs font-semibold">{{name:"Card / player name",set_name:"Set",number:"Card number",year:"Year",line:"Game / sport",variant:"Variant",language:"Language"}[key]}<Input required={key !== "variant"} value={details[key]} onChange={e => setDetails(d => ({ ...d, [key]: e.target.value }))} /></label>)}<label className="space-y-1 text-xs font-semibold">Category<select className="block h-9 w-full rounded-md border border-input bg-background px-2" value={details.subcategory} onChange={e => { const v = e.target.value; if (v === "sports" || v === "tcg" || v === "nonsport") setDetails(d => ({ ...d, subcategory: v })); }}><option value="sports">Sports</option><option value="tcg">TCG</option><option value="nonsport">Non-sport</option></select></label></div><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Confirm match & publish card"}</Button></form>
     </DialogContent></Dialog>
   </div>;
 }

@@ -15,6 +15,7 @@ const printingKey = (s: string) => {
   return n;
 };
 export const CARD_CONDITIONS = [
+  { key: "raw_ungraded", label: "Ungraded" },
   { key: "raw_mint", label: "Mint" },
   { key: "raw_nm", label: "Near Mint" },
   { key: "raw_lp", label: "Lightly Played" },
@@ -42,14 +43,15 @@ export function resolvePrinting(variants: CardVariant[], requested: string | nul
   if (requested?.trim()) return options.find((p) => printingKey(p) === printingKey(requested)) ?? null;
   return options.find((p) => printingKey(p) === "normal") ?? options.find((p) => printingKey(p) !== "reverse") ?? options[0] ?? null;
 }
-export function selectedCardVariant(variants: CardVariant[], condition: string, printing?: string | null) {
-  const label = CARD_CONDITIONS.find((c) => c.key === condition)?.label;
+export function selectedCardVariant(variants: CardVariant[], condition: string, printing?: string | null, grader?: string | null, grade?: string | null) {
+  const label = condition === "graded" ? "Graded" : CARD_CONDITIONS.find((c) => c.key === condition)?.label;
   const resolved = resolvePrinting(variants, printing);
   if (!label || !resolved) return null;
-  return variants.find((v) => v.printing === resolved && normalize(v.condition ?? "") === normalize(label) && typeof v.price === "number" && Number.isFinite(v.price) && v.price > 0) ?? null;
+  return variants.find((v) => v.printing === resolved && normalize(v.condition ?? "") === normalize(label) && (condition !== "graded" || (normalize(v.grader ?? "") === normalize(grader ?? "") && v.grade === grade)) && typeof v.price === "number" && Number.isFinite(v.price) && v.price > 0) ?? null;
 }
-export function cardPriceSources(variants: CardVariant[], condition: string, printing?: string | null): PriceSource[] {
-  const match = selectedCardVariant(variants, condition, printing);
+export function cardPriceSources(variants: CardVariant[], condition: string, printing?: string | null, grader?: string | null, grade?: string | null): PriceSource[] {
+  const match = selectedCardVariant(variants, condition, printing, grader, grade);
   if (!match || typeof match.price !== "number") return [];
+  if (match.sources) return match.sources;
   return [{ source: "justtcg", label: `JustTCG · ${match.condition}, ${printingLabel(match.printing ?? "")}`, price: match.price, kind: "market" }];
 }

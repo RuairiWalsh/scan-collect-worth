@@ -33,6 +33,6 @@ export const confirmCardImport = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertImportAdmin, confirmImportPair } = await import("@/server/admin-import.server");
     await assertImportAdmin(context.supabase, context.userId);
-    // A manual identity must not retain a potentially incorrect AI catalog match.
+    // The server retains an unchanged reviewed match, or rematches corrected details.
     return confirmImportPair(data.pairId, { ...data, catalog_id: null, category: "cards", is_collectible: true, confidence: 1, grader: null, grade: null }, context.userId);
   });

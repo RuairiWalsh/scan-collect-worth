@@ -43,6 +43,7 @@ export type Condition = { key: string; label: string; mult: number };
 
 export const CONDITIONS: Record<CategoryKey, Condition[]> = {
   cards: [
+    { key: "raw_ungraded", label: "Ungraded (condition unspecified)", mult: 1 },
     { key: "raw_nm", label: "Near Mint", mult: 1 },
     { key: "raw_mint", label: "Mint", mult: 1 },
     { key: "raw_lp", label: "Lightly Played", mult: 0.85 },

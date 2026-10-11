@@ -11,14 +11,15 @@
 
 ## Architecture
 - Bulk scanner PDFs render one pair at a time in the browser via dynamically loaded PDF.js and upload lossless page images to private storage; durable import/pair rows support reselection and resume without repeating identification. SSR-reachable PDF helpers use normal filenames, never *.client.*, with browser APIs and PDF.js imports inside event-invoked functions to satisfy import protection.
-- Admin scanner imports identify both sides without CardMagic, publish only confident exact identities, and auto-approve after server-side role checks; ambiguous pairs require manual identity confirmation and never retain an uncertain catalog match.
+- Every scanner pair waits for explicit admin match confirmation before publishing unchanged scans. Corrected details are rematched server-side to prevent wrong-card prices.
 - Scanner image delivery checks approved-cache anonymous RLS before reading private storage; front/back images stay in storage rather than large database data URLs.
 - Admin image review lives on the dedicated /admin-images page, linked from /admin, to keep the overview focused on stats and user management.
 - The front-screen featured card reads only its exact catalog entry through anonymous column-scoped access and is always included in shared daily cache refreshes even if nobody owns it, avoiding provider calls for visitors.
 - Exact card quality/printing selection lives in src/lib/card-pricing.ts and is shared by editing, search details, and nightly revaluation; missing provider combinations return no price, never a near-mint multiplier fallback.
 - Server functions live in src/lib/*.functions.ts; server-only helpers in src/server/*.server.ts (src/server is blocked from client bundles).
 - Item identification uses the AI Gateway Responses API via raw streamed fetch in src/server/ai.server.ts — keeps worker bundle small.
-- Prices come from pluggable sources in src/server/prices.server.ts; pure math in src/lib/pricing.ts (tested) — add new sources there.
+- Reviewed imports create catalog_prices records with separate provider IDs or lymitz-prefixed local IDs; imported_card keeps unowned cards in daily refreshes.
+- CardSight sports prices use batched completed-auction comps, separated by parallel/grade. Raw comps are Ungraded, never Near Mint; failures preserve saved prices.
 - Collectible taxonomy and condition multipliers live in src/lib/taxonomy.ts — single source for categories.
 - Card scans are pinned to an exact JustTCG catalog card (items.catalog_id) in src/server/identify.server.ts; pricing fetches by that id, and editing a card's identity clears it — prevents prices from a look-alike printing.
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).

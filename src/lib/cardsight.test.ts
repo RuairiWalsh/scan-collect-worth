@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cardsightNumber, pickCardsightCard, type CardsightCard } from "./cardsight";
 
-const card = (over: Partial<CardsightCard>): CardsightCard => ({ id: crypto.randomUUID(), ...over });
+const card = (over: Partial<CardsightCard>): CardsightCard => ({ id: crypto.randomUUID(), name: "Ken Griffey Jr.", ...over });
 
 describe("cardsightNumber", () => {
   it("strips the set total", () => {
@@ -26,7 +26,7 @@ describe("pickCardsightCard", () => {
   });
 
   it("matches numbers regardless of leading zeros", () => {
-    const right = card({ number: "25", releaseName: "Upper Deck" });
+    const right = card({ name: "X", number: "25", releaseName: "Upper Deck" });
     expect(pickCardsightCard([right], { name: "X", number: "025/165" })).toBe(right);
   });
 
@@ -40,5 +40,9 @@ describe("pickCardsightCard", () => {
 
   it("returns null for an empty candidate list", () => {
     expect(pickCardsightCard([], item)).toBeNull();
+  });
+  it("rejects another year or player with the same card number", () => {
+    expect(pickCardsightCard([card({ number: "1", releaseName: "Upper Deck", releaseYear: "1990" })], item)).toBeNull();
+    expect(pickCardsightCard([card({ name: "Other Player", number: "1", releaseName: "Upper Deck", releaseYear: "1989" })], item)).toBeNull();
   });
 });
