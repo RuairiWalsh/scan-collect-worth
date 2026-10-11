@@ -15,7 +15,7 @@ export async function processCardMagic(image: string): Promise<string> {
   const form = new FormData();
   form.append("image", new Blob([bytes], { type: match[1] }), "card-front.jpg");
   const params = new URLSearchParams({ mode: "process", paddingPercent: "0", autoLevels: "true", outputFormat: "jpeg", longEdge: "1000", corners: "false" });
-  const response = await fetch(`https://api.cardsight.ai/v1/cardmagic/process?${params}`, { method: "POST", headers: { "X-API-Key": key }, body: form });
+  const response = await fetch(`https://api.cardsight.ai/v1/cardmagic/process?${params}`, { method: "POST", headers: { "X-API-Key": key }, body: form, signal: AbortSignal.timeout(45_000) });
   if (!response.ok) throw new Error(`CardMagic could not process this scan (${response.status}). Your original scan is still available.`);
   const contentType = response.headers.get("content-type")?.split(";")[0];
   if (contentType !== "image/jpeg" && contentType !== "image/png") throw new Error("CardMagic needs a photo containing just one card.");
@@ -42,8 +42,9 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string): P
   const claimed = cached
     ? await db.from("card_product_images").update(row).eq("card_key", cardKey).eq("claim_id", cached.claim_id).select("card_key")
     : await db.from("card_product_images").insert(row).select("card_key");
-  if (claimed.error?.code === "23505" || !claimed.data?.length) return null;
+  if (claimed.error?.code === "23505") return null;
   if (claimed.error) throw new Error("Could not save the card image cache.");
+  if (!claimed.data?.length) return null;
   try {
     const processed = await processCardMagic(image);
     const { error: saveError } = await db.from("card_product_images").update({ image: processed, status: "ready", updated_at: new Date().toISOString() }).eq("card_key", cardKey).eq("claim_id", claim);

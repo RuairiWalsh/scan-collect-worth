@@ -35,7 +35,12 @@ export const searchCards = createServerFn({ method: "POST" })
 
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
     const fresh = (cached ?? []).filter((c) => c.updated_at && Date.parse(c.updated_at) > dayAgo);
-    if (fresh.length >= 3) return { results: fresh, source: "cache" };
+    const { catalogProductImages } = await import("@/server/cardmagic.server");
+    const withProductImages = async (rows: SearchResult[]) => {
+      const images = await catalogProductImages(context.supabase, rows.map(r => r.catalog_id));
+      return rows.map(r => ({ ...r, image: images.get(r.catalog_id) ?? null }));
+    };
+    if (fresh.length >= 3) return { results: await withProductImages(fresh), source: "cache" };
 
     // Miss (or stale): ask JustTCG and save what we find.
     const { jtSearch } = await import("@/server/prices.server");
@@ -91,7 +96,7 @@ export const searchCards = createServerFn({ method: "POST" })
       seen.add(r.catalog_id);
       return true;
     });
-    return { results: merged.slice(0, 20), source: "live" };
+    return { results: await withProductImages(merged.slice(0, 20)), source: "live" };
   });
 
 export type CatalogHistoryPoint = { recorded_at: string; nm_price: number | null };
@@ -143,5 +148,7 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
         if (n > 0) ({ data: rows } = await load());
       }
     }
-    return { card: card ? { ...card, variants: cardVariants(card.variants) } : null, history: rows ?? [] };
+    const { catalogProductImages } = await import("@/server/cardmagic.server");
+    const images = await catalogProductImages(context.supabase, [data.catalog_id]);
+    return { card: card ? { ...card, image: images.get(data.catalog_id) ?? null, variants: cardVariants(card.variants) } : null, history: rows ?? [] };
   });
