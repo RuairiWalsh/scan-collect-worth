@@ -70,7 +70,7 @@ export function AdminCardImport() {
   async function chooseFile(file: File) {
     setBusy(true); setPhase("Opening PDF…");
     try {
-      const { openScannerPdf, scannerPage } = await import("@/lib/pdf-scanner.client");
+      const { openScannerPdf, scannerPage } = await import("@/lib/pdf-scanner");
       const opened = await openScannerPdf(file);
       await pdf.current?.destroy(); pdf.current = opened.pdf;
       const next = await startImport({ data: { hash: opened.hash, name: file.name, pages: opened.pdf.numPages } });
@@ -90,7 +90,7 @@ export function AdminCardImport() {
     setRunning(true); stop.current = false;
     try {
       const statuses = await loadStatuses(batch.id);
-      const { scannerPage } = await import("@/lib/pdf-scanner.client");
+      const { scannerPage } = await import("@/lib/pdf-scanner");
       const { data: session } = await supabase.auth.getUser();
       if (!session.user) throw new Error("Please sign in again.");
       let failures = 0;

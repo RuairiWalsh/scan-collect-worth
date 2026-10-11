@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture
-- Bulk scanner PDFs render one pair at a time in the browser via dynamically loaded PDF.js and upload lossless page images to private storage; durable import/pair rows support reselection and resume without repeating identification.
+- Bulk scanner PDFs render one pair at a time in the browser via dynamically loaded PDF.js and upload lossless page images to private storage; durable import/pair rows support reselection and resume without repeating identification. SSR-reachable PDF helpers use normal filenames, never *.client.*, with browser APIs and PDF.js imports inside event-invoked functions to satisfy import protection.
 - Admin scanner imports identify both sides without CardMagic, publish only confident exact identities, and auto-approve after server-side role checks; ambiguous pairs require manual identity confirmation and never retain an uncertain catalog match.
 - Scanner image delivery checks approved-cache anonymous RLS before reading private storage; front/back images stay in storage rather than large database data URLs.
 - Admin image review lives on the dedicated /admin-images page, linked from /admin, to keep the overview focused on stats and user management.
