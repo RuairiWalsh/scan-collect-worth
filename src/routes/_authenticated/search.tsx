@@ -11,10 +11,10 @@ import { ListingCard } from "@/components/ListingCard";
 export const Route = createFileRoute("/_authenticated/search")({
   head: () => ({
     meta: [
-      { title: "Browse cards for sale — Lymitz" },
-      { name: "description", content: "Browse cards, stamps and coins for sale, newest first, and look up any card's price." },
-      { property: "og:title", content: "Browse cards for sale — Lymitz" },
-      { property: "og:description", content: "Browse cards, stamps and coins for sale, newest first, and look up any card's price." },
+      { title: "Browse collectables for sale — Lymitz" },
+      { name: "description", content: "Browse cards, stamps and coins for sale, newest first, and look up any item's price." },
+      { property: "og:title", content: "Browse collectables for sale — Lymitz" },
+      { property: "og:description", content: "Browse cards, stamps and coins for sale, newest first, and look up any item's price." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -58,9 +58,9 @@ function SearchPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-24">
-      <h1 className="font-display text-2xl font-black">Browse Cards</h1>
+      <h1 className="font-display text-2xl font-black">Browse Collectables</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Shop items for sale, or search any card to see its price and listings.
+        Shop items for sale, or search any card, stamp or coin to see its price and listings.
       </p>
       <div className="relative mt-4">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

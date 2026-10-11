@@ -25,3 +25,4 @@
 - Coin collection facets are derived in src/lib/coin-filters.ts from existing identity metadata only, never condition or grading fields; unknown buckets keep filtering honest without changing scan or storage behavior.
 - Scan language is part of identification; Japanese Pokémon match JustTCG's separate pokemon-japan catalog, other games filter candidates by variant language — avoids pricing a Japanese card from the English printing.
 - Roles live only in public.user_roles, checked via public.has_role(); admin actions and cross-user reads (stats, user list, marketplace view of private items) go through SECURITY DEFINER SQL functions that verify the caller's role — never client-side flags.
+- Route loaders must never throw: wrap data lookups in try/catch and return an empty fallback, because a rejected loader renders the router error boundary and blanks the whole page.

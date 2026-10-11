@@ -5,7 +5,14 @@ import { tickerCards, type TickerCard } from "@/lib/ticker.functions";
 import hero from "@/assets/hero.jpg";
 
 export const Route = createFileRoute("/")({
-  loader: () => tickerCards(),
+  // A failed price lookup must never blank the landing page — fall back to the sample ticker.
+  loader: async () => {
+    try {
+      return await tickerCards();
+    } catch {
+      return [] as TickerCard[];
+    }
+  },
   head: () => ({
     meta: [
       { title: "Lymitz — Live scanner for cards, stamps & coins" },

@@ -40,7 +40,7 @@ function AuthedLayout() {
               <ScanLine className="size-4" /> Scan
             </Link>
             <Link to="/search" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>
-              <Search className="size-4" /> Browse Cards
+              <Search className="size-4" /> Browse Collectables
             </Link>
           </nav>
           <div className="flex items-center gap-3">

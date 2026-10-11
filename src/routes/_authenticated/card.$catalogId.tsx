@@ -46,7 +46,7 @@ function CardPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-24">
       <Link to="/search" className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Browse Cards
+        <ArrowLeft className="h-4 w-4" /> Back to Browse Collectables
       </Link>
       {isLoading ? (
         <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
