@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Upload } from "lucide-react";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { AdminImageReview } from "@/components/AdminImageReview";
@@ -33,9 +33,12 @@ function AdminImagesPage() {
     <main className="mx-auto max-w-6xl space-y-8 px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-black">Image review</h1>
-        <Button asChild variant="outline">
-          <Link to="/admin"><ArrowLeft className="size-4" />Back to admin</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild><Link to="/admin-import"><Upload className="size-4" />Import scanner PDF</Link></Button>
+          <Button asChild variant="outline">
+            <Link to="/admin"><ArrowLeft className="size-4" />Back to admin</Link>
+          </Button>
+        </div>
       </div>
       <AdminImageReview />
     </main>

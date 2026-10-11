@@ -127,6 +127,20 @@
       "when": 1791751005412,
       "tag": "0017_admin_image_review",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791752230437,
+      "tag": "0018_admin_scanner_imports",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791752292582,
+      "tag": "0019_scanner_image_storage_paths",
+      "breakpoints": true
     }
   ]
 }
