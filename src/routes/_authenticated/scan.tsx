@@ -133,6 +133,7 @@ function ScanPage() {
         const res = await identify({ data: { image: img.full, strip: img.strip } });
         if (!res.ok) throw new Error(res.error);
         const r = res.result;
+        if (res.imageWarning) toast.warning(res.imageWarning);
         if (!r.is_collectible) throw new Error("No collectible found in that shot.");
         const { data: row, error } = await supabase
           .from("items")
