@@ -363,6 +363,103 @@ export type Database = {
         }
         Relationships: []
       }
+      order_events: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          source: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          source?: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string | null
+          carrier: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          item_id: string | null
+          item_name: string
+          listing_id: string | null
+          price: number
+          seller_id: string
+          ship_to: Json | null
+          shipped_at: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          listing_id?: string | null
+          price?: number
+          seller_id: string
+          ship_to?: Json | null
+          shipped_at?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          carrier?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          listing_id?: string | null
+          price?: number
+          seller_id?: string
+          ship_to?: Json | null
+          shipped_at?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_history: {
         Row: {
           est_value: number | null
@@ -483,6 +580,15 @@ export type Database = {
           subcategory: string
           variant: string
         }[]
+      }
+      merchant_update_order: {
+        Args: {
+          _carrier?: string
+          _id: string
+          _status: string
+          _tracking?: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
