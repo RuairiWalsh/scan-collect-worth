@@ -95,6 +95,16 @@ function AuthPage() {
           <Button type="submit" className="w-full" disabled={busy}>
             {mode === "in" ? "Sign in" : "Create account"}
           </Button>
+          {mode === "in" && (
+            <button
+              type="button"
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+              onClick={sendReset}
+              disabled={busy}
+            >
+              Forgot password?
+            </button>
+          )}
         </form>
         <button
           className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
