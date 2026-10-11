@@ -20,6 +20,7 @@ import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedCardCatalogIdRouteImport } from './routes/_authenticated/card.$catalogId'
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
+import { Route as ApiPublicEbayAccountDeletionRouteImport } from './routes/api/public/ebay-account-deletion'
 import { Route as ApiPublicEbayTestRouteImport } from './routes/api/public/ebay-test'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -80,6 +81,12 @@ const AuthenticatedItemIdRoute = AuthenticatedItemIdRouteImport.update({
   path: '/item/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicEbayAccountDeletionRoute =
+  ApiPublicEbayAccountDeletionRouteImport.update({
+    id: '/api/public/ebay-account-deletion',
+    path: '/api/public/ebay-account-deletion',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEbayTestRoute = ApiPublicEbayTestRouteImport.update({
   id: '/api/public/ebay-test',
   path: '/api/public/ebay-test',
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -129,6 +137,7 @@ export interface FileRoutesByTo {
   '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -147,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
+  '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
+    | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
+    | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sell'
     | '/_authenticated/card/$catalogId'
     | '/_authenticated/item/$id'
+    | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
@@ -208,6 +221,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicEbayAccountDeletionRoute: typeof ApiPublicEbayAccountDeletionRoute
   ApiPublicEbayTestRoute: typeof ApiPublicEbayTestRoute
   ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -293,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedItemIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/ebay-account-deletion': {
+      id: '/api/public/ebay-account-deletion'
+      path: '/api/public/ebay-account-deletion'
+      fullPath: '/api/public/ebay-account-deletion'
+      preLoaderRoute: typeof ApiPublicEbayAccountDeletionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ebay-test': {
       id: '/api/public/ebay-test'
       path: '/api/public/ebay-test'
@@ -354,6 +375,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicEbayAccountDeletionRoute: ApiPublicEbayAccountDeletionRoute,
   ApiPublicEbayTestRoute: ApiPublicEbayTestRoute,
   ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
