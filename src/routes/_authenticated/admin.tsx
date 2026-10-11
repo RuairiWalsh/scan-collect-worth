@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-type Stats = Record<string, number | string | null | Record<string, number>>;
+type Stats = { [k: string]: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 function AdminPage() {
   const { isAdmin, isLoading } = useRoles();
@@ -86,7 +86,7 @@ function AdminDashboard() {
     onError: (e) => toast.error((e as Error).message),
   });
 
-  const s = stats.data ?? {};
+  const s: { users?: number; new_users_7d?: number; active_users_7d?: number; items?: number; scans_7d?: number; collection_value?: number; tracked_cards?: number; merchants?: number; pending_applications?: number; active_listings?: number; listed_value?: number; prices_updated_at?: string | null } = stats.data ?? {};
   const emailOf = new Map((users.data ?? []).map((u) => [u.user_id, u.email]));
   const tiles: [string, string][] = [
     ["Users", String(s.users ?? "—")],
