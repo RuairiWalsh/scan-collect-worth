@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { cardImageIdentity, cardProductImage } from "./card-product-images";
+import { canReuseCardImage, cardImageIdentity, cardProductImage } from "./card-product-images";
 
 describe("scan-derived card images", () => {
+  it("does not share pending images with other collectors", () => {
+    expect(canReuseCardImage("pending", "owner", "other")).toBe(false);
+    expect(canReuseCardImage("pending", "owner", "owner")).toBe(true);
+    expect(canReuseCardImage("pending", null, "owner")).toBe(false);
+  });
+  it("shares approved images and never reuses rejected images", () => {
+    expect(canReuseCardImage("approved", "owner", "other")).toBe(true);
+    expect(canReuseCardImage("rejected", "owner", "owner")).toBe(false);
+    expect(canReuseCardImage("rejected", "owner", "other")).toBe(false);
+  });
   it("never uses provider artwork", () => {
     const item = { category: "cards", official_image: "https://provider/image.jpg", thumbnail: "data:image/jpeg;base64,scan" };
     expect(cardProductImage(item)).toBe(item.thumbnail);

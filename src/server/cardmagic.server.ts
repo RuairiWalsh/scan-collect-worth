@@ -1,4 +1,4 @@
-import { cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
+import { canReuseCardImage, cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
 
 async function digest(value: string) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -33,7 +33,7 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: cached, error } = await db.from("card_product_images").select("*").eq("card_key", cardKey).maybeSingle();
   if (error) throw new Error("Could not read the card image cache.");
-  if (cached?.status === "ready") return cached.review_status === "approved" || (cached.review_status === "pending" && cached.submitted_by === userId) ? cached.image : null;
+  if (cached?.status === "ready") return canReuseCardImage(cached.review_status, cached.submitted_by, userId) ? cached.image : null;
   // Do not automatically retry failed paid calls; a newer scan can be retried explicitly later.
   if (cached?.status === "failed") return null;
   if (cached?.status === "processing" && Date.parse(cached.updated_at) > Date.now() - 10 * 60_000) return null;
