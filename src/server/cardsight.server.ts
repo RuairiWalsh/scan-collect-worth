@@ -50,9 +50,11 @@ export async function cardsightImageDataUri(cardId: string): Promise<string | nu
   if (!res) return null;
   const type = res.headers.get("content-type") ?? "";
   if (!type.startsWith("image/")) return null;
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length > 400_000) return null; // keep DB rows small
-  return `data:${type.split(";")[0]};base64,${buf.toString("base64")}`;
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if (bytes.length > 400_000) return null; // keep DB rows small
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return `data:${type.split(";")[0]};base64,${btoa(bin)}`;
 }
 
 /** One call: find the card and return its image. */

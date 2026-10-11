@@ -90,6 +90,14 @@ export async function identifyImage(image: string, strip?: string | undefined) {
           result.confidence = Math.max(result.confidence, 0.85);
         }
       }
+      // Sports / non-TCG cards (or TCG cards JustTCG couldn't pin): CardSight artwork.
+      if (!result.official_image) {
+        const { cardsightConfigured, cardsightArtwork } = await import("@/server/cardsight.server");
+        if (cardsightConfigured()) {
+          const img = await cardsightArtwork(result).catch(() => null);
+          if (img) result.official_image = img;
+        }
+      }
     }
     return { ok: true as const, result };
   } catch (e) {
