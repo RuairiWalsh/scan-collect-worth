@@ -24,13 +24,14 @@ export function AdminImageReview() {
   });
   const review = useMutation({
     mutationFn: async ({ key, approve }: { key: string; approve: boolean }) => {
-      const { error } = await supabase.rpc("admin_review_image", { _key: key, _approve: approve, _note: notes[key] ?? "" });
+      const existingNote = queue.data?.find(row => row.card_key === key)?.review_note;
+      const { error } = await supabase.rpc("admin_review_image", { _key: key, _approve: approve, _note: notes[key] ?? existingNote ?? "" });
       if (error) throw error;
     },
     onSuccess: (_data, action) => {
       toast.success(action.approve ? "Image approved for sharing" : "Image rejected — hidden from shared pages");
       qc.invalidateQueries({ queryKey: ["admin-images"] });
-      qc.invalidateQueries({ queryKey: ["market-listings"] });
+      qc.invalidateQueries({ queryKey: ["market"] });
       qc.invalidateQueries({ queryKey: ["catalog-card"] });
     },
     onError: (error) => toast.error(error.message),

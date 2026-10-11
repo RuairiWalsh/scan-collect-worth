@@ -24,3 +24,7 @@ export function cardImageIdentity(item: CardImageIdentity): string | null {
 export function cardProductImage(item: { category: string; product_image?: string | null; thumbnail?: string | null }): string | null {
   return item.category === "cards" ? item.product_image || item.thumbnail || null : item.thumbnail || null;
 }
+
+export function canReuseCardImage(reviewStatus: string, submittedBy: string | null, userId: string): boolean {
+  return reviewStatus === "approved" || (reviewStatus === "pending" && submittedBy === userId);
+}
