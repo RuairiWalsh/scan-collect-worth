@@ -32,29 +32,50 @@ export type Database = {
       card_product_images: {
         Row: {
           card_key: string
+          card_metadata: Json
           catalog_id: string | null
           claim_id: string
           image: string | null
+          original_scan: string | null
+          review_note: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
           source: string
           status: string
+          submitted_by: string | null
           updated_at: string
         }
         Insert: {
           card_key: string
+          card_metadata?: Json
           catalog_id?: string | null
           claim_id: string
           image?: string | null
+          original_scan?: string | null
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source?: string
           status?: string
+          submitted_by?: string | null
           updated_at?: string
         }
         Update: {
           card_key?: string
+          card_metadata?: Json
           catalog_id?: string | null
           claim_id?: string
           image?: string | null
+          original_scan?: string | null
+          review_note?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           source?: string
           status?: string
+          submitted_by?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -557,8 +578,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_image_queue: {
+        Args: { _status?: string }
+        Returns: {
+          card_key: string
+          card_metadata: Json
+          image: string
+          original_scan: string
+          review_note: string
+          review_status: string
+          reviewed_at: string
+          updated_at: string
+        }[]
+      }
       admin_review_application: {
         Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
+      admin_review_image: {
+        Args: { _approve: boolean; _key: string; _note?: string }
         Returns: undefined
       }
       admin_set_role: {
