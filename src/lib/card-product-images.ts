@@ -11,6 +11,10 @@ export type CardImageIdentity = {
   language?: string | null;
 };
 
+export function cardImageReviewStatus(item: CardImageIdentity): "pending" | "approved" {
+  return item.subcategory === "sports" ? "pending" : "approved";
+}
+
 /** Missing printing identifiers must not cause unrelated cards to share a photograph. */
 export function cardImageIdentity(item: CardImageIdentity): string | null {
   const normalize = (s?: string | null) => (s ?? "").normalize("NFKC").trim().toLowerCase().replace(/\s+/g, " ");

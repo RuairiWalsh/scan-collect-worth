@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { canReuseCardImage, cardImageIdentity, cardProductImage } from "./card-product-images";
+import { canReuseCardImage, cardImageIdentity, cardImageReviewStatus, cardProductImage } from "./card-product-images";
 
 describe("scan-derived card images", () => {
+  it("requires approval for CardSight sports-card images", () => {
+    expect(cardImageReviewStatus({ name: "Aaron Judge", subcategory: "sports" })).toBe("pending");
+  });
+  it("keeps TCG and other image flows unchanged", () => {
+    expect(cardImageReviewStatus({ name: "Pikachu", subcategory: "tcg" })).toBe("approved");
+    expect(cardImageReviewStatus({ name: "Film card", subcategory: "non_sport" })).toBe("approved");
+  });
   it("does not share pending images with other collectors", () => {
     expect(canReuseCardImage("pending", "owner", "other")).toBe(false);
     expect(canReuseCardImage("pending", "owner", "owner")).toBe(true);
