@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LayoutGrid, ScanLine, LogOut, Search } from "lucide-react";
+import { LayoutGrid, ScanLine, LogOut, Search, Store, Tag, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useRoles } from "@/hooks/use-roles";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthedLayout() {
   const { user, loading } = useAuth();
+  const { isAdmin } = useRoles();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,17 +42,31 @@ function AuthedLayout() {
             <Link to="/search" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>
               <Search className="size-4" /> Search
             </Link>
+            <Link to="/market" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>
+              <Store className="size-4" /> Market
+            </Link>
           </nav>
-          <button
-            onClick={() => supabase.auth.signOut()}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="size-4" /> <span className="hidden sm:inline">Sign out</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <Link to="/sell" className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground" activeProps={{ className: "text-foreground" }}>
+              <Tag className="size-4" /> Sell
+            </Link>
+            {isAdmin && (
+              <Link to="/admin" className="flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground" activeProps={{ className: "text-foreground" }}>
+                <Shield className="size-4" /> Admin
+              </Link>
+            )}
+            <button
+              onClick={() => supabase.auth.signOut()}
+              aria-label="Sign out"
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="size-4" /> <span className="hidden sm:inline">Sign out</span>
+            </button>
+          </div>
         </div>
       </header>
       <Outlet />
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t-2 border-ink bg-background md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t-2 border-ink bg-background md:hidden">
         <Link to="/collection" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
           <LayoutGrid className="size-5" /> Collection
         </Link>
@@ -59,6 +75,9 @@ function AuthedLayout() {
         </Link>
         <Link to="/search" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
           <Search className="size-5" /> Search
+        </Link>
+        <Link to="/market" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
+          <Store className="size-5" /> Market
         </Link>
       </nav>
     </div>
