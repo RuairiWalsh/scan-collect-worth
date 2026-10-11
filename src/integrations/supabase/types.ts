@@ -255,6 +255,77 @@ export type Database = {
           },
         ]
       }
+      listings: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          price: number
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          price: number
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          price?: number
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listings_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_applications: {
+        Row: {
+          about: string | null
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          store_name: string
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_name: string
+          user_id?: string
+        }
+        Update: {
+          about?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          store_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       price_history: {
         Row: {
           est_value: number | null
@@ -293,15 +364,88 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_review_application: {
+        Args: { _approve: boolean; _id: string }
+        Returns: undefined
+      }
+      admin_set_role: {
+        Args: {
+          _enabled: boolean
+          _role: Database["public"]["Enums"]["app_role"]
+          _user: string
+        }
+        Returns: undefined
+      }
+      admin_stats: { Args: never; Returns: Json }
+      admin_users: {
+        Args: never
+        Returns: {
+          collection_value: number
+          created_at: string
+          email: string
+          item_count: number
+          last_sign_in_at: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      market_listings: {
+        Args: never
+        Returns: {
+          category: string
+          condition: string
+          created_at: string
+          est_value: number
+          grade: string
+          grader: string
+          image: string
+          item_id: string
+          listing_id: string
+          name: string
+          number: string
+          price: number
+          seller_id: string
+          set_name: string
+          store_name: string
+          variant: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "merchant" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -428,6 +572,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "merchant", "user"],
+    },
   },
 } as const
