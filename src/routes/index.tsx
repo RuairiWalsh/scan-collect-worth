@@ -49,7 +49,10 @@ function tickerLabel(c: TickerCard): string {
 }
 
 function Index() {
-  const { cards, featured } = Route.useLoaderData();
+  const data = Route.useLoaderData();
+  // Hot updates can retain the previous array-only loader result until revalidation.
+  const cards: TickerCard[] = Array.isArray(data) ? data : data?.cards ?? [];
+  const featured = Array.isArray(data) ? null : data?.featured ?? null;
   const items = cards.length > 0 ? cards.map(tickerLabel) : FALLBACK_TICKER;
   return (
     <div className="min-h-screen bg-background">
