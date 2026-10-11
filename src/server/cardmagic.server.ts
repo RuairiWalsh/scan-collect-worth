@@ -1,12 +1,12 @@
 import { canReuseCardImage, cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
-import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, type TcgGraphCard } from "@/lib/tcggraph";
+import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, tcgGraphName, type TcgGraphCard } from "@/lib/tcggraph";
 
 /** Official TCG artwork from TCGGraph's CDN for supported games; null when no exact printing matches. */
 export async function tcgGraphImage(item: CardImageIdentity): Promise<string | null> {
   const key = process.env["TCG_GRAPH_API_KEY"];
   const game = tcgGraphGame(item.line);
   if (!key || !game || !item.name || !item.number) return null;
-  const params = new URLSearchParams({ game, name: item.name, language: tcgGraphLanguage(item.language), limit: "50" });
+  const params = new URLSearchParams({ game, name: tcgGraphName(item.name), collectorNumber: item.number.split("/")[0]?.trim() || item.number, language: tcgGraphLanguage(item.language), limit: "50" });
   const res = await fetch(`https://api.tcggraph.com/v1/cards?${params}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) return null;
   const body = await res.json() as { data?: TcgGraphCard[] };
@@ -84,11 +84,11 @@ export async function cachedTcgGraphImages(ids: string[]): Promise<Map<string, s
   const stale: NonNullable<typeof data> = [];
   for (const r of data ?? []) {
     if (r.tcggraph_image) out.set(r.catalog_id, r.tcggraph_image);
-    else if (tcgGraphGame(r.game) && (!r.tcggraph_checked_at || Date.parse(r.tcggraph_checked_at) < Date.now() - RECHECK_MS)) stale.push(r);
+    else if (tcgGraphGame(r.game ?? r.catalog_id) && (!r.tcggraph_checked_at || Date.parse(r.tcggraph_checked_at) < Date.now() - RECHECK_MS)) stale.push(r);
   }
   for (let i = 0; i < stale.length; i += 5) {
     await Promise.all(stale.slice(i, i + 5).map(async r => {
-      const image = await tcgGraphImage({ line: r.game, name: r.name, number: r.number, set_name: r.set_name, language: r.game === "pokemon-japan" ? "ja" : "en" }).catch(() => undefined);
+      const image = await tcgGraphImage({ line: r.game ?? r.catalog_id, name: r.name, number: r.number, set_name: r.set_name, language: (r.game ?? r.catalog_id).startsWith("pokemon-japan") ? "ja" : "en" }).catch(() => undefined);
       if (image === undefined) return; // network failure: retry next time
       await db.from("catalog_prices").update({ tcggraph_image: image, tcggraph_checked_at: new Date().toISOString() }).eq("catalog_id", r.catalog_id);
       if (image) { out.set(r.catalog_id, image); await db.from("items").update({ product_image: image }).eq("catalog_id", r.catalog_id); }
