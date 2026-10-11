@@ -8,6 +8,9 @@ describe("tcggraph matching", () => {
   it("prefers the matching set when numbers collide", () => {
     expect(pickTcgGraphImage([card("4", "Jungle"), card("4", "Base Set")], "4/102", "Base Set")).toBe("Base Set-4");
   });
+  it("treats \"Base Set\" and \"Base\" as the same set", () => {
+    expect(pickTcgGraphImage([card("4", "Base"), card("4", "Base Set 2")], "4/102", "Base Set")).toBe("Base-4");
+  });
   it("refuses ambiguous or missing numbers", () => {
     expect(pickTcgGraphImage([card("4", "Jungle"), card("4", "Fossil")], "4", "Base Set")).toBeNull();
     expect(pickTcgGraphImage([card("4", "Jungle")], null, "Jungle")).toBeNull();

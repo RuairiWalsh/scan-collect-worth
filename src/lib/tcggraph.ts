@@ -27,7 +27,8 @@ export function pickTcgGraphImage(cards: TcgGraphCard[], number?: string | null,
   const wanted = num(number);
   if (!wanted) return null;
   const sameNumber = cards.filter(c => num(c.collectorNumber) === wanted && (c.images?.large || c.images?.normal));
-  const set = norm(setName);
-  const pick = (set && sameNumber.find(c => norm(c.set?.name) === set)) || (sameNumber.length === 1 ? sameNumber[0] : null);
+  const setKey = (s?: string | null) => norm((s ?? "").replace(/\bset\b/gi, ""));
+  const set = setKey(setName);
+  const pick = (set && sameNumber.find(c => setKey(c.set?.name) === set)) || (sameNumber.length === 1 ? sameNumber[0] : null);
   return pick ? (pick.images?.large || pick.images?.normal || null) : null;
 }
