@@ -19,5 +19,6 @@ export const featuredCard = createServerFn({ method: "GET" }).handler(async () =
     .select("catalog_id,name,set_name,number,updated_at,variants")
     .eq("catalog_id", FEATURED_CARD_ID).maybeSingle();
   if (error || !data) return null;
-  return { name: String(data.name), setName: String(data.set_name), price: featuredCardPrice(data.variants), updatedAt: data.updated_at as string | null };
+  const { data: artwork } = await db.from("card_product_images").select("image").eq("catalog_id", FEATURED_CARD_ID).eq("status", "ready").limit(1).maybeSingle();
+  return { name: String(data.name), setName: String(data.set_name), price: featuredCardPrice(data.variants), updatedAt: data.updated_at as string | null, image: artwork?.image as string | null ?? null };
 });

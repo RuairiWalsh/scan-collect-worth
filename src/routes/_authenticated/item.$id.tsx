@@ -131,7 +131,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         condition: f.condition, grader: f.grader, grade: f.grade, quantity: f.quantity, notes: f.notes,
         // Identity edited by hand → re-match the catalog card from the new details.
         ...(f.name !== item.name || f.number !== item.number || f.set_name !== item.set_name || f.line !== item.line
-          ? { catalog_id: null, official_image: null }
+          ? { catalog_id: null, official_image: null, product_image: null }
           : {}),
       })
       .eq("id", item.id);
@@ -183,7 +183,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
           <div className="space-y-2">
             {item.category === "cards" && (
               <div className="flex gap-2" role="group" aria-label="Card images">
-                <Button size="sm" variant={showScan ? "outline" : "default"} aria-pressed={!showScan} onClick={() => setShowScan(false)}>Official image</Button>
+                <Button size="sm" variant={showScan ? "outline" : "default"} aria-pressed={!showScan} onClick={() => setShowScan(false)}>Product image</Button>
                 <Button size="sm" variant={showScan ? "default" : "outline"} aria-pressed={showScan} disabled={!item.thumbnail} onClick={() => setShowScan(true)}>Your scan</Button>
               </div>
             )}
@@ -192,7 +192,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             ) : (
               <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
             )}
-            {item.category === "cards" && !showScan && !item.official_image && <p className="text-xs text-muted-foreground">Official image unavailable for this printing.</p>}
+            {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
           <div className="panel shadow-hard p-4">
             <p className="tabular text-xs text-muted-foreground">ESTIMATED VALUE</p>
