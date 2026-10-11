@@ -71,6 +71,13 @@
       "when": 1791671603209,
       "tag": "0009_item_folders_multi_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791679867778,
+      "tag": "0010_roles_merchants_listings",
+      "breakpoints": true
     }
   ]
 }
