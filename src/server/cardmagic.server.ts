@@ -41,6 +41,10 @@ export async function processCardMagic(image: string): Promise<string> {
 
 /** Admin writes are restricted to the shared derived-image cache, after the caller is authenticated. */
 export async function cachedCardMagic(item: CardImageIdentity, image: string, userId: string): Promise<string | null> {
+  if (item.catalog_id) {
+    const tcg = (await cachedTcgGraphImages([item.catalog_id]).catch(() => null))?.get(item.catalog_id);
+    if (tcg) return tcg;
+  }
   const identity = cardImageIdentity(item);
   const cardKey = await digest(identity ?? `scan:${image}`);
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
