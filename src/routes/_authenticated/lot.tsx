@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useRoles } from "@/hooks/use-roles";
 
 export const Route = createFileRoute("/_authenticated/lot")({
-  validateSearch: (s: Record<string, unknown>) => ({ items: typeof s.items === "string" ? s.items : "" }),
+  validateSearch: (s: Record<string, unknown>) => ({ items: typeof s["items"] === "string" ? s["items"] : "" }),
   head: () => ({
     meta: [
       { title: "New listing lot — Lymitz" },

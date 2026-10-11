@@ -369,7 +369,7 @@ function CollectionPage() {
           <div className="mt-6 flex flex-wrap items-center gap-2">
             {selecting ? (
               <>
-                <span className="text-sm font-semibold">{picked.length} selected</span>
+                <span className="text-sm font-semibold">{picked.length} selected · tap items to tick them</span>
                 <Button size="sm" variant="outline" onClick={() => setPicked(shown.filter((i) => !listedIds.has(i.id)).map((i) => i.id))}>Select all shown</Button>
                 <Button size="sm" variant="ghost" onClick={() => { setSelecting(false); setPicked([]); }}>Cancel</Button>
               </>
