@@ -313,17 +313,19 @@ export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
 }
 
 export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
-  if (item.category === "cards" && justtcgConfigured()) return justtcg(item);
-  const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   const line = (item.line ?? "").toLowerCase();
   if (item.category === "cards") {
-    if (justtcgConfigured()) {
-      tasks.push(justtcg(item));
-    } else {
+    // TCG games with condition-specific data stay on JustTCG; sports, non-sport,
+    // and unmatched cards price from eBay listings instead.
+    if (justtcgConfigured() && justtcgGame(item.line)) return justtcg(item);
+    const tasks: Promise<PriceSource[]>[] = [ebay(item)];
+    if (!justtcgConfigured()) {
       if (line.includes("pok")) tasks.push(pokemonTcg(item));
       if (line.includes("magic")) tasks.push(scryfall(item));
     }
+    const settled = await Promise.allSettled(tasks);
+    return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
   }
-  const settled = await Promise.allSettled(tasks);
+  const settled = await Promise.allSettled([ebay(item)]);
   return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
 }
