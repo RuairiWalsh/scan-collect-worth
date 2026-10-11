@@ -10,6 +10,8 @@ import { useState } from "react";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ConditionPrices, VariantSelect } from "@/components/CardPricingControls";
 import { resolvePrinting, selectedCardVariant } from "@/lib/card-pricing";
+import { marketQuery } from "@/lib/market";
+import { ListingCard } from "@/components/ListingCard";
 
 export const Route = createFileRoute("/_authenticated/card/$catalogId")({
   head: () => ({
@@ -44,7 +46,7 @@ function CardPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6 pb-24">
       <Link to="/search" className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to search
+        <ArrowLeft className="h-4 w-4" /> Back to Browse Cards
       </Link>
       {isLoading ? (
         <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
@@ -88,8 +90,26 @@ function CardPage() {
             />
             <ConditionPrices variants={variants} printing={printing} />
           </div>
+          <CardListings catalogId={catalogId} />
         </>
       )}
     </main>
+  );
+}
+
+function CardListings({ catalogId }: { catalogId: string }) {
+  const { data = [] } = useQuery(marketQuery());
+  const forSale = data.filter((l) => l.catalog_id === catalogId).sort((a, b) => Number(a.price) - Number(b.price));
+  return (
+    <section className="mt-8">
+      <h2 className="font-display text-xl font-black">For sale <span className="text-sm font-semibold text-muted-foreground">· {forSale.length}</span></h2>
+      {forSale.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">No one is selling this card right now.</p>
+      ) : (
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {forSale.map((l) => <ListingCard key={l.listing_id} listing={l} />)}
+        </div>
+      )}
+    </section>
   );
 }

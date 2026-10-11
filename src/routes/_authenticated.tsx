@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LayoutGrid, ScanLine, LogOut, Search, Store, Tag, Shield } from "lucide-react";
+import { LayoutGrid, ScanLine, LogOut, Search, Tag, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useRoles } from "@/hooks/use-roles";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,10 +40,7 @@ function AuthedLayout() {
               <ScanLine className="size-4" /> Scan
             </Link>
             <Link to="/search" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>
-              <Search className="size-4" /> Search
-            </Link>
-            <Link to="/market" className={navCls} activeProps={{ className: "text-foreground bg-muted" }}>
-              <Store className="size-4" /> Market
+              <Search className="size-4" /> Browse Cards
             </Link>
           </nav>
           <div className="flex items-center gap-3">
@@ -66,7 +63,7 @@ function AuthedLayout() {
         </div>
       </header>
       <Outlet />
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t-2 border-ink bg-background md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t-2 border-ink bg-background md:hidden">
         <Link to="/collection" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
           <LayoutGrid className="size-5" /> Collection
         </Link>
@@ -74,10 +71,7 @@ function AuthedLayout() {
           <ScanLine className="size-5" /> Scan
         </Link>
         <Link to="/search" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
-          <Search className="size-5" /> Search
-        </Link>
-        <Link to="/market" className="flex flex-col items-center py-2 text-xs font-semibold" activeProps={{ className: "text-primary" }}>
-          <Store className="size-5" /> Market
+          <Search className="size-5" /> Browse
         </Link>
       </nav>
     </div>
