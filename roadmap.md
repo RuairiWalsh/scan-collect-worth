@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Admin image queue with approval required before sharing
+
 - [ ] Replace all provider card artwork with scan-derived CardMagic images and a shared exact-card cache
 - [ ] Verify CardMagic processing and cache reuse
 
