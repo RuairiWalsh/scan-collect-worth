@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { cardImageIdentity } from "@/lib/card-product-images";
 import { isImportedPair, pdfCardPair, scannerImageApproval } from "@/lib/pdf-card-pairs";
 import type { Identification } from "@/lib/scan.functions";
+import { reviewedCatalogId, sameImportedIdentity, isCardsightId } from "@/lib/imported-catalog";
 
 type Pair = Database["public"]["Tables"]["card_image_import_pairs"]["Row"];
 
@@ -20,29 +21,42 @@ async function imageData(blob: Blob) {
   return `data:${blob.type};base64,${btoa(text)}`;
 }
 
-async function publishPair(pair: Pair, item: Identification, userId: string) {
+async function publishPair(pair: Pair, item: Identification, userId: string, confirmed = false) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const identity = cardImageIdentity(item);
   // Incomplete identities stay private rather than publishing a guessed catalog image.
-  if (!identity || item.confidence < 0.8 || !item.is_collectible || item.category !== "cards") {
+  if (!confirmed || !identity || !item.is_collectible || item.category !== "cards") {
     const { error } = await db.from("card_image_import_pairs").update({ status: "needs_details", metadata: item as unknown as Json, error: "Confirm this card's identity before sharing.", updated_at: new Date().toISOString() }).eq("id", pair.id);
     if (error) throw new Error("Could not save card details.");
     return "needs_details";
   }
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(identity));
   const key = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const catalogId = reviewedCatalogId(key, item.catalog_id);
+  const provider = item.subcategory === "sports" ? "cardsight" : item.subcategory === "tcg" ? "justtcg" : "ebay";
+  const { data: existingCard } = await db.from("catalog_prices").select("catalog_id").eq("catalog_id", catalogId).maybeSingle();
+  const { error: catalogError } = await db.from("catalog_prices").upsert({
+    catalog_id: catalogId, name: item.name, set_name: item.set_name, number: item.number,
+    card_metadata: item as unknown as Json, price_provider: provider,
+    provider_card_id: item.catalog_id ?? null, imported_card: true,
+    ...(existingCard ? {} : { variants: [], nm_price: null, image: null }),
+  });
+  if (catalogError) throw new Error("Could not save this card to the shared catalog.");
   const frontUrl = `/api/public/card-images/${key}?side=front`;
   const backUrl = `/api/public/card-images/${key}?side=back`;
   const { error } = await db.from("card_product_images").upsert({
-    card_key: key, catalog_id: item.catalog_id ?? null, image: frontUrl, original_scan: frontUrl,
+    card_key: key, catalog_id: catalogId, image: frontUrl, original_scan: frontUrl,
     back_image: backUrl, front_storage_path: pair.front_path, back_storage_path: pair.back_path,
     status: "ready", source: "admin_scanner", review_status: "approved", reviewed_by: userId,
     reviewed_at: new Date().toISOString(), submitted_by: userId, card_metadata: item as unknown as Json,
-    claim_id: crypto.randomUUID(), updated_at: new Date().toISOString(), review_note: "Admin scanner upload",
+    claim_id: crypto.randomUUID(), updated_at: new Date().toISOString(), review_note: "Admin confirmed scanner card and images",
   });
   if (error) throw new Error("Could not publish the scanner images.");
   const saved = await db.from("card_image_import_pairs").update({ status: "approved", card_key: key, metadata: item as unknown as Json, error: null, updated_at: new Date().toISOString() }).eq("id", pair.id);
   if (saved.error) throw new Error("Could not save import progress.");
+  // Publishing succeeds even when pricing is unavailable; the daily queue retries it.
+  const { refreshImportedPrice } = await import("@/server/imported-prices.server");
+  await refreshImportedPrice(catalogId).catch(() => undefined);
   return "approved";
 }
 
@@ -75,5 +89,18 @@ export async function confirmImportPair(pairId: string, item: Identification, us
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: pair } = await db.from("card_image_import_pairs").select("*").eq("id", pairId).single();
   if (!pair) throw new Error("Scan unavailable.");
-  return { status: await publishPair(pair, { ...item, confidence: 1, is_collectible: true, category: "cards" }, userId) };
+  const suggested = pair.metadata as unknown as Identification;
+  let providerId = sameImportedIdentity(suggested, item) ? suggested.catalog_id : null;
+  if (!providerId) {
+    if (item.subcategory === "sports") {
+      const { cardsightFindCard } = await import("@/server/cardsight.server");
+      providerId = (await cardsightFindCard(item))?.id ?? null;
+    } else if (item.subcategory === "tcg") {
+      const { findCatalogCandidates } = await import("@/server/prices.server");
+      const { confidentMatch } = await import("@/lib/catalog");
+      providerId = confidentMatch(await findCatalogCandidates(item))?.id ?? null;
+    }
+  }
+  if (item.subcategory === "tcg" && providerId && isCardsightId(providerId)) providerId = null;
+  return { status: await publishPair(pair, { ...item, catalog_id: providerId ?? null, confidence: 1, is_collectible: true, category: "cards" }, userId, true) };
 }

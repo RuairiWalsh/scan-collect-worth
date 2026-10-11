@@ -38,19 +38,26 @@ export function pickCardsightCard(candidates: CardsightCard[], item: CardsightQu
 
   const scored = candidates.map((card) => {
     let score = 0;
+    const name = norm(card.name);
+    const wantedName = norm(item.name);
+    if (!name || !(name === wantedName || name.includes(wantedName) || wantedName.includes(name))) return { card, score: -1 };
+    if (wantYear && (card.releaseYear ?? "").trim() !== wantYear) return { card, score: -1 };
     const num = (card.number ?? "").trim().replace(/^0+(?=\d)/, "");
     if (wantNum) {
       if (num !== wantNum) return { card, score: -1 };
       score += 3;
     }
     const setBits = [norm(card.setName), norm(card.releaseName)].filter(Boolean);
-    if (wantSet && setBits.some((s) => s.includes(wantSet) || wantSet.includes(s))) score += 2;
+    if (wantSet && !setBits.some((s) => s.includes(wantSet) || wantSet.includes(s))) return { card, score: -1 };
+    if (wantSet) score += 2;
     if (wantYear && (card.releaseYear ?? "").trim() === wantYear) score += 1;
     return { card, score };
   });
 
-  const best = scored.filter((s) => s.score >= 0).sort((a, b) => b.score - a.score)[0];
+  const ranked = scored.filter((s) => s.score >= 0).sort((a, b) => b.score - a.score);
+  const best = ranked[0];
   if (!best) return null;
+  if (ranked[1]?.score === best.score) return null;
   // With a number, an exact number match alone is enough. Without one, require
   // set or year agreement so a same-named card from another set isn't used.
   return wantNum ? best.card : best.score >= 1 ? best.card : null;

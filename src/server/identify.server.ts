@@ -33,6 +33,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
     });
 
     if (result.is_collectible && result.category === "cards") {
+      const { cardsightConfigured, cardsightFindCard } = await import("@/server/cardsight.server");
       const { justtcgConfigured, findCatalogCandidates } = await import("@/server/prices.server");
       if (justtcgConfigured()) {
         const { confidentMatch, baseName } = await import("@/lib/catalog");
@@ -80,6 +81,23 @@ export async function identifyImage(image: string, strip?: string | undefined, b
         } else if (!card && shortlist.length === 1 && shortlist[0] && shortlist[0].score >= 5) {
           card = shortlist[0].card;
         }
+        if (!card && cardsightConfigured()) {
+          const csCard = await cardsightFindCard({
+            name: result.name,
+            set_name: result.set_name,
+            number: result.number,
+            year: result.year,
+          });
+          if (csCard) {
+            result.catalog_id = csCard.id;
+            result.name = csCard.name || result.name;
+            result.set_name = csCard.releaseName || csCard.setName || result.set_name;
+            result.number = csCard.number || result.number;
+            result.confidence = Math.max(result.confidence, 0.8);
+            // For sports, we often dont have a JustTCG match, so this is our primary identity.
+          }
+        }
+
         if (card) {
           // Keep the language in the saved variant so the Japanese printing is priced and shown.
           const lang = result.language && result.language !== "English" ? result.language : null;

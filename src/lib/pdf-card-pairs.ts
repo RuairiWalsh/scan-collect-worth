@@ -13,7 +13,7 @@ export function isImportedPair(status: string) {
   return status === "approved" || status === "duplicate" || status === "needs_details";
 }
 
-export function scannerImageApproval(isAdmin: boolean) {
+export function scannerImageApproval(isAdmin: boolean, confirmed = false) {
   if (!isAdmin) throw new Error("Admins only");
-  return "approved" as const;
+  return confirmed ? "approved" as const : "needs_details" as const;
 }

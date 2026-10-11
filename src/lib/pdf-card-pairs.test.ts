@@ -9,9 +9,13 @@ describe("bulk scanner card imports", () => {
     expect(() => pdfCardPair(3, 0)).toThrow();
     expect(() => pdfCardPair(2, 1)).toThrow();
   });
-  it("automatically approves admin scanner uploads only", () => {
-    expect(scannerImageApproval(true)).toBe("approved");
+  it("requires review for every admin scanner upload, even a confident match", () => {
+    expect(scannerImageApproval(true)).toBe("needs_details");
+  });
+  it("publishes only after an admin explicitly confirms the card", () => {
+    expect(scannerImageApproval(true, true)).toBe("approved");
     expect(() => scannerImageApproval(false)).toThrow("Admins only");
+    expect(() => scannerImageApproval(false, true)).toThrow("Admins only");
   });
   it("resumes without repeating saved pairs and allows failed pairs to retry", () => {
     expect(isImportedPair("approved")).toBe(true);

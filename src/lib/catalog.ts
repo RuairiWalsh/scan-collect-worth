@@ -12,6 +12,9 @@ export type CatalogCard = {
     condition?: string;
     printing?: string;
     price?: number;
+    sources?: import("./pricing").PriceSource[];
+    grader?: string;
+    grade?: string;
     priceHistory?: { p: number; t: number }[];
   }[];
 };

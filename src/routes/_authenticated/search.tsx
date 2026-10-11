@@ -116,7 +116,7 @@ function SearchResultCard({ result: r }: { result: SearchResult }) {
           <p className="font-display text-lg font-black text-primary">
             {r.nm_price != null ? usd(r.nm_price) : "—"}
           </p>
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">near mint</p>
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{r.price_provider && r.price_provider !== "justtcg" ? "ungraded" : "near mint"}</p>
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </Link>

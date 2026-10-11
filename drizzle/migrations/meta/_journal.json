@@ -141,6 +141,13 @@
       "when": 1791752292582,
       "tag": "0019_scanner_image_storage_paths",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791752940633,
+      "tag": "0020_track_reviewed_import_catalog_prices",
+      "breakpoints": true
     }
   ]
 }

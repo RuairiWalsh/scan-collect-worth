@@ -2,7 +2,10 @@
 import { trimmedMedian, type PriceSource } from "@/lib/pricing";
 import { conditionFor } from "@/lib/taxonomy";
 import { cardPriceSources, cardVariants } from "@/lib/card-pricing";
+import { cardsightConfigured, cardsightFindCard, cardsightGetPricing, type CardsightPriceRecord } from "./cardsight.server";
 import { confidentMatch, parseNumber, rankCandidates, type CatalogCard, type ScanGuess } from "@/lib/catalog";
+import { isLocalCatalogId, isCardsightId } from "@/lib/imported-catalog";
+import { cardsightVariants } from "@/lib/cardsight-pricing";
 
 export type PricedItem = {
   category: string;
@@ -215,6 +218,7 @@ export async function findCatalogCandidates(item: ScanGuess & { line: string | n
 }
 
 export async function catalogCardById(id: string, opts?: { history?: boolean }) {
+  if (isLocalCatalogId(id) || isCardsightId(id)) return null;
   const params: Record<string, string> = { cardId: id };
   if (opts?.history) params["priceHistoryDuration"] = "180d";
   return (await jtCards(params))[0] ?? null;
@@ -228,6 +232,7 @@ export async function catalogCardById(id: string, opts?: { history?: boolean }) 
  */
 export async function catalogCardsByIds(ids: string[]): Promise<CatalogCard[]> {
   const key = process.env["JUSTTCG_API_KEY"];
+  ids = ids.filter(id => !isLocalCatalogId(id) && !isCardsightId(id));
   if (!key || !ids.length) return [];
   const batchSize = Math.max(
     1,
@@ -306,19 +311,43 @@ function priceFromCard(card: CatalogCard, item: PricedItem): PriceSource[] {
 export async function justtcg(item: PricedItem): Promise<PriceSource[]> {
   if (!justtcgConfigured()) return [];
   let card: CatalogCard | null = null;
-  if (item.catalog_id) card = await catalogCardById(item.catalog_id);
+  if (item.catalog_id && !isLocalCatalogId(item.catalog_id) && !isCardsightId(item.catalog_id)) card = await catalogCardById(item.catalog_id);
   if (!card) card = confidentMatch(await findCatalogCandidates(item));
   // Not sure which card it is → no price rather than a wrong one.
   return card ? priceFromCard(card, item) : [];
 }
 
+export async function cardsight(item: PricedItem): Promise<PriceSource[]> {
+  if (!cardsightConfigured()) return [];
+  let cardId = item.catalog_id;
+  if (!cardId || !isCardsightId(cardId)) {
+    const csCard = await cardsightFindCard({
+      name: item.name,
+      set_name: item.set_name,
+      number: item.number,
+      year: item.year,
+    });
+    cardId = csCard?.id;
+  }
+  if (!cardId) return [];
+  const pricing = await cardsightGetPricing(cardId);
+  if (!pricing) return [];
+  return cardPriceSources(cardsightVariants(pricing), item.condition, item.variant, item.grader, item.grade);
+}
+
 export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
   const line = (item.line ?? "").toLowerCase();
   if (item.category === "cards") {
+    if (item.catalog_id && isLocalCatalogId(item.catalog_id)) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data } = await supabaseAdmin.from("catalog_prices").select("variants").eq("catalog_id", item.catalog_id).maybeSingle();
+      return cardPriceSources(cardVariants(data?.variants), item.condition, item.variant, item.grader, item.grade);
+    }
+    if (item.subcategory === "sports") return cardsight(item);
     // TCG games with condition-specific data stay on JustTCG; sports, non-sport,
     // and unmatched cards price from eBay listings instead.
     if (justtcgConfigured() && justtcgGame(item.line)) return justtcg(item);
-    const tasks: Promise<PriceSource[]>[] = [ebay(item)];
+    const tasks: Promise<PriceSource[]>[] = [ebay(item), cardsight(item)];
     if (!justtcgConfigured()) {
       if (line.includes("pok")) tasks.push(pokemonTcg(item));
       if (line.includes("magic")) tasks.push(scryfall(item));

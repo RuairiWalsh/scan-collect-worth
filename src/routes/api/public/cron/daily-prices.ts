@@ -1,134 +1,80 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { dailyCatalogIds } from "@/lib/featured-card";
+import { dailyTrackedIds, isCardsightId, isLocalCatalogId } from "@/lib/imported-catalog";
 
-// Nightly job: refresh the shared catalog_prices table for every catalog card
-// anyone owns, then update each owned item's saved value from the fresh price.
-// One JustTCG lookup per unique card, no matter how many users own it.
 export const Route = createFileRoute("/api/public/cron/daily-prices")({
-  server: {
-    handlers: {
-      POST: async ({ request }) => {
-        const auth = request.headers.get("authorization");
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: cfg } = await supabaseAdmin
-          .from("app_config")
-          .select("value")
-          .eq("key", "cron_secret")
-          .single();
-        if (!cfg?.value || auth !== `Bearer ${cfg.value}`) {
-          return new Response("Unauthorized", { status: 401 });
-        }
-        const { catalogCardById, justtcgConfigured } = await import("@/server/prices.server");
-        if (!justtcgConfigured()) return Response.json({ ok: false, reason: "justtcg not configured" });
-
-        // Distinct catalog cards currently owned or batched by any user.
-        const { data: rows, error } = await supabaseAdmin
-          .from("items")
-          .select("catalog_id")
-          .not("catalog_id", "is", null);
-        if (error) return Response.json({ ok: false, reason: error.message }, { status: 500 });
-        const ids = dailyCatalogIds((rows ?? []).map((r) => r.catalog_id as string));
-
-        let updated = 0;
-        let failed = 0;
-        const { seedCatalogHistory, nmVariantOf, catalogCardsByIds } = await import("@/server/prices.server");
-        const { cardVariants } = await import("@/lib/card-pricing");
-        const { officialCardImage } = await import("@/lib/card-artwork");
-
-        // Cards with no history yet get a per-card 180-day backfill fetch.
-        const { data: histRows } = await supabaseAdmin
-          .from("catalog_price_history")
-          .select("catalog_id")
-          .in("catalog_id", ids.length ? ids : ["__none__"]);
-        const hasHistory = new Set((histRows ?? []).map((r) => r.catalog_id as string));
-        const needsHistory = ids.filter((id) => !hasHistory.has(id));
-
-        // Current prices for every owned card in a handful of batched requests
-        // (up to 200 cards per call) instead of one request per card.
-        const cards = await catalogCardsByIds(ids);
-        const byId = new Map(cards.map((c) => [c.id, c]));
-
-        // Backfill history for the (rare) cards that don't have any yet.
-        for (const id of needsHistory) {
-          try {
-            const card = await catalogCardById(id, { history: true });
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
-            if (card) await seedCatalogHistory(supabaseAdmin as any, card);
-          } catch {
-            // history backfill is best-effort; tonight's price still updates
-          }
-        }
-
-        for (const id of ids) {
-          try {
-            const card = byId.get(id);
-            if (!card) {
-              failed++;
-              continue;
-            }
-            const variants = cardVariants(card.variants);
-            const nm = nmVariantOf(card);
-            const { error: upErr } = await supabaseAdmin.from("catalog_prices").upsert({
-              catalog_id: card.id,
-              name: card.name,
-              set_name: card.set_name ?? null,
-              number: card.number ?? null,
-              rarity: card.rarity ?? null,
-              image: officialCardImage(card),
-              variants,
-              nm_price: nm?.price ?? null,
-              updated_at: new Date().toISOString(),
-            });
-            if (upErr) failed++;
-            else {
-              updated++;
-              if (nm?.price != null) {
-                await supabaseAdmin
-                  .from("catalog_price_history")
-                  .upsert(
-                    { catalog_id: card.id, nm_price: nm.price },
-                    { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true },
-                  );
-              }
-            }
-          } catch {
-            failed++;
-          }
-        }
-
-        // Re-value every pinned item from the fresh shared prices.
-        const { data: items } = await supabaseAdmin
-          .from("items")
-          .select("id, user_id, category, condition, variant, catalog_id")
-          .not("catalog_id", "is", null);
-        const { data: prices } = await supabaseAdmin.from("catalog_prices").select("catalog_id, variants, updated_at");
-        const priceById = new Map((prices ?? []).map((p) => [p.catalog_id, p]));
-        const { cardPriceSources } = await import("@/lib/card-pricing");
-        const { estimateValue } = await import("@/lib/pricing");
-        let revalued = 0;
-        for (const item of items ?? []) {
-          if (!item.catalog_id || item.category !== "cards") continue;
-          const cached = priceById.get(item.catalog_id);
-          if (!cached) continue;
-          const sources = cardPriceSources(cardVariants(cached.variants), item.condition, item.variant);
-          const estimate = estimateValue(sources, 1);
-          const est = estimate?.est ?? null;
-          const { error: itemErr } = await supabaseAdmin
-            .from("items")
-            .update({ est_value: est, price_low: estimate?.low ?? null, price_high: estimate?.high ?? null, price_sources: sources, price_updated_at: cached.updated_at })
-            .eq("id", item.id);
-          if (!itemErr) {
-            revalued++;
-            if (est != null) await supabaseAdmin.from("price_history").insert({
-              item_id: item.id,
-              user_id: item.user_id,
-              est_value: est,
-            });
-          }
-        }
-
-        return Response.json({ ok: true, cards: ids.length, updated, failed, revalued });
-      },
-    },
-  },
+  server: { handlers: { POST: async ({ request }) => {
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { data: cfg } = await db.from("app_config").select("value").eq("key", "cron_secret").single();
+    if (!cfg?.value || request.headers.get("authorization") !== `Bearer ${cfg.value}`) return new Response("Unauthorized", { status: 401 });
+    const { catalogCardsByIds, nmVariantOf } = await import("@/server/prices.server");
+    const { cardVariants, cardPriceSources } = await import("@/lib/card-pricing");
+    const { estimateValue } = await import("@/lib/pricing");
+    const { refreshTrackedRow } = await import("@/server/imported-prices.server");
+    const { cardsightBulkPricing } = await import("@/server/cardsight.server");
+    const owned: { catalog_id: string | null }[] = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await db.from("items").select("catalog_id").not("catalog_id", "is", null).order("id").range(offset, offset + 999);
+      if (error) return Response.json({ ok: false, reason: "Could not load tracked cards" }, { status: 500 });
+      owned.push(...data);
+      if (data.length < 1000) break;
+    }
+    const catalog = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await db.from("catalog_prices").select("*").order("catalog_id").range(offset, offset + 999);
+      if (error) return Response.json({ ok: false, reason: "Could not load catalog" }, { status: 500 });
+      catalog.push(...data);
+      if (data.length < 1000) break;
+    }
+    const ids = dailyTrackedIds(owned.flatMap(r => r.catalog_id ? [r.catalog_id] : []), catalog.filter(r => r.imported_card).map(r => r.catalog_id), dailyCatalogIds([]));
+    const byId = new Map(catalog.map(r => [r.catalog_id, r]));
+    const special = ids.filter(id => (byId.has(id) && byId.get(id)?.price_provider !== "justtcg") || isLocalCatalogId(id) || isCardsightId(id));
+    const jtIds = ids.filter(id => !special.includes(id));
+    let updated = 0, failed = 0;
+    const freshIds = new Set<string>();
+    // JustTCG requests use provider IDs only; local identities are handled separately.
+    const cards = await catalogCardsByIds(jtIds);
+    for (const card of cards) {
+      const at = new Date().toISOString();
+      const nm = nmVariantOf(card);
+      const { error } = await db.from("catalog_prices").upsert({ catalog_id: card.id, name: card.name, set_name: card.set_name ?? null, number: card.number ?? null, rarity: card.rarity ?? null, image: null, variants: cardVariants(card.variants), nm_price: nm?.price ?? null, price_status: "ready", price_error: null, price_checked_at: at, updated_at: at });
+      if (error) failed++;
+      else { updated++; freshIds.add(card.id); if (nm?.price != null) await db.from("catalog_price_history").upsert({ catalog_id: card.id, nm_price: nm.price, recorded_at: at }, { onConflict: "catalog_id,recorded_at", ignoreDuplicates: true }); }
+    }
+    failed += jtIds.length - cards.length;
+    // Up to 100 sports cards per provider request. Failure never clears saved prices.
+    const sports = special.flatMap(id => { const r = byId.get(id); return r?.price_provider === "cardsight" && r.provider_card_id ? [r.provider_card_id] : []; });
+    let bulk = new Map<string, import("@/lib/cardsight-pricing").CardsightPricing>();
+    let bulkFailed = false;
+    try { bulk = await cardsightBulkPricing([...new Set(sports)]); } catch { bulkFailed = true; }
+    for (const id of special) {
+      const row = byId.get(id);
+      if (!row) { failed++; continue; }
+      if (row.price_provider === "cardsight" && row.provider_card_id && (!bulk.has(row.provider_card_id) || bulkFailed)) {
+        await db.from("catalog_prices").update({ price_status: "failed", price_error: "CardSight daily pricing unavailable; previous price preserved.", price_checked_at: new Date().toISOString() }).eq("catalog_id", id);
+        failed++; continue;
+      }
+      const ok = await refreshTrackedRow(row, row.provider_card_id ? bulk.get(row.provider_card_id) : undefined);
+      if (ok) { updated++; freshIds.add(id); } else failed++;
+    }
+    let revalued = 0;
+    for (let offset = 0; ; offset += 500) {
+      const { data: items, error } = await db.from("items").select("id,user_id,category,condition,variant,grader,grade,catalog_id").not("catalog_id", "is", null).order("id").range(offset, offset + 499);
+      if (error || !items) return Response.json({ ok: false, updated, failed, reason: "Item revaluation unavailable" }, { status: 500 });
+      const pageIds = [...new Set(items.flatMap(i => i.catalog_id ? [i.catalog_id] : []))];
+      const { data: prices } = await db.from("catalog_prices").select("catalog_id,variants,updated_at").in("catalog_id", pageIds.length ? pageIds : ["__none__"]);
+      const pricesById = new Map((prices ?? []).map(r => [r.catalog_id, r]));
+      for (const item of items) {
+        if (!item.catalog_id || item.category !== "cards" || !freshIds.has(item.catalog_id)) continue;
+        const cached = pricesById.get(item.catalog_id);
+        if (!cached) continue;
+        const sources = cardPriceSources(cardVariants(cached.variants), item.condition, item.variant, item.grader, item.grade);
+        const est = estimateValue(sources, 1);
+        const { error: saveError } = await db.from("items").update({ est_value: est?.est ?? null, price_low: est?.low ?? null, price_high: est?.high ?? null, price_sources: sources, price_updated_at: cached.updated_at }).eq("id", item.id);
+        if (!saveError) { revalued++; if (est) await db.from("price_history").insert({ item_id: item.id, user_id: item.user_id, est_value: est.est }); }
+      }
+      if (items.length < 500) break;
+    }
+    return Response.json({ ok: true, cards: ids.length, updated, failed, revalued });
+  } } },
 });

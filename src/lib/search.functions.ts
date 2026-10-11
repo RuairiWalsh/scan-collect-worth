@@ -14,6 +14,9 @@ export type SearchResult = {
   image: string | null;
   nm_price: number | null;
   updated_at: string | null;
+  price_provider?: string;
+  price_status?: string;
+  price_error?: string | null;
 };
 
 /** Card price lookup by name/number. Reads the shared price table first;
@@ -26,10 +29,12 @@ export const searchCards = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }): Promise<{ results: SearchResult[]; source: "cache" | "live" }> => {
     const q = data.q;
-    const { data: cached } = await context.supabase
-      .from("catalog_prices")
-      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at")
-      .ilike("name", `%${q}%`)
+    let query = context.supabase.from("catalog_prices").select("catalog_id,name,set_name,number,rarity,image,nm_price,updated_at,price_provider,price_status,price_error");
+    for (const term of q.split(/\s+/)) {
+      const safe = term.replace(/[%_,()."\\]/g, "");
+      if (safe) query = query.or(`name.ilike.%${safe}%,set_name.ilike.%${safe}%,number.ilike.%${safe}%,card_metadata->>year.ilike.%${safe}%`);
+    }
+    const { data: cached } = await query
       .order("updated_at", { ascending: false })
       .limit(20);
 
@@ -40,7 +45,7 @@ export const searchCards = createServerFn({ method: "POST" })
       const images = await catalogProductImages(context.supabase, rows.map(r => r.catalog_id));
       return rows.map(r => ({ ...r, image: images.get(r.catalog_id) ?? null }));
     };
-    if (fresh.length >= 3) return { results: await withProductImages(fresh), source: "cache" };
+    if (cached?.length) return { results: await withProductImages(cached), source: "cache" };
 
     // Miss (or stale): ask JustTCG and save what we find.
     const { jtSearch } = await import("@/server/prices.server");
@@ -135,11 +140,11 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
         .limit(1000);
     const { data: card } = await context.supabase
       .from("catalog_prices")
-      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at, variants")
+      .select("catalog_id, name, set_name, number, rarity, image, nm_price, updated_at, variants,price_provider,price_status,price_error")
       .eq("catalog_id", data.catalog_id)
       .maybeSingle();
     let { data: rows } = await load();
-    if (card && (rows?.length ?? 0) < 100) {
+    if (card && card.price_provider === "justtcg" && !data.catalog_id.startsWith("lymitz-") && (rows?.length ?? 0) < 100) {
       const { catalogCardById, seedCatalogHistory } = await import("@/server/prices.server");
       const full = await catalogCardById(data.catalog_id, { history: true });
       if (full) {

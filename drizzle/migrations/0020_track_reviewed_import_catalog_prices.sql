@@ -1,0 +1,10 @@
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS card_metadata jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS price_provider text NOT NULL DEFAULT 'justtcg';
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS provider_card_id text;
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS imported_card boolean NOT NULL DEFAULT false;
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS price_status text NOT NULL DEFAULT 'pending';
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS price_error text;
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS price_checked_at timestamptz;
+CREATE INDEX IF NOT EXISTS catalog_prices_imported_idx ON public.catalog_prices (catalog_id) WHERE imported_card;
+COMMENT ON COLUMN public.catalog_prices.imported_card IS 'Reviewed scanner imports remain in daily price refreshes even without owned items.';
+COMMENT ON COLUMN public.catalog_prices.provider_card_id IS 'Exact provider identity; local Lymitz catalog IDs are never sent to provider APIs.';

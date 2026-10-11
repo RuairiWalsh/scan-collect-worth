@@ -1,5 +1,7 @@
 // Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
 import { cardsightNumber, pickCardsightCard, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
+import type { CardsightPricing } from "@/lib/cardsight-pricing";
+export type { CardsightPricing, CardsightPriceRecord } from "@/lib/cardsight-pricing";
 
 const BASE = "https://api.cardsight.ai";
 
@@ -43,4 +45,24 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
   }
   return pickCardsightCard(cards, item);
 }
+
+export async function cardsightGetPricing(cardId: string): Promise<CardsightPricing | null> {
+  const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=90d&listing_type=auction`);
+  if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");
+  return res.json() as Promise<CardsightPricing>;
+}
+
+export async function cardsightBulkPricing(ids: string[]) {
+  const key = process.env["CARDSIGHT_API_KEY"];
+  const out = new Map<string, CardsightPricing>();
+  if (!key) return out;
+  for (let i = 0; i < ids.length; i += 100) {
+    const response = await fetch(`${BASE}/v1/pricing/`, { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, body: JSON.stringify({ card_ids: ids.slice(i, i + 100), period: "90d", listing_type: "auction", limit: 100 }), signal: AbortSignal.timeout(45_000) });
+    if (!response.ok) throw new Error(`CardSight pricing unavailable (${response.status}).`);
+    const data = await response.json() as { results: { card_id: string; success: boolean; data?: CardsightPricing }[] };
+    for (const row of data.results ?? []) if (row.success && row.data) out.set(row.card_id, row.data);
+  }
+  return out;
+}
+
 

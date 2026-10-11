@@ -194,36 +194,57 @@ export type Database = {
       }
       catalog_prices: {
         Row: {
+          card_metadata: Json
           catalog_id: string
           game: string | null
           image: string | null
+          imported_card: boolean
           name: string
           nm_price: number | null
           number: string | null
+          price_checked_at: string | null
+          price_error: string | null
+          price_provider: string
+          price_status: string
+          provider_card_id: string | null
           rarity: string | null
           set_name: string | null
           updated_at: string
           variants: Json
         }
         Insert: {
+          card_metadata?: Json
           catalog_id: string
           game?: string | null
           image?: string | null
+          imported_card?: boolean
           name: string
           nm_price?: number | null
           number?: string | null
+          price_checked_at?: string | null
+          price_error?: string | null
+          price_provider?: string
+          price_status?: string
+          provider_card_id?: string | null
           rarity?: string | null
           set_name?: string | null
           updated_at?: string
           variants?: Json
         }
         Update: {
+          card_metadata?: Json
           catalog_id?: string
           game?: string | null
           image?: string | null
+          imported_card?: boolean
           name?: string
           nm_price?: number | null
           number?: string | null
+          price_checked_at?: string | null
+          price_error?: string | null
+          price_provider?: string
+          price_status?: string
+          provider_card_id?: string | null
           rarity?: string | null
           set_name?: string | null
           updated_at?: string

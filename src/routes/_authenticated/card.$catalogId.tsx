@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/card/$catalogId")({
 
 function CardPage() {
   const { catalogId } = Route.useParams();
-  const [condition, setCondition] = useState("raw_nm");
+  const [condition, setCondition] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
   const fetchDetail = useServerFn(catalogCardDetail);
   const { data, isLoading } = useQuery({
@@ -37,10 +37,11 @@ function CardPage() {
     queryFn: () => fetchDetail({ data: { catalog_id: catalogId } }),
   });
   const variants = data?.card?.variants ?? [];
+  const resolvedCondition = condition ?? (data?.card?.price_provider === "justtcg" ? "raw_nm" : "raw_ungraded");
   const resolved = resolvePrinting(variants, printing);
-  const selected = selectedCardVariant(variants, condition, printing);
+  const selected = selectedCardVariant(variants, resolvedCondition, printing);
   // Saved historical series is NM/base only; never relabel it as another quality.
-  const baseHistory = condition === "raw_nm" && resolved === resolvePrinting(variants, null);
+  const baseHistory = (resolvedCondition === "raw_nm" || resolvedCondition === "raw_ungraded") && resolved === resolvePrinting(variants, null);
   const points = baseHistory ? trimPresale(data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
 
   return (
@@ -76,9 +77,13 @@ function CardPage() {
           <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 shadow-[4px_4px_0_0_var(--foreground)]">
             <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1"><p className="text-xs font-semibold">Variant</p><VariantSelect variants={variants} value={printing} onChange={setPrinting} /></div>
-              <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" value={condition} onChange={setCondition} /></div>
+              <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" value={resolvedCondition} onChange={setCondition} /></div>
             </div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
+            {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed auction sales · USD</p>}
+            {data.card.price_status === "failed" && <p className="text-xs text-destructive">Latest price check unavailable; showing the last saved price.</p>}
+            {data.card.price_status === "pending" && <p className="text-xs text-muted-foreground">Awaiting daily price check.</p>}
+            {data.card.price_status === "no_comps" && <p className="text-xs text-muted-foreground">No matching sale prices available yet.</p>}
             <p className="font-display text-3xl font-black text-primary">
               {usd(selected?.price ?? null)}
             </p>
