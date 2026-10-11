@@ -18,16 +18,34 @@ export type MarketListing = {
   grader: string | null;
   grade: string | null;
   image: string | null;
+  photos?: string[] | null;
+  scan_image?: string | null;
+  uploaded_image?: string | null;
 };
+
+export function listingImage(l: Pick<MarketListing, "image" | "uploaded_image" | "scan_image">, sellerPhoto = false): string | null {
+  return sellerPhoto ? l.uploaded_image || l.scan_image || l.image : l.image;
+}
 
 export const marketQuery = () =>
   queryOptions({
     queryKey: ["market"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("market_listings");
+      const { data, error } = await supabase.rpc("market_listings_with_photos");
       if (error) throw error;
-      return data as MarketListing[];
+      const rows = data as MarketListing[];
+      const paths = [...new Set(rows.flatMap(l => l.photos?.slice(0, 1) ?? []))];
+      const images = new Map<string, string>();
+      if (paths.length) {
+        const { data: signed } = await supabase.storage.from("listing-photos").createSignedUrls(paths, 3600);
+        for (const photo of signed ?? []) {
+          if (photo.path && photo.signedUrl && !photo.error) images.set(photo.path, photo.signedUrl);
+        }
+      }
+      return rows.map(l => ({ ...l, uploaded_image: l.photos?.[0] ? images.get(l.photos[0]) ?? null : null }));
     },
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
   });
 
 /** Carousel label: card game/sport line (e.g. Pokémon, Baseball), else the category (Stamps, Coins). */
