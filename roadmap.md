@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Admin bulk PDF import: sequential front/back pairs, unchanged scans, automatic approval, resumable progress
+- [x] Admin bulk PDF import: sequential front/back pairs, unchanged scans, automatic approval, resumable progress
 
 - [x] Move image review to its own admin page and verify navigation
 
