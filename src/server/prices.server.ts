@@ -108,6 +108,12 @@ export function ebayConfigured() {
   return Boolean(process.env["EBAY_CLIENT_ID"] && process.env["EBAY_CLIENT_SECRET"]);
 }
 
+/** Attempts a real eBay OAuth login; true when the stored credentials work. */
+export async function testEbayAuth(): Promise<boolean> {
+  ebayToken = null;
+  return (await getEbayToken()) !== null;
+}
+
 export function buildSearchQuery(item: PricedItem) {
   const bits = [item.year, item.set_name, item.name, item.number ? `#${item.number}` : null, item.variant];
   if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
