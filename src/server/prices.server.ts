@@ -113,7 +113,6 @@ export async function testEbayAuth(): Promise<boolean> {
   ebayToken = null;
   return (await getEbayToken()) !== null;
 }
-}
 
 export function buildSearchQuery(item: PricedItem) {
   const bits = [item.year, item.set_name, item.name, item.number ? `#${item.number}` : null, item.variant];
