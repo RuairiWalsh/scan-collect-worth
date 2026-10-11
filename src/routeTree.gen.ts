@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminImagesRouteImport } from './routes/_authenticated/admin-images'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
@@ -51,6 +52,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminImagesRoute =
+  AuthenticatedAdminImagesRouteImport.update({
+    id: '/admin-images',
+    path: '/admin-images',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
   id: '/collection',
   path: '/collection',
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin-images': typeof AuthenticatedAdminImagesRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/lot': typeof AuthenticatedLotRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/admin-images'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/admin-images'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/admin-images'
     | '/_authenticated/collection'
     | '/_authenticated/lot'
     | '/_authenticated/scan'
@@ -276,6 +289,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin-images': {
+      id: '/_authenticated/admin-images'
+      path: '/admin-images'
+      fullPath: '/admin-images'
+      preLoaderRoute: typeof AuthenticatedAdminImagesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/collection': {
@@ -367,6 +387,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminImagesRoute: typeof AuthenticatedAdminImagesRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedLotRoute: typeof AuthenticatedLotRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
@@ -378,6 +399,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminImagesRoute: AuthenticatedAdminImagesRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedLotRoute: AuthenticatedLotRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
