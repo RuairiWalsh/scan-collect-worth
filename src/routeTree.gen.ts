@@ -12,9 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
+import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
+import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedCardCatalogIdRouteImport } from './routes/_authenticated/card.$catalogId'
 import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated/item.$id'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
@@ -35,9 +38,19 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
   id: '/collection',
   path: '/collection',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
+  id: '/market',
+  path: '/market',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedScanRoute = AuthenticatedScanRouteImport.update({
@@ -48,6 +61,11 @@ const AuthenticatedScanRoute = AuthenticatedScanRouteImport.update({
 const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
+  id: '/sell',
+  path: '/sell',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCardCatalogIdRoute =
@@ -81,9 +99,12 @@ const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
+  '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
@@ -93,9 +114,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
+  '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
+  '/sell': typeof AuthenticatedSellRoute
   '/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
@@ -107,9 +131,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
+  '/_authenticated/market': typeof AuthenticatedMarketRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
+  '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/card/$catalogId': typeof AuthenticatedCardCatalogIdRoute
   '/_authenticated/item/$id': typeof AuthenticatedItemIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
@@ -121,9 +148,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin'
     | '/collection'
+    | '/market'
     | '/scan'
     | '/search'
+    | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
     | '/api/public/cron/daily-prices'
@@ -133,9 +163,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/admin'
     | '/collection'
+    | '/market'
     | '/scan'
     | '/search'
+    | '/sell'
     | '/card/$catalogId'
     | '/item/$id'
     | '/api/public/cron/daily-prices'
@@ -146,9 +179,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/admin'
     | '/_authenticated/collection'
+    | '/_authenticated/market'
     | '/_authenticated/scan'
     | '/_authenticated/search'
+    | '/_authenticated/sell'
     | '/_authenticated/card/$catalogId'
     | '/_authenticated/item/$id'
     | '/api/public/cron/daily-prices'
@@ -188,11 +224,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/collection': {
       id: '/_authenticated/collection'
       path: '/collection'
       fullPath: '/collection'
       preLoaderRoute: typeof AuthenticatedCollectionRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/market': {
+      id: '/_authenticated/market'
+      path: '/market'
+      fullPath: '/market'
+      preLoaderRoute: typeof AuthenticatedMarketRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/scan': {
@@ -207,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sell': {
+      id: '/_authenticated/sell'
+      path: '/sell'
+      fullPath: '/sell'
+      preLoaderRoute: typeof AuthenticatedSellRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/card/$catalogId': {
@@ -248,17 +305,23 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
+  AuthenticatedMarketRoute: typeof AuthenticatedMarketRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
+  AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedCardCatalogIdRoute: typeof AuthenticatedCardCatalogIdRoute
   AuthenticatedItemIdRoute: typeof AuthenticatedItemIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
+  AuthenticatedMarketRoute: AuthenticatedMarketRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
+  AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedCardCatalogIdRoute: AuthenticatedCardCatalogIdRoute,
   AuthenticatedItemIdRoute: AuthenticatedItemIdRoute,
 }
