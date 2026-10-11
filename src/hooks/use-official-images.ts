@@ -10,7 +10,7 @@ export function useOfficialImages(items: Item[]) {
   const sync = useServerFn(syncOfficialImages);
   const qc = useQueryClient();
   useEffect(() => {
-    const missing = items.filter((item) => item.category === "cards" && !item.product_image && item.thumbnail && !attempted.current.has(`${item.id}:${item.catalog_id}`)).slice(0, 50);
+    const missing = items.filter((item) => item.category === "cards" && (!item.product_image ? !!item.thumbnail : !!item.catalog_id) && !attempted.current.has(`${item.id}:${item.catalog_id}`)).slice(0, 50);
     if (!missing.length) return;
     missing.forEach((item) => attempted.current.add(`${item.id}:${item.catalog_id}`));
     sync({ data: { ids: missing.map((item) => item.id) } }).then(() => {
