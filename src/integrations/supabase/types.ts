@@ -762,6 +762,32 @@ export type Database = {
           variant: string
         }[]
       }
+      market_listings_with_photos: {
+        Args: never
+        Returns: {
+          catalog_id: string
+          category: string
+          condition: string
+          created_at: string
+          est_value: number
+          grade: string
+          grader: string
+          image: string
+          item_id: string
+          line: string
+          listing_id: string
+          name: string
+          number: string
+          photos: string[]
+          price: number
+          scan_image: string
+          seller_id: string
+          set_name: string
+          store_name: string
+          subcategory: string
+          variant: string
+        }[]
+      }
       merchant_update_order: {
         Args: {
           _carrier?: string

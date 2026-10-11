@@ -140,10 +140,10 @@ function Carousels() {
             {g.items.map((l) =>
               l.catalog_id ? (
                 <Link key={l.listing_id} to="/card/$catalogId" params={{ catalogId: l.catalog_id }} className="w-40 shrink-0 snap-start">
-                  <ListingCard listing={l} />
+                  <ListingCard listing={l} sellerPhoto={g.label === "Just listed"} />
                 </Link>
               ) : (
-                <ListingCard key={l.listing_id} listing={l} className="w-40 shrink-0 snap-start" />
+                <ListingCard key={l.listing_id} listing={l} className="w-40 shrink-0 snap-start" sellerPhoto={g.label === "Just listed"} />
               ),
             )}
           </div>

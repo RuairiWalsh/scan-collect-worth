@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Just listed: seller-uploaded photos with original-scan fallback; preserve other carousels
+
 - [x] Imported cards: review every match, publish searchable shared records, daily prices including unowned cards
 - [x] CardSight sports pricing with source-labelled completed-sale comps
 - [x] Admin bulk PDF import: sequential front/back pairs, unchanged scans, resumable progress

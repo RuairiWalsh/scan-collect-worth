@@ -1,17 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { usd } from "@/lib/image";
 import { conditionFor } from "@/lib/taxonomy";
-import type { MarketListing } from "@/lib/market";
+import { listingImage, type MarketListing } from "@/lib/market";
 
 export function listingCondition(l: MarketListing) {
   return l.condition === "graded" && l.grader ? `${l.grader} ${l.grade ?? ""}`.trim() : conditionFor(l.category, l.condition).label;
 }
 
-export function ListingCard({ listing: l, className = "" }: { listing: MarketListing; className?: string }) {
+export function ListingCard({ listing: l, className = "", sellerPhoto = false }: { listing: MarketListing; className?: string; sellerPhoto?: boolean }) {
+  const image = listingImage(l, sellerPhoto);
   return (
     <div className={`panel flex flex-col p-3 ${className}`}>
-      {l.image ? (
-        <img src={l.image} alt={l.name} className="aspect-[5/7] w-full rounded object-contain" loading="lazy" />
+      {image ? (
+        <img src={image} alt={l.name} className="aspect-[5/7] w-full rounded object-contain" loading="lazy" />
       ) : (
         <div className="aspect-[5/7] w-full rounded bg-muted" />
       )}
