@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ScanLine, Layers, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { tickerCards, type TickerCard } from "@/lib/ticker.functions";
-import hero from "@/assets/celebration-pikachu.jpg.asset.json";
 import { featuredCard } from "@/lib/featured-card.functions";
 
 export const Route = createFileRoute("/")({
@@ -107,7 +106,7 @@ function Index() {
           </div>
         </div>
         <div>
-          <img src={hero.url} alt="Official Pikachu 036/128 — ME: 30th Celebration Pokémon card" className="mx-auto h-auto w-full max-w-xs object-contain" width={733} height={1024} />
+          {featured?.image ? <img src={featured.image} alt="Scan-derived Pikachu 036/128 product image" className="mx-auto h-auto w-full max-w-xs object-contain" width={733} height={1024} /> : <div className="mx-auto flex aspect-[63/88] w-full max-w-xs items-center justify-center border-2 border-ink bg-muted text-muted-foreground"><ScanLine className="size-16" aria-label="No scanned card image yet" /></div>}
           <div className="mt-5 flex items-end justify-between gap-4 border-t-2 border-ink pt-4">
             <div>
               <p className="font-display text-lg font-bold">Pikachu · 036/128</p>

@@ -18,7 +18,7 @@
 - Collectible taxonomy and condition multipliers live in src/lib/taxonomy.ts — single source for categories.
 - Card scans are pinned to an exact JustTCG catalog card (items.catalog_id) in src/server/identify.server.ts; pricing fetches by that id, and editing a card's identity clears it — prevents prices from a look-alike printing.
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).
-- Keep the original scan in items.thumbnail and matched catalog artwork in items.official_image; resolve provider artwork only from the exact catalog entry's external IDs to avoid look-alike images.
+- Keep the original scan in items.thumbnail and scan-derived CardMagic images in items.product_image; never display or fetch provider catalog artwork. items.official_image is deprecated.
 - Live scan finds cards with a pure, tested rectangle detector (src/lib/card-detect.ts) instead of a fixed guide box — runs every tick on-device with no ML download.
 
 - Stamp collection facets are derived in src/lib/stamp-filters.ts from existing item metadata, with unknown buckets rather than guessed classifications; this keeps filtering client-side without changing scan or storage behavior.
@@ -29,4 +29,4 @@
 - Route loaders must never throw: wrap data lookups in try/catch and return an empty fallback, because a rejected loader renders the router error boundary and blanks the whole page.
 - Merchant order status changes go only through public.merchant_update_order (SECURITY DEFINER; transitions mirrored in src/lib/orders.ts, tested); orders has no client insert/update policy so future checkout and shipping webhooks write server-side.
 
-- CardSight AI (src/server/cardsight.server.ts, pure matcher in src/lib/cardsight.ts, tested) supplies official artwork for cards without a JustTCG catalog match — sports and non-TCG. Images are fetched server-side with CARDSIGHT_API_KEY and stored as data URIs in items.official_image.
+- CardMagic processing lives in src/server/cardmagic.server.ts: POST /v1/cardmagic/process uploads the user's scan, not catalog artwork. Exact printing/language identities share public.card_product_images through server-only atomic claims; ambiguous identities use a scan hash. Search, featured cards, collection and marketplace must use this cache or the original scan, never catalog_prices.image.

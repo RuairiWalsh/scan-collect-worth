@@ -18,6 +18,7 @@ export type Identification = {
   printed_text?: string;
   catalog_id?: string | null;
   official_image?: string | null;
+  product_image?: string | null;
 };
 
 export const identifyItem = createServerFn({ method: "POST" })
@@ -32,5 +33,14 @@ export const identifyItem = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { identifyImage } = await import("@/server/identify.server");
-    return identifyImage(data.image, data.strip);
+    const result = await identifyImage(data.image, data.strip);
+    if (result.ok && result.result.is_collectible && result.result.category === "cards") {
+      const { cachedCardMagic } = await import("@/server/cardmagic.server");
+      try {
+        result.result.product_image = await cachedCardMagic(result.result, data.image);
+      } catch (error) {
+        return { ...result, imageWarning: error instanceof Error ? error.message : "Product image unavailable; your scan is saved." };
+      }
+    }
+    return { ...result, imageWarning: undefined };
   });

@@ -106,6 +106,20 @@
       "when": 1791736790521,
       "tag": "0014_public_featured_card_price",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791750497722,
+      "tag": "0015_scan_derived_card_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791750556968,
+      "tag": "0016_marketplace_scan_derived_images",
+      "breakpoints": true
     }
   ]
 }

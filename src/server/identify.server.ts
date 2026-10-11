@@ -1,7 +1,6 @@
 // Server-only: identify a collectible photo, then pin it to an exact catalog card.
 import type { Identification } from "@/lib/scan.functions";
 import { identificationSchema as schema } from "@/lib/scan-schema";
-import { officialCardImage } from "@/lib/card-artwork";
 
 export async function identifyImage(image: string, strip?: string | undefined) {
   const stripInput = strip ? [{ type: "input_text", text: "Zoomed view of the bottom of the same card (collector number / set code):" }, { type: "input_image", image_url: strip, detail: "high" }] : [];
@@ -75,8 +74,8 @@ export async function identifyImage(image: string, strip?: string | undefined) {
             },
           }).catch(() => ({ index: -1 }));
           card = shortlist[pick.index]?.card ?? null;
-        } else if (!card && shortlist.length === 1 && shortlist[0]!.score >= 5) {
-          card = shortlist[0]!.card;
+        } else if (!card && shortlist.length === 1 && shortlist[0] && shortlist[0].score >= 5) {
+          card = shortlist[0].card;
         }
         if (card) {
           // Keep the language in the saved variant so the Japanese printing is priced and shown.
@@ -86,18 +85,10 @@ export async function identifyImage(image: string, strip?: string | undefined) {
           result.set_name = card.set_name ?? result.set_name;
           result.number = card.number ?? result.number;
           result.catalog_id = card.id;
-          result.official_image = officialCardImage(card);
           result.confidence = Math.max(result.confidence, 0.85);
         }
       }
-      // Sports / non-TCG cards (or TCG cards JustTCG couldn't pin): CardSight artwork.
-      if (!result.official_image) {
-        const { cardsightConfigured, cardsightArtwork } = await import("@/server/cardsight.server");
-        if (cardsightConfigured()) {
-          const img = await cardsightArtwork(result).catch(() => null);
-          if (img) result.official_image = img;
-        }
-      }
+      // All card images come from the scanned front, never from a provider catalog.
     }
     return { ok: true as const, result };
   } catch (e) {

@@ -29,6 +29,36 @@ export type Database = {
         }
         Relationships: []
       }
+      card_product_images: {
+        Row: {
+          card_key: string
+          catalog_id: string | null
+          claim_id: string
+          image: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          card_key: string
+          catalog_id?: string | null
+          claim_id: string
+          image?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          card_key?: string
+          catalog_id?: string | null
+          claim_id?: string
+          image?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       catalog_price_history: {
         Row: {
           catalog_id: string
@@ -175,6 +205,7 @@ export type Database = {
           price_low: number | null
           price_sources: Json
           price_updated_at: string | null
+          product_image: string | null
           quantity: number
           set_name: string | null
           status: string
@@ -205,6 +236,7 @@ export type Database = {
           price_low?: number | null
           price_sources?: Json
           price_updated_at?: string | null
+          product_image?: string | null
           quantity?: number
           set_name?: string | null
           status?: string
@@ -235,6 +267,7 @@ export type Database = {
           price_low?: number | null
           price_sources?: Json
           price_updated_at?: string | null
+          product_image?: string | null
           quantity?: number
           set_name?: string | null
           status?: string

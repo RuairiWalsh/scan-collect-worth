@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Replace all provider card artwork with scan-derived CardMagic images and a shared exact-card cache
+- [ ] Verify CardMagic processing and cache reuse
+
 - [x] Front-screen 30th Celebration Pikachu artwork and current cached price
 
 - [x] Filter chips always visible below collection search bar

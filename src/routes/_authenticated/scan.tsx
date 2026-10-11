@@ -133,6 +133,7 @@ function ScanPage() {
         const res = await identify({ data: { image: img.full, strip: img.strip } });
         if (!res.ok) throw new Error(res.error);
         const r = res.result;
+        if (res.imageWarning) toast.warning(res.imageWarning);
         if (!r.is_collectible) throw new Error("No collectible found in that shot.");
         const { data: row, error } = await supabase
           .from("items")
@@ -151,7 +152,7 @@ function ScanPage() {
             condition: r.grader ? "graded" : defaultCondition(r.category),
             ai_confidence: r.confidence,
             thumbnail: img.thumb,
-            official_image: r.official_image ?? null,
+            product_image: r.product_image ?? null,
             catalog_id: r.catalog_id ?? null,
           })
           .select("id")
@@ -271,7 +272,7 @@ function ScanPage() {
     const identity = ["name", "number", "set_name", "line"].some((k) => k in patch);
     const { error } = await supabase
       .from("items")
-      .update(identity ? { ...patch, catalog_id: null, official_image: null } : patch)
+      .update(identity ? { ...patch, catalog_id: null, official_image: null, product_image: null } : patch)
       .eq("id", id);
     if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["items", "batch"] });
