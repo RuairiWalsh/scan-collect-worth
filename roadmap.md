@@ -1,5 +1,7 @@
 # Roadmap
 
-- [x] Filter chips always visible just below the collection search bar (verified: All/Cards/Stamps/Coins row shows on phone viewport)
-- [x] Folders are multi-select tags (item_folders join table, chips on card page + scan batch, collection filter; verified 2 tags persist after reload)
-- [ ] Republish to ship both
+- [x] Filter chips always visible below collection search bar
+- [x] Folders are multi-select tags
+- [x] Admin + merchant roles (admin stats/users/approvals, merchant apply, listings, market page)
+- [ ] In-app checkout (Lymitz collects, pays merchants out) — waiting on user to confirm enabling Stripe payments
+- [ ] Republish to ship
