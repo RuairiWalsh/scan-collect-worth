@@ -235,15 +235,7 @@ function ApplyForm() {
 function MerchantListings() {
   const qc = useQueryClient();
   const { data: items = [] } = useQuery(itemsQuery("collection"));
-  const { data: listings = [] } = useQuery({
-    queryKey: ["my-listings"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from("listings").select("*").eq("seller_id", u.user!.id).eq("status", "active");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: listings = [] } = useQuery(myActiveListingsQuery);
   const invalidate = () => { qc.invalidateQueries({ queryKey: ["my-listings"] }); qc.invalidateQueries({ queryKey: ["market"] }); };
   const unlist = useMutation({
     mutationFn: async (id: string) => {
