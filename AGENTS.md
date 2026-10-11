@@ -22,7 +22,7 @@
 - Collectible taxonomy and condition multipliers live in src/lib/taxonomy.ts — single source for categories.
 - Card scans are pinned to an exact JustTCG catalog card (items.catalog_id) in src/server/identify.server.ts; pricing fetches by that id, and editing a card's identity clears it — prevents prices from a look-alike printing.
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).
-- Keep the original scan in items.thumbnail and scan-derived CardMagic images in items.product_image; never display or fetch provider catalog artwork. items.official_image is deprecated.
+- Keep the original scan in items.thumbnail and scan-derived CardMagic images in items.product_image; TCG artwork may come from TCGGraph CDN URLs (exact number match only) stored as the shared product image; CardMagic remains the fallback. items.official_image is deprecated.
 - Live scan finds cards with a pure, tested rectangle detector (src/lib/card-detect.ts) instead of a fixed guide box — runs every tick on-device with no ML download.
 
 - Stamp collection facets are derived in src/lib/stamp-filters.ts from existing item metadata, with unknown buckets rather than guessed classifications; this keeps filtering client-side without changing scan or storage behavior.
