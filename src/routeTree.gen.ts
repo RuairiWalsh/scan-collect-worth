@@ -15,7 +15,6 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
-import { Route as AuthenticatedMarketRouteImport } from './routes/_authenticated/market'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
@@ -52,11 +51,6 @@ const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
 const AuthenticatedLotRoute = AuthenticatedLotRouteImport.update({
   id: '/lot',
   path: '/lot',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedMarketRoute = AuthenticatedMarketRouteImport.update({
-  id: '/market',
-  path: '/market',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedScanRoute = AuthenticatedScanRouteImport.update({
@@ -108,7 +102,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
-  '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
   '/sell': typeof AuthenticatedSellRoute
@@ -124,7 +117,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
-  '/market': typeof AuthenticatedMarketRoute
   '/scan': typeof AuthenticatedScanRoute
   '/search': typeof AuthenticatedSearchRoute
   '/sell': typeof AuthenticatedSellRoute
@@ -142,7 +134,6 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/lot': typeof AuthenticatedLotRoute
-  '/_authenticated/market': typeof AuthenticatedMarketRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
@@ -160,7 +151,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/collection'
     | '/lot'
-    | '/market'
     | '/scan'
     | '/search'
     | '/sell'
@@ -176,7 +166,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/collection'
     | '/lot'
-    | '/market'
     | '/scan'
     | '/search'
     | '/sell'
@@ -193,7 +182,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/collection'
     | '/_authenticated/lot'
-    | '/_authenticated/market'
     | '/_authenticated/scan'
     | '/_authenticated/search'
     | '/_authenticated/sell'
@@ -255,13 +243,6 @@ declare module '@tanstack/react-router' {
       path: '/lot'
       fullPath: '/lot'
       preLoaderRoute: typeof AuthenticatedLotRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/market': {
-      id: '/_authenticated/market'
-      path: '/market'
-      fullPath: '/market'
-      preLoaderRoute: typeof AuthenticatedMarketRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/scan': {
@@ -327,7 +308,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedLotRoute: typeof AuthenticatedLotRoute
-  AuthenticatedMarketRoute: typeof AuthenticatedMarketRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
@@ -339,7 +319,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedLotRoute: AuthenticatedLotRoute,
-  AuthenticatedMarketRoute: AuthenticatedMarketRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,

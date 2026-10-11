@@ -462,6 +462,7 @@ export type Database = {
       market_listings: {
         Args: never
         Returns: {
+          catalog_id: string
           category: string
           condition: string
           created_at: string
@@ -470,6 +471,7 @@ export type Database = {
           grader: string
           image: string
           item_id: string
+          line: string
           listing_id: string
           name: string
           number: string
@@ -478,6 +480,7 @@ export type Database = {
           seller_id: string
           set_name: string
           store_name: string
+          subcategory: string
           variant: string
         }[]
       }
