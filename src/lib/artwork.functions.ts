@@ -15,7 +15,7 @@ export const syncOfficialImages = createServerFn({ method: "POST" })
     const { cachedCardMagic } = await import("@/server/cardmagic.server");
     for (const item of items ?? []) {
       if (!item.thumbnail) continue;
-      const image = await cachedCardMagic(item, item.thumbnail);
+      const image = await cachedCardMagic(item, item.thumbnail, context.userId);
       if (!image) continue;
       const { error } = await context.supabase.from("items").update({ product_image: image }).eq("id", item.id).eq("user_id", context.userId).is("product_image", null);
       if (error) throw new Error(error.message);

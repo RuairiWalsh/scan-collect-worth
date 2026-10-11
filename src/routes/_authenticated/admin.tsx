@@ -5,14 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/use-roles";
 import { usd } from "@/lib/image";
 import { Button } from "@/components/ui/button";
+import { AdminImageReview } from "@/components/AdminImageReview";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
       { title: "Admin — Lymitz" },
-      { name: "description", content: "Lymitz site stats, users and merchant approvals." },
+      { name: "description", content: "Lymitz site stats, users, image review and merchant approvals." },
       { property: "og:title", content: "Admin — Lymitz" },
-      { property: "og:description", content: "Lymitz site stats, users and merchant approvals." },
+      { property: "og:description", content: "Lymitz site stats, users, image review and merchant approvals." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -107,6 +108,8 @@ function AdminDashboard() {
   return (
     <main className="mx-auto max-w-6xl space-y-8 px-4 py-6">
       <h1 className="font-display text-3xl font-black">Admin</h1>
+
+      <AdminImageReview />
 
       <section>
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Site stats</h2>
