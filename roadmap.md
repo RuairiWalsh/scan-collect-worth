@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Move image review to its own admin page and verify navigation
+- [x] Move image review to its own admin page and verify navigation
 
 - [x] Admin image queue with approval required before sharing
 
