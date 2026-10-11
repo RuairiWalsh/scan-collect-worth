@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { dailyCatalogIds } from "@/lib/featured-card";
 
 // Nightly job: refresh the shared catalog_prices table for every catalog card
 // anyone owns, then update each owned item's saved value from the fresh price.
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
           .select("catalog_id")
           .not("catalog_id", "is", null);
         if (error) return Response.json({ ok: false, reason: error.message }, { status: 500 });
-        const ids = [...new Set((rows ?? []).map((r) => r.catalog_id as string))];
+        const ids = dailyCatalogIds((rows ?? []).map((r) => r.catalog_id as string));
 
         let updated = 0;
         let failed = 0;

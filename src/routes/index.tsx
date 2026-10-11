@@ -107,12 +107,12 @@ function Index() {
           </div>
         </div>
         <div>
-          <img src={hero.url} alt="Official Pikachu 036/128 — ME: 30th Celebration Pokémon card" className="mx-auto h-auto w-full max-w-sm object-contain" width={733} height={1024} />
+          <img src={hero.url} alt="Official Pikachu 036/128 — ME: 30th Celebration Pokémon card" className="mx-auto h-auto w-full max-w-xs object-contain" width={733} height={1024} />
           <div className="mt-5 flex items-end justify-between gap-4 border-t-2 border-ink pt-4">
             <div>
               <p className="font-display text-lg font-bold">Pikachu · 036/128</p>
               <p className="text-sm text-muted-foreground">ME: 30th Celebration · Near Mint · Holofoil</p>
-              <p className="mt-1 text-xs text-muted-foreground">JustTCG · Updated {featured?.updatedAt ? new Date(featured.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "—"}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Updated {featured?.updatedAt ? new Date(featured.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : "—"}</p>
             </div>
             <p className="tabular shrink-0 text-3xl font-bold">{featured?.price != null ? `$${featured.price.toFixed(2)}` : "—"}<span className="ml-1 text-xs font-normal text-muted-foreground">USD</span></p>
           </div>
