@@ -1,4 +1,17 @@
 import { canReuseCardImage, cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
+import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, type TcgGraphCard } from "@/lib/tcggraph";
+
+/** Official TCG artwork from TCGGraph's CDN for supported games; null when no exact printing matches. */
+export async function tcgGraphImage(item: CardImageIdentity): Promise<string | null> {
+  const key = process.env["TCG_GRAPH_API_KEY"];
+  const game = tcgGraphGame(item.line);
+  if (!key || !game || !item.name || !item.number) return null;
+  const params = new URLSearchParams({ game, name: item.name, language: tcgGraphLanguage(item.language), limit: "50" });
+  const res = await fetch(`https://api.tcggraph.com/v1/cards?${params}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) return null;
+  const body = await res.json() as { data?: TcgGraphCard[] };
+  return pickTcgGraphImage(body.data ?? [], item.number, item.set_name);
+}
 
 async function digest(value: string) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -46,7 +59,7 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   if (claimed.error) throw new Error("Could not save the card image cache.");
   if (!claimed.data?.length) return null;
   try {
-    const processed = await processCardMagic(image);
+    const processed = (await tcgGraphImage(item).catch(() => null)) ?? await processCardMagic(image);
     const { error: saveError } = await db.from("card_product_images").update({ image: processed, status: "ready", updated_at: new Date().toISOString() }).eq("card_key", cardKey).eq("claim_id", claim);
     if (saveError) throw new Error("Could not save the processed card image.");
     return processed;
