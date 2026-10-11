@@ -15,6 +15,10 @@ import { EMPTY_COIN_FILTER, matchesCoinFilter, type CoinFilter } from "@/lib/coi
 import { QuickChips } from "@/components/QuickChips";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { foldersQuery, itemFoldersQuery, useCreateFolder } from "@/components/FolderPicker";
+import { useRoles } from "@/hooks/use-roles";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
+import { Check, Tag } from "lucide-react";
 
 type SortKey = "added_desc" | "added_asc" | "value_desc" | "value_asc" | "year_desc" | "year_asc";
 
@@ -56,6 +60,21 @@ function CollectionPage() {
   const { data: folders = [] } = useQuery(foldersQuery());
   const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const createFolder = useCreateFolder();
+  const { isMerchant } = useRoles();
+  const navigate = useNavigate();
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const { data: listedIds = new Set<string>() } = useQuery({
+    queryKey: ["my-listings", "ids"],
+    enabled: isMerchant,
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from("listings").select("item_id").eq("seller_id", u.user!.id).eq("status", "active");
+      if (error) throw error;
+      return new Set(data.map((r) => r.item_id));
+    },
+  });
+  const togglePick = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const searching = q.trim().length > 0 || folder !== "all";
   const searched = useMemo(
@@ -345,9 +364,37 @@ function CollectionPage() {
           </Button>
         </div>
       ) : (
+        <>
+        {isMerchant && (
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {selecting ? (
+              <>
+                <span className="text-sm font-semibold">{picked.length} selected</span>
+                <Button size="sm" variant="outline" onClick={() => setPicked(shown.filter((i) => !listedIds.has(i.id)).map((i) => i.id))}>Select all shown</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setSelecting(false); setPicked([]); }}>Cancel</Button>
+              </>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setSelecting(true)}><Tag /> Select items to list</Button>
+            )}
+          </div>
+        )}
         <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {shown.map((i) => (
-            <li key={i.id}>
+          {shown.map((i) => {
+            const listed = listedIds.has(i.id);
+            const on = picked.includes(i.id);
+            return (
+            <li key={i.id} className="relative">
+              {listed && (
+                <span className="absolute left-2 top-2 z-10 rounded border-2 border-ink bg-destructive px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-destructive-foreground">Listed</span>
+              )}
+              {selecting && !listed && (
+                <button type="button" role="checkbox" aria-checked={on} aria-label={`Select ${i.name}`} onClick={() => togglePick(i.id)}
+                  className={`absolute inset-0 z-20 rounded-lg ${on ? "ring-4 ring-primary" : ""}`}>
+                  <span className={`absolute right-2 top-2 flex size-7 items-center justify-center rounded border-2 border-ink ${on ? "bg-primary text-primary-foreground" : "bg-background"}`}>
+                    {on && <Check className="size-4" />}
+                  </span>
+                </button>
+              )}
               <Link to="/item/$id" params={{ id: i.id }} className="panel block overflow-hidden transition hover:shadow-hard-sm">
                 <ItemArtwork item={i} className="aspect-[63/88] w-full border-b-2 border-ink" />
                 <div className="p-3">
@@ -364,8 +411,18 @@ function CollectionPage() {
                 </div>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
+        {selecting && picked.length > 0 && (
+          <div className="fixed inset-x-0 bottom-16 z-40 border-t-2 border-ink bg-background md:bottom-0">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+              <span className="text-sm font-semibold">{picked.length} item{picked.length === 1 ? "" : "s"} selected</span>
+              <Button onClick={() => navigate({ to: "/lot", search: { items: picked.join(",") } })}>Create listing lot</Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
