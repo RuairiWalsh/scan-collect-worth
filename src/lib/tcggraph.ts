@@ -6,8 +6,19 @@ const GAMES: Record<string, string> = {
   "one piece": "one-piece", lorcana: "disney-lorcana", "disney lorcana": "disney-lorcana",
 };
 
+const SLUGS: Record<string, string> = { "pokemon-japan": "pokemon", "one-piece-card-game": "one-piece", "yugioh": "yugioh", "magic-the-gathering": "magic-the-gathering", "disney-lorcana": "disney-lorcana", "pokemon": "pokemon", "star-wars-unlimited": "star-wars-unlimited", "digimon-card-game": "digimon", "dragon-ball-super-fusion-world": "dragon-ball-super" };
+
 export function tcgGraphGame(line?: string | null): string | null {
-  return GAMES[(line ?? "").trim().toLowerCase()] ?? null;
+  const l = (line ?? "").trim().toLowerCase();
+  if (GAMES[l] ?? SLUGS[l]) return GAMES[l] ?? SLUGS[l] ?? null;
+  // Catalog ids start with the provider game slug, e.g. "pokemon-me-30th-...".
+  const prefix = Object.keys(SLUGS).sort((a, b) => b.length - a.length).find(k => l.startsWith(`${k}-`));
+  return prefix ? SLUGS[prefix] ?? null : null;
+}
+
+/** Catalog names sometimes carry the number ("Pikachu - 036/128"); TCGGraph wants just the card name. */
+export function tcgGraphName(name: string): string {
+  return name.replace(/\s+-\s+[\w/]+$/, "").replace(/\s*\(.*?\)\s*/g, " ").trim();
 }
 
 export function tcgGraphLanguage(language?: string | null): string {
@@ -29,6 +40,7 @@ export function pickTcgGraphImage(cards: TcgGraphCard[], number?: string | null,
   const sameNumber = cards.filter(c => num(c.collectorNumber) === wanted && (c.images?.large || c.images?.normal));
   const setKey = (s?: string | null) => norm((s ?? "").replace(/\bset\b/gi, ""));
   const set = setKey(setName);
-  const pick = (set && sameNumber.find(c => setKey(c.set?.name) === set)) || (sameNumber.length === 1 ? sameNumber[0] : null);
+  const sameSet = (n?: string | null) => { const k = setKey(n); return !!set && !!k && (k === set || (k.length >= 4 && set.endsWith(k)) || (set.length >= 4 && k.endsWith(set))); };
+  const pick = (set && (sameNumber.find(c => setKey(c.set?.name) === set) ?? sameNumber.find(c => sameSet(c.set?.name)))) || (sameNumber.length === 1 ? sameNumber[0] : null);
   return pick ? (pick.images?.large || pick.images?.normal || null) : null;
 }

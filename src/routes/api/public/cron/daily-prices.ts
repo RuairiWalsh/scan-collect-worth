@@ -75,6 +75,8 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
       }
       if (items.length < 500) break;
     }
+    const { cachedTcgGraphImages } = await import("@/server/cardmagic.server");
+    for (let i = 0; i < ids.length; i += 200) await cachedTcgGraphImages(ids.slice(i, i + 200)).catch(() => null);
     return Response.json({ ok: true, cards: ids.length, updated, failed, revalued });
   } } },
 });

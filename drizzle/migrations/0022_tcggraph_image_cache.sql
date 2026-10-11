@@ -1,0 +1,2 @@
+ALTER TABLE public.catalog_prices ADD COLUMN IF NOT EXISTS tcggraph_image text, ADD COLUMN IF NOT EXISTS tcggraph_checked_at timestamptz;
+GRANT SELECT (tcggraph_image) ON public.catalog_prices TO anon;

@@ -1,12 +1,12 @@
 import { canReuseCardImage, cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
-import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, type TcgGraphCard } from "@/lib/tcggraph";
+import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, tcgGraphName, type TcgGraphCard } from "@/lib/tcggraph";
 
 /** Official TCG artwork from TCGGraph's CDN for supported games; null when no exact printing matches. */
 export async function tcgGraphImage(item: CardImageIdentity): Promise<string | null> {
   const key = process.env["TCG_GRAPH_API_KEY"];
   const game = tcgGraphGame(item.line);
   if (!key || !game || !item.name || !item.number) return null;
-  const params = new URLSearchParams({ game, name: item.name, language: tcgGraphLanguage(item.language), limit: "50" });
+  const params = new URLSearchParams({ game, name: tcgGraphName(item.name), collectorNumber: item.number.split("/")[0]?.trim() || item.number, language: tcgGraphLanguage(item.language), limit: "50" });
   const res = await fetch(`https://api.tcggraph.com/v1/cards?${params}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
   if (!res.ok) return null;
   const body = await res.json() as { data?: TcgGraphCard[] };
@@ -41,6 +41,10 @@ export async function processCardMagic(image: string): Promise<string> {
 
 /** Admin writes are restricted to the shared derived-image cache, after the caller is authenticated. */
 export async function cachedCardMagic(item: CardImageIdentity, image: string, userId: string): Promise<string | null> {
+  if (item.catalog_id) {
+    const tcg = (await cachedTcgGraphImages([item.catalog_id]).catch(() => null))?.get(item.catalog_id);
+    if (tcg) return tcg;
+  }
   const identity = cardImageIdentity(item);
   const cardKey = await digest(identity ?? `scan:${image}`);
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
@@ -69,8 +73,35 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   }
 }
 
+const RECHECK_MS = 30 * 86_400_000;
+
+/** Looks up TCGGraph artwork once per catalog card and caches the CDN URL (or a miss) on catalog_prices. */
+export async function cachedTcgGraphImages(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!ids.length) return out;
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+  const { data } = await db.from("catalog_prices").select("catalog_id,name,number,set_name,game,tcggraph_image,tcggraph_checked_at").in("catalog_id", ids);
+  const stale: NonNullable<typeof data> = [];
+  for (const r of data ?? []) {
+    if (r.tcggraph_image) out.set(r.catalog_id, r.tcggraph_image);
+    else if (tcgGraphGame(r.game ?? r.catalog_id) && (!r.tcggraph_checked_at || Date.parse(r.tcggraph_checked_at) < Date.now() - RECHECK_MS)) stale.push(r);
+  }
+  for (let i = 0; i < stale.length; i += 5) {
+    await Promise.all(stale.slice(i, i + 5).map(async r => {
+      const image = await tcgGraphImage({ line: r.game ?? r.catalog_id, name: r.name, number: r.number, set_name: r.set_name, language: (r.game ?? r.catalog_id).startsWith("pokemon-japan") ? "ja" : "en" }).catch(() => undefined);
+      if (image === undefined) return; // network failure: retry next time
+      await db.from("catalog_prices").update({ tcggraph_image: image, tcggraph_checked_at: new Date().toISOString() }).eq("catalog_id", r.catalog_id);
+      if (image) { out.set(r.catalog_id, image); await db.from("items").update({ product_image: image }).eq("catalog_id", r.catalog_id); }
+    }));
+  }
+  return out;
+}
+
 export async function catalogProductImages(db: { from: (table: "card_product_images") => any }, ids: string[]): Promise<Map<string, string>> { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (!ids.length) return new Map();
-  const { data } = await db.from("card_product_images").select("catalog_id,image").in("catalog_id", ids).eq("status", "ready").eq("review_status", "approved");
-  return new Map((data ?? []).filter((r: { catalog_id: string | null; image: string | null }) => r.catalog_id && r.image).map((r: { catalog_id: string; image: string }) => [r.catalog_id, r.image]));
+  const tcg = await cachedTcgGraphImages(ids).catch(() => new Map<string, string>());
+  const rest = ids.filter(id => !tcg.has(id));
+  if (!rest.length) return tcg;
+  const { data } = await db.from("card_product_images").select("catalog_id,image").in("catalog_id", rest).eq("status", "ready").eq("review_status", "approved");
+  return new Map([...tcg, ...(data ?? []).filter((r: { catalog_id: string | null; image: string | null }) => r.catalog_id && r.image).map((r: { catalog_id: string; image: string }) => [r.catalog_id, r.image] as [string, string])]);
 }
