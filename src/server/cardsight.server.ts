@@ -1,4 +1,4 @@
-// Server-only: CardSight AI catalog + card images (sports / non-TCG artwork).
+// Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
 import { cardsightNumber, pickCardsightCard, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
 
 const BASE = "https://api.cardsight.ai";
@@ -44,22 +44,3 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
   return pickCardsightCard(cards, item);
 }
 
-/** Card image as a data URI, or null when CardSight has no image for it. */
-export async function cardsightImageDataUri(cardId: string): Promise<string | null> {
-  const res = await csFetch(`/v1/images/cards/${cardId}?format=raw`);
-  if (!res) return null;
-  const type = res.headers.get("content-type") ?? "";
-  if (!type.startsWith("image/")) return null;
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.length > 400_000) return null; // keep DB rows small
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  return `data:${type.split(";")[0]};base64,${btoa(bin)}`;
-}
-
-/** One call: find the card and return its image. */
-export async function cardsightArtwork(item: CardsightQuery): Promise<string | null> {
-  const card = await cardsightFindCard(item);
-  if (!card) return null;
-  return cardsightImageDataUri(card.id);
-}

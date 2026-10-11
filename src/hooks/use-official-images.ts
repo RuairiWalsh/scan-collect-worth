@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { syncOfficialImages } from "@/lib/artwork.functions";
 import type { Item } from "@/lib/items";
+import { toast } from "sonner";
 
 export function useOfficialImages(items: Item[]) {
   const attempted = useRef(new Set<string>());
@@ -15,6 +16,6 @@ export function useOfficialImages(items: Item[]) {
     sync({ data: { ids: missing.map((item) => item.id) } }).then(() => {
       qc.invalidateQueries({ queryKey: ["items"] });
       missing.forEach((item) => qc.invalidateQueries({ queryKey: ["item", item.id] }));
-    }).catch(() => {});
+    }).catch((error) => toast.warning(error instanceof Error ? error.message : "Product image processing unavailable; original scans are still shown."));
   }, [items, sync, qc]);
 }
