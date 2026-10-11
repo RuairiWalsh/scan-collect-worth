@@ -110,7 +110,7 @@ function AdminDashboard() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-black">Admin</h1>
         <Button asChild variant="outline">
-          <Link to="/admin-images"><Images className="size-4" />Image review</Link>
+          <Link to="/admin-import"><Images className="size-4" />Scanner PDF imports</Link>
         </Button>
       </div>
 

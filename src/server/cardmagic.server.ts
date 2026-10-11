@@ -38,7 +38,7 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   if (cached?.status === "failed") return null;
   if (cached?.status === "processing" && Date.parse(cached.updated_at) > Date.now() - 10 * 60_000) return null;
   const claim = crypto.randomUUID();
-  const row = { card_key: cardKey, catalog_id: item.catalog_id ?? null, claim_id: claim, updated_at: new Date().toISOString(), status: "processing", submitted_by: userId, original_scan: image, card_metadata: { ...item }, review_status: "pending" };
+  const row = { card_key: cardKey, catalog_id: item.catalog_id ?? null, claim_id: claim, updated_at: new Date().toISOString(), status: "processing", submitted_by: userId, original_scan: image, card_metadata: { ...item }, review_status: "approved" };
   const claimed = cached
     ? await db.from("card_product_images").update(row).eq("card_key", cardKey).eq("claim_id", cached.claim_id).select("card_key")
     : await db.from("card_product_images").insert(row).select("card_key");
