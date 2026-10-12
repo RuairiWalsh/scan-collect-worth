@@ -87,7 +87,7 @@ export async function cardsightIdentifyImage(dataUrl: string): Promise<Cardsight
   try {
     const bytes = Uint8Array.from(atob(m[2]!), (c) => c.charCodeAt(0));
     const form = new FormData();
-    form.append("image", new Blob([bytes], { type: m[1] }), "scan.jpg");
+    form.append("image", new Blob([bytes], { type: m[1] ?? "image/jpeg" }), "scan.jpg");
     const res = await fetch(`${BASE}/v1/identify/card`, { method: "POST", headers: { "X-API-Key": key }, body: form, signal: AbortSignal.timeout(20_000) });
     if (!res.ok) return null;
     const j = (await res.json()) as { detections?: { confidence: "High" | "Medium" | "Low"; card?: { id?: string; name?: string; number?: string; year?: string; releaseName?: string; setName?: string } }[] };
