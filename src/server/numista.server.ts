@@ -38,13 +38,13 @@ export async function numistaType(typeId: number): Promise<NumistaTypeData | nul
     nFetch<NumistaIssue[]>(`/types/${typeId}/issues?lang=en`),
   ]);
   if (!type) return null;
-  const data: NumistaTypeData = {
+  const data = {
     id: type.id, title: type.title, issuer: type.issuer, min_year: type.min_year, max_year: type.max_year,
     value: type.value, composition: type.composition,
     obverse: { picture: type.obverse?.picture, thumbnail: type.obverse?.thumbnail },
     reverse: { picture: type.reverse?.picture, thumbnail: type.reverse?.thumbnail },
     issues: issues ?? [],
-  };
+  } as NumistaTypeData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
   await (db as any).from("numista_types").upsert({ type_id: typeId, data, fetched_at: new Date().toISOString() });
   return data;
