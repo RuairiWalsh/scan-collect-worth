@@ -24,8 +24,16 @@ export function pointsInRange(points: SparkPoint[], days: number, now = Date.now
   return i > 0 ? pts.slice(i - 1) : pts;
 }
 
+/** Smallest range holding at least 2 points, so sparse data (e.g. weekly sports sales) doesn't open on a flat single-point view. */
+export function defaultRange(points: SparkPoint[], now = Date.now()): RangeKey {
+  for (const r of RANGES) {
+    if (pointsInRange(points, r.days, now).length >= 2) return r.key;
+  }
+  return "All";
+}
+
 export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
-  const [range, setRange] = useState<RangeKey>("1W");
+  const [range, setRange] = useState<RangeKey>(() => defaultRange(points));
   const pts = pointsInRange(points, RANGES.find((r) => r.key === range)!.days);
   const [active, setActive] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
