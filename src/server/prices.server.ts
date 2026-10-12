@@ -362,12 +362,17 @@ export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
     const pcgs = await import("@/server/pcgs.server").then((m) => m.pcgsPrice(item)).catch(() => []);
     if (pcgs.length) return pcgs;
   }
-  const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   if (item.category === "coins") {
+    // Coins matched to an exact Numista type/issue use the Numista estimate only;
+    // eBay asking prices are the fallback when there is no Numista match.
     const { parseNumistaId } = await import("@/lib/numista");
     const n = parseNumistaId(item.catalog_id);
-    if (n) tasks.push(import("@/server/numista.server").then((m) => m.numistaPrice(n.typeId, n.issueId, item.condition)));
+    if (n) {
+      const numista = await import("@/server/numista.server").then((m) => m.numistaPrice(n.typeId, n.issueId, item.condition)).catch(() => []);
+      if (numista.length) return numista;
+    }
   }
+  const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   const settled = await Promise.allSettled(tasks);
   return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
 }
