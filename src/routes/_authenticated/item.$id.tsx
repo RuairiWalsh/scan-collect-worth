@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { ArrowLeft, ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { itemQuery, priceHistoryQuery, catalogHistoryForQuery, type Item } from "@/lib/items";
+import { sportsSalesHistory } from "@/lib/sports-history.functions";
 import { trimPresale } from "@/lib/collection-history";
 import { usd } from "@/lib/image";
 import { TAXONOMY, CATEGORY_KEYS, conditionFor, type CategoryKey } from "@/lib/taxonomy";
@@ -43,11 +44,21 @@ function ItemPage() {
   const { data: item } = useQuery(itemQuery(id));
   const { data: history } = useQuery(priceHistoryQuery(id));
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
+  const fetchSales = useServerFn(sportsSalesHistory);
+  const isSports = item?.subcategory === "sports" && !!item?.catalog_id;
+  const { data: sales } = useQuery({
+    queryKey: ["sports_sales", id, item?.catalog_id, item?.condition, item?.variant, item?.grader, item?.grade],
+    queryFn: () => fetchSales({ data: { itemId: id } }),
+    enabled: isSports,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
   useOfficialImages(item ? [item] : []);
   if (!item) return <p className="p-10 text-center text-muted-foreground">Loading…</p>;
   // Matched cards: use the card's full market history, scaled to this copy's condition/printing.
   let points: HistoryPoint[] = history ?? [];
-  if (item.catalog_id && market && market.length > 1) {
+  if (isSports && sales && sales.points.length > 1) {
+    points = sales.points.map((p) => ({ est_value: p.est_value, price_low: null, price_high: null, recorded_at: p.recorded_at }));
+  } else if (item.catalog_id && market && market.length > 1) {
     const sorted = trimPresale([...market].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at)));
     const latest = [...sorted].reverse().find((p) => p.nm_price != null)?.nm_price ?? null;
     const ratio = latest && item.est_value != null ? item.est_value / latest : 1;
