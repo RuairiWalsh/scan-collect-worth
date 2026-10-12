@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminCoinImagesRouteImport } from './routes/_authenticated/admin-coin-images'
 import { Route as AuthenticatedAdminImagesRouteImport } from './routes/_authenticated/admin-images'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin-import'
+import { Route as AuthenticatedAdminStampsRouteImport } from './routes/_authenticated/admin-stamps'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
 import { Route as AuthenticatedScanRouteImport } from './routes/_authenticated/scan'
@@ -73,6 +74,12 @@ const AuthenticatedAdminImportRoute =
   AuthenticatedAdminImportRouteImport.update({
     id: '/admin-import',
     path: '/admin-import',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminStampsRoute =
+  AuthenticatedAdminStampsRouteImport.update({
+    id: '/admin-stamps',
+    path: '/admin-stamps',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedCollectionRoute = AuthenticatedCollectionRouteImport.update({
@@ -163,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
+  '/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -187,6 +195,7 @@ export interface FileRoutesByTo {
   '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
+  '/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
   '/scan': typeof AuthenticatedScanRoute
@@ -213,6 +222,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/_authenticated/admin-images': typeof AuthenticatedAdminImagesRoute
   '/_authenticated/admin-import': typeof AuthenticatedAdminImportRoute
+  '/_authenticated/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/lot': typeof AuthenticatedLotRoute
   '/_authenticated/scan': typeof AuthenticatedScanRoute
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
+    | '/admin-stamps'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
+    | '/admin-stamps'
     | '/collection'
     | '/lot'
     | '/scan'
@@ -288,6 +300,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-coin-images'
     | '/_authenticated/admin-images'
     | '/_authenticated/admin-import'
+    | '/_authenticated/admin-stamps'
     | '/_authenticated/collection'
     | '/_authenticated/lot'
     | '/_authenticated/scan'
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-import'
       fullPath: '/admin-import'
       preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin-stamps': {
+      id: '/_authenticated/admin-stamps'
+      path: '/admin-stamps'
+      fullPath: '/admin-stamps'
+      preLoaderRoute: typeof AuthenticatedAdminStampsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/collection': {
@@ -491,6 +511,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminCoinImagesRoute: typeof AuthenticatedAdminCoinImagesRoute
   AuthenticatedAdminImagesRoute: typeof AuthenticatedAdminImagesRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
+  AuthenticatedAdminStampsRoute: typeof AuthenticatedAdminStampsRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedLotRoute: typeof AuthenticatedLotRoute
   AuthenticatedScanRoute: typeof AuthenticatedScanRoute
@@ -505,6 +526,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminCoinImagesRoute: AuthenticatedAdminCoinImagesRoute,
   AuthenticatedAdminImagesRoute: AuthenticatedAdminImagesRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
+  AuthenticatedAdminStampsRoute: AuthenticatedAdminStampsRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedLotRoute: AuthenticatedLotRoute,
   AuthenticatedScanRoute: AuthenticatedScanRoute,
