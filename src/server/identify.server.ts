@@ -150,9 +150,45 @@ export async function identifyImage(image: string, strip?: string | undefined, b
       }
       // All card images come from the scanned front, never from a provider catalog.
     }
+    if (result.is_collectible && result.category === "coins") {
+      await matchNumista(result, data.image, back, streamJson).catch((e) => console.error("Numista match failed", e));
+    }
     return { ok: true as const, result };
   } catch (e) {
     if (e instanceof AiError) return { ok: false as const, error: e.message, status: e.status };
     throw e;
   }
+}
+
+type StreamJson = typeof import("@/server/ai.server").streamJson;
+
+/** Pin a coin to its exact Numista type/issue; images then come from Numista (cached ≤7 days). */
+async function matchNumista(result: Identification, image: string, back: string | undefined, streamJson: StreamJson) {
+  const { numistaConfigured, numistaSearch, numistaType, rankNumistaTypes, pickNumistaIssue } = await import("@/server/numista.server");
+  const { numistaCatalogId, numistaImagePath } = await import("@/lib/numista");
+  if (!numistaConfigured() || !result.name) return;
+  const types = rankNumistaTypes(await numistaSearch(result.name, result.year), { country: result.set_name, year: result.year }).slice(0, 10);
+  if (!types.length) return;
+  let picked = types.length === 1 ? types[0]! : null;
+  if (!picked) {
+    const pick = await streamJson<{ index: number }>({
+      instructions: "Match a photographed coin to an exact catalog type. Compare country, denomination, design, metal and date range. Answer -1 if none clearly match.",
+      content: [
+        { type: "input_text", text: `Read: ${result.printed_text ?? ""}\nGuess: ${result.year ?? "?"} ${result.set_name ?? "?"} ${result.name} ${result.variant ?? ""}\nCandidates:\n` + types.map((t, i) => `${i}. ${t.title} | ${t.issuer?.name ?? "?"} | ${t.min_year ?? "?"}-${t.max_year ?? "?"} | ${t.object_type?.name ?? ""}`).join("\n") },
+        { type: "input_image", image_url: image, detail: "high" },
+        ...(back ? [{ type: "input_image", image_url: back, detail: "high" }] : []),
+      ],
+      schemaName: "numista_pick",
+      schema: { type: "object", additionalProperties: false, required: ["index"], properties: { index: { type: "integer" } } },
+    }).catch(() => ({ index: -1 }));
+    picked = types[pick.index] ?? null;
+  }
+  if (!picked) return;
+  const type = await numistaType(picked.id);
+  const issue = type?.issues ? pickNumistaIssue(type.issues, { year: result.year, mint: result.variant, proof: /proof/i.test(result.variant ?? "") }) : null;
+  result.catalog_id = numistaCatalogId(picked.id, issue?.id ?? null);
+  result.product_image = numistaImagePath(picked.id);
+  result.name = picked.title;
+  result.set_name = picked.issuer?.name ?? result.set_name;
+  result.confidence = Math.max(result.confidence, issue ? 0.85 : 0.7);
 }

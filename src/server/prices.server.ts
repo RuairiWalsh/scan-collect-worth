@@ -355,6 +355,12 @@ export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
     const settled = await Promise.allSettled(tasks);
     return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
   }
-  const settled = await Promise.allSettled([ebay(item)]);
+  const tasks: Promise<PriceSource[]>[] = [ebay(item)];
+  if (item.category === "coins") {
+    const { parseNumistaId } = await import("@/lib/numista");
+    const n = parseNumistaId(item.catalog_id);
+    if (n) tasks.push(import("@/server/numista.server").then((m) => m.numistaPrice(n.typeId, n.issueId, item.condition)));
+  }
+  const settled = await Promise.allSettled(tasks);
   return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
 }

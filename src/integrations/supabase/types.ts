@@ -527,6 +527,24 @@ export type Database = {
         }
         Relationships: []
       }
+      numista_types: {
+        Row: {
+          data: Json
+          fetched_at: string
+          type_id: number
+        }
+        Insert: {
+          data?: Json
+          fetched_at?: string
+          type_id: number
+        }
+        Update: {
+          data?: Json
+          fetched_at?: string
+          type_id?: number
+        }
+        Relationships: []
+      }
       order_events: {
         Row: {
           created_at: string

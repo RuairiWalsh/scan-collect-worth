@@ -176,6 +176,13 @@
       "when": 1791763043156,
       "tag": "0024_sports_image_approval",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791829497491,
+      "tag": "0025_numista_cache",
+      "breakpoints": true
     }
   ]
 }
