@@ -142,6 +142,17 @@ export function buildSearchQuery(item: PricedItem) {
   return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Estimate from eBay asking prices. Slabbed coins (special issues like the
+ * WTC silver dollar) sell well below asking, so until sold-listing access is
+ * available they are estimated at 75% of the median asking price.
+ */
+export function ebayEstimate(item: PricedItem, prices: number[]): number {
+  const med = trimmedMedian(prices);
+  if (item.category === "coins" && item.condition === "graded") return round2(med * 0.75);
+  return med;
+}
+
 /** eBay Browse API — current listings (fixed price) matching the item. */
 export async function ebay(item: PricedItem): Promise<PriceSource[]> {
   const token = await getEbayToken();
