@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,6 +124,33 @@ export function AdminCardImport() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Import failed."); setPhase("Paused"); }
     finally { setRunning(false); }
   }
+  const [rotating, setRotating] = useState<string | null>(null);
+  async function rotateImage(path: string) {
+    setRotating(path);
+    try {
+      const { data, error } = await supabase.storage.from("admin-card-scans").createSignedUrl(path, 300);
+      if (error || !data) throw new Error(error?.message ?? "Could not load image.");
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Could not load image."));
+        img.src = data.signedUrl;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalHeight; canvas.height = image.naturalWidth;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Rotation is not supported in this browser.");
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Could not save rotated image.")), "image/png"));
+      const { error: uploadError } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+      if (uploadError) throw new Error(uploadError.message);
+      await qc.invalidateQueries({ queryKey: ["admin-import-previews"] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not rotate image."); }
+    finally { setRotating(null); }
+  }
   function edit(row: Pair) {
     const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
     const str = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]) : "";
@@ -173,7 +200,7 @@ export function AdminCardImport() {
         <div className="space-y-3">{pairs.data?.map(row => {
           const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
           return <article key={row.id} className="flex flex-wrap items-center gap-4 border-b border-border pb-3">
-            <div className="flex gap-2">{[row.front_path, row.back_path].map((path, i) => <img key={path} src={images.data?.get(path) ?? undefined} alt={`Card ${row.pair_index + 1} ${i ? "back" : "front"}`} className="h-24 w-16 bg-muted object-contain" loading="lazy" />)}</div>
+            <div className="flex gap-2">{[row.front_path, row.back_path].map((path, i) => <div key={path} className="space-y-1"><img src={images.data?.get(path) ?? undefined} alt={`Card ${row.pair_index + 1} ${i ? "back" : "front"}`} className="h-24 w-16 bg-muted object-contain" loading="lazy" /><Button variant="outline" size="sm" className="w-full" disabled={rotating === path || running} aria-label={`Rotate ${i ? "back" : "front"} image`} onClick={() => void rotateImage(path)}><RotateCw className={rotating === path ? "animate-spin" : undefined} />{rotating === path ? "…" : "Rotate"}</Button></div>)}</div>
             <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">Card {row.pair_index + 1} · Pages {row.pair_index * 2 + 1}–{row.pair_index * 2 + 2}</p><h3 className="break-words font-bold">{typeof metadata["name"] === "string" ? metadata["name"] : "Scanned card"}</h3><p className="text-xs text-muted-foreground">{[metadata["set_name"], metadata["number"], metadata["year"]].filter(v => typeof v === "string").join(" · ")}</p><p className="mt-1 text-sm font-semibold">{labels[row.status] ?? row.status}</p>{row.error && <p className="mt-1 text-xs text-destructive">{row.error}</p>}</div>
             {row.status === "needs_details" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Review card match</Button>}
           </article>;
@@ -182,7 +209,7 @@ export function AdminCardImport() {
       </>}
     </section>
     <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Review card match</DialogTitle></DialogHeader>
-      {editing && <div className="grid grid-cols-2 gap-3">{[editing.front_path, editing.back_path].map((path, i) => <a key={path} href={images.data?.get(path) ?? undefined} target="_blank" rel="noreferrer"><img src={images.data?.get(path) ?? undefined} alt={`Review ${i ? "back" : "front"}`} className="h-64 w-full bg-muted object-contain" /></a>)}</div>}
+      {editing && <div className="grid grid-cols-2 gap-3">{[editing.front_path, editing.back_path].map((path, i) => <div key={path} className="space-y-2"><a href={images.data?.get(path) ?? undefined} target="_blank" rel="noreferrer"><img src={images.data?.get(path) ?? undefined} alt={`Review ${i ? "back" : "front"}`} className="h-64 w-full bg-muted object-contain" /></a><Button type="button" variant="outline" size="sm" disabled={rotating === path} onClick={() => void rotateImage(path)}><RotateCw className={rotating === path ? "animate-spin" : undefined} />Rotate {i ? "back" : "front"}</Button></div>)}</div>}
       <form onSubmit={saveDetails} className="space-y-4"><div className="grid grid-cols-2 gap-3">{(["name", "set_name", "number", "year", "line", "variant", "language"] as const).map(key => <label key={key} className="space-y-1 text-xs font-semibold">{{name:"Card / player name",set_name:"Set",number:"Card number",year:"Year",line:"Game / sport",variant:"Variant",language:"Language"}[key]}<Input required={key !== "variant"} value={details[key]} onChange={e => setDetails(d => ({ ...d, [key]: e.target.value }))} /></label>)}<label className="space-y-1 text-xs font-semibold">Category<select className="block h-9 w-full rounded-md border border-input bg-background px-2" value={details.subcategory} onChange={e => { const v = e.target.value; if (v === "sports" || v === "tcg" || v === "nonsport") setDetails(d => ({ ...d, subcategory: v })); }}><option value="sports">Sports</option><option value="tcg">TCG</option><option value="nonsport">Non-sport</option></select></label></div><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Confirm match & publish card"}</Button></form>
     </DialogContent></Dialog>
   </div>;
