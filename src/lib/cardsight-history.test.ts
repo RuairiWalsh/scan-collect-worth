@@ -10,9 +10,9 @@ describe("cardsightSalesSeries", () => {
   it("groups base raw sales by week, excluding parallels", () => {
     const s = cardsightSalesSeries(data, { condition: "raw_ungraded" });
     expect(s.map(p => p.count)).toEqual([1, 2]);
-    expect(s[0].est_value).toBe(9);
+    expect(s[0]?.est_value).toBe(9);
   });
   it("uses graded sales for the matching grade", () => {
-    expect(cardsightSalesSeries(data, { condition: "graded", grader: "PSA", grade: "10" })[0].est_value).toBe(100);
+    expect(cardsightSalesSeries(data, { condition: "graded", grader: "PSA", grade: "10" })[0]?.est_value).toBe(100);
   });
 });
