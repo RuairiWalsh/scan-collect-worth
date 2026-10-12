@@ -87,6 +87,24 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
   const numistaTypeId = item.category === "coins" ? parseNumistaId(item.catalog_id)?.typeId ?? null : null;
+  // Catalog-matched cards: the shared image table keeps the scanned back; the collector's own back scan wins.
+  const { data: catalogBack } = useQuery({
+    queryKey: ["card_back", item.catalog_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("card_product_images")
+        .select("card_key")
+        .eq("catalog_id", item.catalog_id)
+        .eq("status", "ready")
+        .eq("review_status", "approved")
+        .limit(1)
+        .maybeSingle();
+      return data?.card_key ? `/api/public/card-images/${data.card_key}?side=back` : null;
+    },
+    enabled: item.category === "cards" && !!item.catalog_id,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const backImage = item.back_image ?? catalogBack ?? null;
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [showBack, setShowBack] = useState(false);
