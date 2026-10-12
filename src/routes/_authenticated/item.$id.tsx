@@ -85,6 +85,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const [f, setF] = useState(item);
   const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
+  const numistaTypeId = item.category === "coins" ? parseNumistaId(item.catalog_id)?.typeId ?? null : null;
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
