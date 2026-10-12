@@ -25,7 +25,7 @@ export function pcgsSources(f: PcgsFacts, now = new Date()): PriceSource[] {
   if (sales.length) out.push({ source: "pcgs", label: `PCGS auction sales · ${f.Grade ?? ""}`.trim(), price: trimmedMedian(sales), kind: "market", count: sales.length });
   if ((f.PriceGuideValue ?? 0) > 0)
     out.push({
-      source: "pcgs", label: `PCGS price guide · ${f.Grade ?? ""}`.trim(), price: f.PriceGuideValue as number, kind: sales.length ? "reference" : "market",
+      source: "pcgs", label: `PCGS price guide · ${f.Grade ?? ""}`.trim(), price: f.PriceGuideValue as number, kind: "market",
       url: f.PCGSNo ? `https://www.pcgs.com/coinfacts/coin/detail/${f.PCGSNo}` : undefined,
     });
   return out;

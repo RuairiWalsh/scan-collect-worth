@@ -355,6 +355,11 @@ export async function collectPrices(item: PricedItem): Promise<PriceSource[]> {
     const settled = await Promise.allSettled(tasks);
     return settled.flatMap((s) => (s.status === "fulfilled" ? s.value : []));
   }
+  if (item.category === "coins" && item.condition === "graded" && /pcgs/i.test(item.grader ?? "")) {
+    // PCGS slabs price from PCGS's own auction records and price guide; eBay asks only as fallback.
+    const pcgs = await import("@/server/pcgs.server").then((m) => m.pcgsPrice(item)).catch(() => []);
+    if (pcgs.length) return pcgs;
+  }
   const tasks: Promise<PriceSource[]>[] = [ebay(item)];
   if (item.category === "coins") {
     const { parseNumistaId } = await import("@/lib/numista");
