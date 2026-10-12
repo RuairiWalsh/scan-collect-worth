@@ -22,7 +22,7 @@ async function nFetch<T>(path: string): Promise<T | null> {
 export type NumistaTypeData = {
   id: number; title: string; issuer?: { name?: string }; min_year?: number; max_year?: number;
   value?: { text?: string }; composition?: { text?: string };
-  obverse?: { picture?: string; thumbnail?: string }; reverse?: { picture?: string; thumbnail?: string };
+  obverse?: { picture?: string | undefined; thumbnail?: string | undefined }; reverse?: { picture?: string | undefined; thumbnail?: string | undefined };
   issues?: NumistaIssue[];
 };
 
