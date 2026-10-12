@@ -2,12 +2,23 @@
 export type NumistaTypeSummary = { id: number; title: string; issuer?: { name?: string } | null; min_year?: number | null; max_year?: number | null; object_type?: { name?: string } | null };
 export type NumistaIssue = { id: number; year?: number | null; gregorian_year?: number | null; mint_letter?: string | null; comment?: string | null; references?: { number?: string | null; catalogue?: { code?: string | null } | null }[] | null };
 
-/** PCGS CoinFacts number recorded on a Numista issue; null when the issue is unknown or unlisted. */
-export function numistaPcgsNo(issues: NumistaIssue[] | null | undefined, issueId: number | null): string | null {
-  if (!issueId) return null;
-  const issue = (issues ?? []).find((i) => i.id === issueId);
-  const ref = issue?.references?.find((r) => r.catalogue?.code === "PCGS" && r.number);
-  return ref?.number ?? null;
+const pcgsRef = (i: NumistaIssue | undefined) => i?.references?.find((r) => r.catalogue?.code === "PCGS" && r.number)?.number ?? null;
+
+/**
+ * PCGS CoinFacts number recorded on a Numista issue; null when the issue is unknown or unlisted.
+ * Without an exact issue, falls back to the year: when every non-proof issue of that year
+ * shares one PCGS number (e.g. same coin struck at two mints), that number is used.
+ */
+export function numistaPcgsNo(issues: NumistaIssue[] | null | undefined, issueId: number | null, year?: string | number | null): string | null {
+  const list = issues ?? [];
+  if (issueId) return pcgsRef(list.find((i) => i.id === issueId));
+  const y = Number(String(year ?? "").match(/\d{4}/)?.[0]);
+  if (!y) return null;
+  const nums = new Set(
+    list.filter((i) => (i.gregorian_year ?? i.year) === y && !/proof/i.test(i.comment ?? "")).map(pcgsRef),
+  );
+  if (nums.size !== 1) return null;
+  return [...nums][0] ?? null;
 }
 
 /** Numista's terms allow caching its data (including image links) for at most 7 days. */

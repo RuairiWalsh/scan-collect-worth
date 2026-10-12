@@ -41,6 +41,18 @@ describe("numista", () => {
     expect(numistaPcgsNo(issues, 11)).toBeNull();
     expect(numistaPcgsNo(issues, null)).toBeNull();
   });
+  it("uses the year's shared PCGS number when the exact issue is unknown", () => {
+    const issues = [
+      { id: 1, gregorian_year: 1991, comment: "No Mint Mark, Minted at San Francisco", references: [{ number: "9846", catalogue: { code: "PCGS" } }] },
+      { id: 2, gregorian_year: 1991, comment: "No Mint Mark, Minted at West Point", references: [{ number: "9846", catalogue: { code: "PCGS" } }] },
+      { id: 3, gregorian_year: 1991, comment: "Proof", mint_letter: "S" },
+      { id: 4, gregorian_year: 1992, references: [{ number: "9847", catalogue: { code: "PCGS" } }] },
+      { id: 5, gregorian_year: 1992, mint_letter: "D", references: [{ number: "9900", catalogue: { code: "PCGS" } }] },
+    ];
+    expect(numistaPcgsNo(issues, null, "1991")).toBe("9846");
+    expect(numistaPcgsNo(issues, null, "1992")).toBeNull();
+    expect(numistaPcgsNo(issues, null, "1993")).toBeNull();
+  });
   it("round-trips catalog ids", () => {
     expect(parseNumistaId(numistaCatalogId(943, 22280))).toEqual({ typeId: 943, issueId: 22280 });
   });

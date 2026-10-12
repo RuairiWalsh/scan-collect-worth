@@ -19,7 +19,7 @@ async function pcgsNoFromNumista(item: PricedItem): Promise<string | null> {
   const n = parseNumistaId(item.catalog_id);
   if (!n) return null;
   const type = await import("@/server/numista.server").then((m) => m.numistaType(n.typeId)).catch(() => null);
-  return type ? numistaPcgsNo(type.issues, n.issueId) : null;
+  return type ? numistaPcgsNo(type.issues, n.issueId, item.year) : null;
 }
 
 /**
@@ -29,9 +29,10 @@ async function pcgsNoFromNumista(item: PricedItem): Promise<string | null> {
 export async function pcgsPrice(item: PricedItem): Promise<PriceSource[]> {
   const grade = pcgsGrade(item.grade);
   const pcgsNo = await pcgsNoFromNumista(item);
-  if (pcgsNo && grade) {
-    const facts = await coinFacts(`GetCoinFactsByPCGSNo/${pcgsNo}/${encodeURIComponent(grade)}`).catch(() => null);
-    if (facts?.PCGSNo) return pcgsSources(facts);
+  const gradeNo = grade?.match(/\d+/)?.[0];
+  if (pcgsNo && gradeNo) {
+    const facts = await coinFacts(`GetCoinFactsByGrade?PCGSNo=${pcgsNo}&GradeNo=${gradeNo}&PlusGrade=false`).catch(() => null);
+    if (facts?.PCGSNo && facts.IsValidRequest !== false) return pcgsSources(facts);
   }
   const cert = pcgsCertNo(item.number);
   if (!cert) return [];
