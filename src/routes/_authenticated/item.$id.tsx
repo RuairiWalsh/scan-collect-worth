@@ -45,7 +45,7 @@ function ItemPage() {
   const { data: history } = useQuery(priceHistoryQuery(id));
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
   const fetchSales = useServerFn(sportsSalesHistory);
-  const isSports = item?.subcategory === "sports" && !!item?.catalog_id;
+  const isSports = item?.subcategory === "sports";
   const { data: sales } = useQuery({
     queryKey: ["sports_sales", id, item?.catalog_id, item?.condition, item?.variant, item?.grader, item?.grade],
     queryFn: () => fetchSales({ data: { itemId: id } }),
