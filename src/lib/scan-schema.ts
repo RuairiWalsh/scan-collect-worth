@@ -5,7 +5,7 @@ export const identificationSchema = {
   additionalProperties: false,
   required: [
     "printed_text", "is_collectible", "category", "subcategory", "line", "name", "set_name",
-    "number", "year", "variant", "language", "grader", "grade", "confidence",
+    "number", "year", "variant", "language", "grader", "grade", "confidence", "missing_info",
   ],
   properties: {
     printed_text: {
@@ -41,6 +41,11 @@ export const identificationSchema = {
     grader: { ...nullableStr, description: "PSA, BGS, CGC, SGC, PCGS, NGC if slabbed, else null" },
     grade: { ...nullableStr, description: "Numeric grade on the slab label, else null" },
     confidence: { type: "number", description: "0-1 confidence in the identification" },
+    missing_info: {
+      type: "array",
+      items: { type: "string", enum: ["country", "denomination", "year", "mint mark", "design"] },
+      description: "Coins only: required details NOT visible on the side(s) shown, so the other side must be scanned. Include 'mint mark' only if this coin type normally carries one and it can't be seen. Empty for non-coins or when complete.",
+    },
   },
 };
 

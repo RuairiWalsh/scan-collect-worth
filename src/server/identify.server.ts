@@ -4,7 +4,7 @@ import { identificationSchema as schema } from "@/lib/scan-schema";
 
 export async function identifyImage(image: string, strip?: string | undefined, back?: string | undefined) {
   const stripInput = strip ? [{ type: "input_text", text: "Zoomed view of the bottom of the same card (collector number / set code):" }, { type: "input_image", image_url: strip, detail: "high" }] : [];
-  const backInput = back ? [{ type: "input_text", text: "Back of this same card. Use its printed card number, copyright year and set details to identify the front precisely:" }, { type: "input_image", image_url: back, detail: "high" }] : [];
+  const backInput = back ? [{ type: "input_text", text: "Other side (back / reverse) of this same item. Combine both sides: for cards use the printed number, copyright year and set; for coins use the date, mint mark, country and denomination shown on either side:" }, { type: "input_image", image_url: back, detail: "high" }] : [];
   const data = { image };
   const { streamJson, AiError } = await import("@/server/ai.server");
   try {
@@ -18,6 +18,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
         "Sports: player name, brand (Topps, Panini, Upper Deck…), card number on the back or corner. ALWAYS give `year`: use the copyright line (©1999), the year in the set name, or the season/stat line; only null if none is visible. Put the brand/product in set_name (e.g. 1999 Topps Chrome).",
         "Copy the number exactly as printed into `number` (keep leading zeros and the /total). If you can't read it, use null — do not guess numbers.",
         "Non-English cards (e.g. Japanese): set `language` accordingly, but write `name` and `set_name` as the official ENGLISH names (e.g. ピカチュウ → Pikachu) so the catalog can match; copy the number exactly as printed.",
+        "Coins: name = coin type and denomination (e.g. Kennedy Half Dollar, 2 Euro, Maple Leaf 1 oz); set_name = issuing country (e.g. United States, Canada); year = date on the coin; variant = mint mark and any special issue (e.g. 'D', 'S Proof', metal like Silver); subcategory us/world/bullion. Many coins show the date or mint mark on only one side: never guess — leave unknown fields null and list them in missing_info.",
         "If it's packaging (box, pack, tin) rather than a single card, set is_collectible false.",
         "Use confidence below 0.5 when the text is unreadable.",
       ].join("\n"),

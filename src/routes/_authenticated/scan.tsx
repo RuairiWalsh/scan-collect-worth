@@ -53,6 +53,12 @@ function ScanPage() {
   const [folderIds, setFolderIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
   const [alts, setAlts] = useState<Record<string, CardAlternative[]>>({});
+  // Coins whose scanned side lacked required details; the next capture becomes their other side.
+  const [needSide, setNeedSide] = useState<Record<string, string[]>>({});
+  const [sideFor, setSideFor] = useState<string | null>(null);
+  const sideRef = useRef<string | null>(null);
+  const fullRef = useRef<Record<string, string>>({});
+  const pickSide = (id: string | null) => { sideRef.current = id; setSideFor(id); };
   const qc = useQueryClient();
   const identify = useServerFn(identifyItem);
   const reprice = useServerFn(refreshItemPrice);
@@ -125,8 +131,40 @@ function ScanPage() {
     [reprice, qc],
   );
 
+  const completeSide = useCallback(
+    async (id: string, img: { full: string; thumb: string }) => {
+      const first = fullRef.current[id];
+      if (!first) return;
+      setPricing((s) => new Set(s).add(id));
+      try {
+        const res = await identify({ data: { image: first, back: img.full } });
+        if (!res.ok) throw new Error(res.error);
+        const r = res.result;
+        const { error } = await supabase.from("items").update({
+          subcategory: r.subcategory, line: r.line, name: r.name, set_name: r.set_name, number: r.number,
+          year: r.year, variant: r.variant, ai_confidence: r.confidence,
+        }).eq("id", id);
+        if (error) throw error;
+        const missing = r.missing_info ?? [];
+        setNeedSide((s) => { const n = { ...s }; if (missing.length) n[id] = missing; else delete n[id]; return n; });
+        toast.success(missing.length ? `Still missing: ${missing.join(", ")}` : "Both sides read — coin identified.");
+        await qc.invalidateQueries({ queryKey: ["items", "batch"] });
+        doPrice(id);
+      } catch (e) {
+        toast.error((e as Error).message || "Couldn't read the other side.");
+        setPricing((s) => { const n = new Set(s); n.delete(id); return n; });
+      }
+    },
+    [identify, qc, doPrice],
+  );
+
   const process = useCallback(
     async (img: { full: string; thumb: string; strip?: string | undefined }, auto = false) => {
+      if (sideRef.current) {
+        const id = sideRef.current;
+        pickSide(null);
+        return completeSide(id, img);
+      }
       const tempId = crypto.randomUUID();
       setPending((p) => [{ id: tempId, thumb: img.thumb }, ...p]);
       inFlight.current++;
@@ -161,6 +199,10 @@ function ScanPage() {
         if (error) throw error;
         setPending((p) => p.filter((x) => x.id !== tempId));
         await qc.invalidateQueries({ queryKey: ["items", "batch"] });
+        if (r.missing_info?.length) {
+          fullRef.current[row.id] = img.full;
+          setNeedSide((s) => ({ ...s, [row.id]: r.missing_info! }));
+        }
         if (r.alternatives?.length) setAlts((a) => ({ ...a, [row.id]: r.alternatives! }));
         doPrice(row.id);
       } catch (e) {
@@ -174,7 +216,7 @@ function ScanPage() {
         inFlight.current--;
       }
     },
-    [identify, qc, doPrice],
+    [identify, qc, doPrice, completeSide],
   );
 
   const lastBoxRef = useRef<Box | null>(null);
@@ -374,6 +416,13 @@ function ScanPage() {
                 />
               )}
 
+              {sideFor && (
+                <div className="absolute inset-x-4 top-4 z-10 flex items-center justify-between gap-2 rounded border-2 border-ink bg-secondary px-3 py-2 text-sm font-extrabold text-secondary-foreground shadow-hard">
+                  <span>Flip the coin — scan the other side of {batch.find((b) => b.id === sideFor)?.name ?? "this coin"}</span>
+                  <button type="button" className="underline" onClick={() => pickSide(null)}>Cancel</button>
+                </div>
+              )}
+
               {/* Captured badge */}
               {captured && (
                 <div key={captured.at} className="absolute left-1/2 top-20 flex -translate-x-1/2 items-center gap-2 rounded-full border-2 border-ink bg-primary py-1 pl-1 pr-4 text-sm font-extrabold text-primary-foreground shadow-hard">
@@ -507,6 +556,16 @@ function ScanPage() {
                   )}
                 </div>
               </div>
+              {(needSide[b.id]?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded border-2 border-foreground bg-accent p-2 text-xs">
+                  <p className="font-semibold">
+                    Scan the other side to finish identifying — missing {needSide[b.id]!.join(", ")}.
+                  </p>
+                  <Button size="sm" variant={sideFor === b.id ? "outline" : "default"} onClick={() => { pickSide(sideFor === b.id ? null : b.id); if (!camOn) startCam(); }}>
+                    {sideFor === b.id ? "Cancel" : "Scan other side"}
+                  </Button>
+                </div>
+              )}
               {(alts[b.id]?.length ?? 0) > 0 && (
                 <div className="rounded border-2 border-foreground bg-secondary/40 p-2 text-xs">
                   <p className="mb-1 font-semibold">

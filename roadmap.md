@@ -25,3 +25,5 @@
 - [x] Landing page no longer blanks when the price lookup fails
 - [ ] In-app checkout (Lymitz collects, pays merchants out) — waiting on user to confirm enabling Stripe payments
 - [ ] Republish to ship
+
+- [ ] Coins: use Numista API for coin identification/catalog (needs Numista API key)
