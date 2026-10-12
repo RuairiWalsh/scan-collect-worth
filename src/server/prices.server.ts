@@ -119,10 +119,23 @@ export async function testEbayAuth(): Promise<boolean> {
 
 export function buildSearchQuery(item: PricedItem) {
   const coin = item.category === "coins";
-  // Coin numbers are slab cert numbers, never in listing titles.
-  const bits = [item.year, item.set_name, item.name, !coin && item.number ? `#${item.number}` : null, item.variant];
+  // Coins: short collector-style wording — year, design name (no country,
+  // denomination, or parenthetical catalog text), special-issue variant, grade.
+  // Long word-for-word catalog names match almost no listing titles.
+  if (coin) {
+    const name = (item.name ?? "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\b\d+(\.\d+)?\s*(dollar|dollars|cent|cents|penny|pence|pound|pounds|euro|franc|francs|peso|pesos|yen|yuan|rupee|shilling|nickel|dime|quarter)s?\b/gi, " ")
+      .replace(/\b(silver|gold|bronze|copper|nickel|clad|bullion|coin|proof)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const bits = [item.year, name, item.variant];
+    if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
+    if (item.condition === "proof") bits.push("proof");
+    return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  }
+  const bits = [item.year, item.set_name, item.name, item.number ? `#${item.number}` : null, item.variant];
   if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
-  if (item.category === "coins" && item.condition === "proof") bits.push("proof");
   return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 }
 
