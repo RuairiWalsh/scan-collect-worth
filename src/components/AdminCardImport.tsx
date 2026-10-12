@@ -124,6 +124,33 @@ export function AdminCardImport() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Import failed."); setPhase("Paused"); }
     finally { setRunning(false); }
   }
+  const [rotating, setRotating] = useState<string | null>(null);
+  async function rotateImage(path: string) {
+    setRotating(path);
+    try {
+      const { data, error } = await supabase.storage.from("admin-card-scans").createSignedUrl(path, 300);
+      if (error || !data) throw new Error(error?.message ?? "Could not load image.");
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Could not load image."));
+        img.src = data.signedUrl;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalHeight; canvas.height = image.naturalWidth;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Rotation is not supported in this browser.");
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Could not save rotated image.")), "image/png"));
+      const { error: uploadError } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+      if (uploadError) throw new Error(uploadError.message);
+      await qc.invalidateQueries({ queryKey: ["admin-import-previews"] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not rotate image."); }
+    finally { setRotating(null); }
+  }
   function edit(row: Pair) {
     const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
     const str = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]) : "";
