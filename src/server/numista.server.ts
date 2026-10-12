@@ -70,5 +70,5 @@ export async function numistaPrice(typeId: number, issueId: number | null, condi
   const r = await nFetch<{ prices?: { grade: string; price: number }[] }>(`/types/${typeId}/issues/${issueId}/prices?currency=USD`);
   const price = r?.prices?.find((p) => p.grade === grade)?.price;
   if (!price || price <= 0) return [];
-  return [{ source: "numista", label: "Numista estimate", price: Math.round(price * 100) / 100, kind: "market", url: `https://en.numista.com/${typeId}` }];
+  return [{ source: "numista", label: "Estimated price (Numista)", price: Math.round(price * 100) / 100, kind: "market", url: `https://en.numista.com/${typeId}` }];
 }
