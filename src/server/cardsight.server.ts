@@ -1,5 +1,5 @@
 // Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
-import { cardsightNumber, pickCardsightCard, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
+import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
 import type { CardsightPricing } from "@/lib/cardsight-pricing";
 export type { CardsightPricing, CardsightPriceRecord } from "@/lib/cardsight-pricing";
 
