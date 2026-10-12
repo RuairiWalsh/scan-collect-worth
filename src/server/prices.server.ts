@@ -129,6 +129,7 @@ export function buildSearchQuery(item: PricedItem) {
       // Drop a leading denomination like "1 Dollar" or "50 Cents" — the
       // design name that follows is how collectors title listings.
       .replace(/^\d+(\.\d+)?\s+[A-Za-z]+\s*/, " ")
+      .replace(/\b(silver|gold|bronze|copper|clad|bullion|coin)\s*$/i, " ")
       .replace(/\s+/g, " ")
       .trim();
     const bits = [item.year, name, item.variant];
