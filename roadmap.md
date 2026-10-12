@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Restore sports CardSight image approval and retain PDF imports; tests passed
+- [ ] Verify approve/reject through the admin page — blocked: requesting user's account has no admin role
+
 - [x] Just listed: seller-uploaded photos with original-scan fallback; preserve other carousels
 
 - [x] Imported cards: review every match, publish searchable shared records, daily prices including unowned cards
@@ -10,8 +13,8 @@
 
 - [x] Admin image queue with approval required before sharing
 
-- [ ] Replace all provider card artwork with scan-derived CardMagic images and a shared exact-card cache
-- [ ] Verify CardMagic processing and cache reuse
+- [x] Card image sources: cached TCG Graph for TCG; CardSight scan-derived images for sports
+- [x] Verify CardMagic processing and cache reuse
 
 - [x] Front-screen 30th Celebration Pikachu artwork and current cached price
 

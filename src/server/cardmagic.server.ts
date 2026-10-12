@@ -1,4 +1,4 @@
-import { canReuseCardImage, cardImageIdentity, type CardImageIdentity } from "@/lib/card-product-images";
+import { canReuseCardImage, cardImageIdentity, cardImageReviewStatus, type CardImageIdentity } from "@/lib/card-product-images";
 import { pickTcgGraphImage, tcgGraphGame, tcgGraphLanguage, tcgGraphName, type TcgGraphCard } from "@/lib/tcggraph";
 
 /** Official TCG artwork from TCGGraph's CDN for supported games; null when no exact printing matches. */
@@ -42,7 +42,7 @@ export async function processCardMagic(image: string): Promise<string> {
 
 /** Admin writes are restricted to the shared derived-image cache, after the caller is authenticated. */
 export async function cachedCardMagic(item: CardImageIdentity, image: string, userId: string): Promise<string | null> {
-  if (item.catalog_id) {
+  if (item.catalog_id && item.subcategory !== "sports") {
     const tcg = (await cachedTcgGraphImages([item.catalog_id]).catch(() => null))?.get(item.catalog_id);
     if (tcg) return tcg;
   }
@@ -56,7 +56,7 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   if (cached?.status === "failed") return null;
   if (cached?.status === "processing" && Date.parse(cached.updated_at) > Date.now() - 10 * 60_000) return null;
   const claim = crypto.randomUUID();
-  const row = { card_key: cardKey, catalog_id: item.catalog_id ?? null, claim_id: claim, updated_at: new Date().toISOString(), status: "processing", submitted_by: userId, original_scan: image, card_metadata: { ...item }, review_status: "approved" };
+  const row = { card_key: cardKey, catalog_id: item.catalog_id ?? null, claim_id: claim, updated_at: new Date().toISOString(), status: "processing", submitted_by: userId, original_scan: image, card_metadata: { ...item }, review_status: cardImageReviewStatus(item), reviewed_by: null, reviewed_at: null, review_note: null };
   const claimed = cached
     ? await db.from("card_product_images").update(row).eq("card_key", cardKey).eq("claim_id", cached.claim_id).select("card_key")
     : await db.from("card_product_images").insert(row).select("card_key");
@@ -64,7 +64,7 @@ export async function cachedCardMagic(item: CardImageIdentity, image: string, us
   if (claimed.error) throw new Error("Could not save the card image cache.");
   if (!claimed.data?.length) return null;
   try {
-    const processed = (await tcgGraphImage(item).catch(() => null)) ?? await processCardMagic(image);
+    const processed = (item.subcategory === "sports" ? null : await tcgGraphImage(item).catch(() => null)) ?? await processCardMagic(image);
     const { error: saveError } = await db.from("card_product_images").update({ image: processed, status: "ready", updated_at: new Date().toISOString() }).eq("card_key", cardKey).eq("claim_id", claim);
     if (saveError) throw new Error("Could not save the processed card image.");
     return processed;

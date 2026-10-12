@@ -109,9 +109,12 @@ function AdminDashboard() {
     <main className="mx-auto max-w-6xl space-y-8 px-4 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-3xl font-black">Admin</h1>
+        <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline"><Link to="/admin-images"><Images className="size-4" />Sports image review</Link></Button>
         <Button asChild variant="outline">
           <Link to="/admin-import"><Images className="size-4" />Scanner PDF imports</Link>
         </Button>
+        </div>
       </div>
 
       <section>

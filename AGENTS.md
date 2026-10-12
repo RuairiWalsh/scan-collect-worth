@@ -35,4 +35,4 @@
 - Merchant order status changes go only through public.merchant_update_order (SECURITY DEFINER; transitions mirrored in src/lib/orders.ts, tested); orders has no client insert/update policy so future checkout and shipping webhooks write server-side.
 
 - CardMagic processing lives in src/server/cardmagic.server.ts: POST /v1/cardmagic/process uploads the user's scan, not catalog artwork. Exact printing/language identities share public.card_product_images through server-only atomic claims; ambiguous identities use a scan hash. Search, featured cards, collection and marketplace must use this cache or the original scan, never catalog_prices.image.
-- Shared images require review_status='approved' enforced by RLS and marketplace RPC; admin_image_queue/admin_review_image verify the admin role server-side. Pending cache reuse is restricted to the authenticated submitter, preserving private scans without publishing unreviewed photos.
+- Shared images require approved RLS/RPC access. Sports CardSight processing enters pending via a DB trigger; admin-only review excludes confirmed PDF imports. Pending cache reuse is submitter-only; TCG Graph caching stays independent.
