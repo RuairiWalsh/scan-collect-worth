@@ -89,6 +89,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const numistaTypeId = item.category === "coins" ? parseNumistaId(item.catalog_id)?.typeId ?? null : null;
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
+  const [showBack, setShowBack] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
