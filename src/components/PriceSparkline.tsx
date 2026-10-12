@@ -106,9 +106,15 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
         )}
       </div>
       {pts.length === 1 ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          First recorded {fmtDate(first.recorded_at)} — check back later to see the trend.
-        </p>
+        <>
+          <div className="mt-1 flex items-baseline justify-between gap-2">
+            <p className="tabular text-sm font-bold">{usd(first.value as number)}</p>
+            <p className="tabular text-xs text-muted-foreground">{fmtDate(first.recorded_at)}</p>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Building price history — one new point is added each day, so the trend line appears as the days add up.
+          </p>
+        </>
       ) : (
         <>
           <div className="mt-1 flex items-baseline justify-between gap-2">
