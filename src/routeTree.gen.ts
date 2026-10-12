@@ -29,6 +29,7 @@ import { Route as ApiPublicEbayTestRouteImport } from './routes/api/public/ebay-
 import { Route as ApiPublicCardImagesKeyRouteImport } from './routes/api/public/card-images.$key'
 import { Route as ApiPublicCoinImagesTypeIdRouteImport } from './routes/api/public/coin-images.$typeId'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
+import { Route as ApiPublicStampImagesIdRouteImport } from './routes/api/public/stamp-images.$id'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 
@@ -138,6 +139,11 @@ const ApiPublicCronDailyPricesRoute =
     path: '/api/public/cron/daily-prices',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicStampImagesIdRoute = ApiPublicStampImagesIdRouteImport.update({
+  id: '/api/public/stamp-images/$id',
+  path: '/api/public/stamp-images/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   id: '/lovable/email/auth/preview',
   path: '/lovable/email/auth/preview',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
+  '/api/public/stamp-images/$id': typeof ApiPublicStampImagesIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
+  '/api/public/stamp-images/$id': typeof ApiPublicStampImagesIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
   '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
+  '/api/public/stamp-images/$id': typeof ApiPublicStampImagesIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
 }
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/public/card-images/$key'
     | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
+    | '/api/public/stamp-images/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
     | '/api/public/card-images/$key'
     | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
+    | '/api/public/stamp-images/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   id:
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/api/public/card-images/$key'
     | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
+    | '/api/public/stamp-images/$id'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
   fileRoutesById: FileRoutesById
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   ApiPublicCardImagesKeyRoute: typeof ApiPublicCardImagesKeyRoute
   ApiPublicCoinImagesTypeIdRoute: typeof ApiPublicCoinImagesTypeIdRoute
   ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
+  ApiPublicStampImagesIdRoute: typeof ApiPublicStampImagesIdRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronDailyPricesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/stamp-images/$id': {
+      id: '/api/public/stamp-images/$id'
+      path: '/api/public/stamp-images/$id'
+      fullPath: '/api/public/stamp-images/$id'
+      preLoaderRoute: typeof ApiPublicStampImagesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/auth/preview': {
       id: '/lovable/email/auth/preview'
       path: '/lovable/email/auth/preview'
@@ -508,6 +528,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicCardImagesKeyRoute: ApiPublicCardImagesKeyRoute,
   ApiPublicCoinImagesTypeIdRoute: ApiPublicCoinImagesTypeIdRoute,
   ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
+  ApiPublicStampImagesIdRoute: ApiPublicStampImagesIdRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
