@@ -112,6 +112,7 @@ function AdminDashboard() {
         <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline"><Link to="/admin-images"><Images className="size-4" />Sports image review</Link></Button>
         <Button asChild variant="outline"><Link to="/admin-coin-images"><Images className="size-4" />Coin images</Link></Button>
+        <Button asChild variant="outline"><Link to="/admin-stamps"><Images className="size-4" />Stamp database</Link></Button>
         <Button asChild variant="outline">
           <Link to="/admin-import"><Images className="size-4" />Scanner PDF imports</Link>
         </Button>

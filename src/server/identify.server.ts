@@ -19,6 +19,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
         "Copy the number exactly as printed into `number` (keep leading zeros and the /total). If you can't read it, use null — do not guess numbers.",
         "Non-English cards (e.g. Japanese): set `language` accordingly, but write `name` and `set_name` as the official ENGLISH names (e.g. ピカチュウ → Pikachu) so the catalog can match; copy the number exactly as printed.",
         "Coins: name = coin type and denomination (e.g. Kennedy Half Dollar, 2 Euro, Maple Leaf 1 oz); set_name = issuing country (e.g. United States, Canada); year = date on the coin; variant = mint mark and any special issue (e.g. 'D', 'S Proof', metal like Silver); subcategory us/world/bullion. Many coins show the date or mint mark on only one side: never guess — leave unknown fields null and list them in missing_info.",
+        "Stamps: name = design title (e.g. George Washington, Statue of Liberty); set_name = issuing country written out in full; variant = face value as printed plus colour (e.g. '3c purple'); year = issue year; number = Scott catalogue number ONLY if you are certain, else null.",
         "If it's packaging (box, pack, tin) rather than a single card, set is_collectible false.",
         "Use confidence below 0.5 when the text is unreadable.",
       ].join("\n"),
@@ -152,6 +153,10 @@ export async function identifyImage(image: string, strip?: string | undefined, b
     }
     if (result.is_collectible && result.category === "coins") {
       await matchNumista(result, data.image, back, streamJson).catch((e) => console.error("Numista match failed", e));
+    }
+    if (result.is_collectible && result.category === "stamps") {
+      const { matchStamp } = await import("@/server/stamps.server");
+      await matchStamp(result).catch((e) => console.error("Stamp match failed", e));
     }
     return { ok: true as const, result };
   } catch (e) {

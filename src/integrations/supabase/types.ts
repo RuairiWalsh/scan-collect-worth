@@ -707,6 +707,54 @@ export type Database = {
           },
         ]
       }
+      stamp_catalog: {
+        Row: {
+          catalog_number: string | null
+          catalog_system: string | null
+          country: string
+          created_at: string
+          created_by: string | null
+          denomination: string | null
+          id: string
+          image_path: string | null
+          match_key: string
+          name: string
+          source: string
+          updated_at: string
+          year: string | null
+        }
+        Insert: {
+          catalog_number?: string | null
+          catalog_system?: string | null
+          country: string
+          created_at?: string
+          created_by?: string | null
+          denomination?: string | null
+          id?: string
+          image_path?: string | null
+          match_key: string
+          name: string
+          source?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Update: {
+          catalog_number?: string | null
+          catalog_system?: string | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          denomination?: string | null
+          id?: string
+          image_path?: string | null
+          match_key?: string
+          name?: string
+          source?: string
+          updated_at?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -774,6 +822,23 @@ export type Database = {
           _user: string
         }
         Returns: undefined
+      }
+      admin_stamp_catalog: {
+        Args: never
+        Returns: {
+          catalog_number: string
+          catalog_system: string
+          country: string
+          created_at: string
+          denomination: string
+          id: string
+          image_path: string
+          item_count: number
+          name: string
+          scan: string
+          source: string
+          year: string
+        }[]
       }
       admin_stats: { Args: never; Returns: Json }
       admin_users: {

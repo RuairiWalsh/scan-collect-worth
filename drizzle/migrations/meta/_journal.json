@@ -190,6 +190,13 @@
       "when": 1791832338530,
       "tag": "0026_coin_images_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791832740429,
+      "tag": "0027_stamp_catalog",
+      "breakpoints": true
     }
   ]
 }
