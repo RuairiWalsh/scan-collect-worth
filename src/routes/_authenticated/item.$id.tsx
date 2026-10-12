@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConditionSelect } from "@/components/ConditionSelect";
 import { ItemArtwork } from "@/components/ItemArtwork";
+import { parseNumistaId } from "@/lib/numista";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
 import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
@@ -84,6 +85,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const [f, setF] = useState(item);
   const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
+  const numistaTypeId = item.category === "coins" ? parseNumistaId(item.catalog_id)?.typeId ?? null : null;
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
@@ -208,6 +210,14 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               <img src={item.thumbnail} alt={`Your scan of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
             ) : (
               <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
+            )}
+            {numistaTypeId != null && item.product_image && (
+              <p className="text-xs text-muted-foreground">
+                Coin image ©{" "}
+                <a href={`https://en.numista.com/${numistaTypeId}`} target="_blank" rel="noreferrer" className="underline">
+                  Numista
+                </a>
+              </p>
             )}
             {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
