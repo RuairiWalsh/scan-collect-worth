@@ -91,16 +91,28 @@ export async function identifyImage(image: string, strip?: string | undefined, b
           });
           const exact = csCard;
           let picked = csCard;
+          // Image matching: CardSight compares the photo against its catalog pictures.
+          const { cardsightIdentifyImage } = await import("@/server/cardsight.server");
+          const visual = await cardsightIdentifyImage(data.image);
+          if (!picked && visual?.card && visual.confidence !== "Low") {
+            picked = visual.card;
+            result.confidence = Math.max(result.confidence, visual.confidence === "High" ? 0.85 : 0.7);
+          }
           // One-sided scan: no number/year. Let the AI pick using player, brand, set design and photo likeness.
           if (!picked) {
             const { cardsightCandidates } = await import("@/server/cardsight.server");
-            const cands = await cardsightCandidates({ name: result.name, set_name: result.set_name });
+            const found = await cardsightCandidates({ name: result.name, set_name: visual?.releaseName ?? result.set_name });
+            // Put the photo match (even low-confidence) first, and prefer the release/year the picture matched.
+            const vis = visual?.card ? [visual.card] : [];
+            const sameRelease = (c: { releaseName?: string | null; releaseYear?: string | null }) => Boolean(visual?.releaseName && c.releaseName === visual.releaseName && (!visual.year || c.releaseYear === visual.year));
+            const rest = found.filter(c => !vis.some(v => v.id === c.id));
+            const cands = [...vis, ...rest.filter(sameRelease), ...rest.filter(c => !sameRelease(c))].slice(0, 25);
             if (cands.length) {
               const pick = await streamJson<{ index: number }>({
                 instructions:
                   "You match a photographed sports card to an exact catalog entry. Use the player, brand logo, card design/era, set name, team and uniform, and any visible text. The number may be on the back and not visible. Answer -1 only if no candidate is plausible.",
                 content: [
-                  { type: "input_text", text: `Read from the card: ${result.printed_text ?? ""}\nGuess: ${result.name} | ${result.set_name ?? "?"} | ${result.year ?? "?"}\nCandidates:\n` + cands.map((c, i) => `${i}. ${c.name} | ${c.releaseYear ?? "?"} ${c.releaseName ?? ""} | set: ${c.setName ?? "?"} | #${c.number ?? "?"}`).join("\n") },
+                  { type: "input_text", text: `Read from the card: ${result.printed_text ?? ""}\nGuess: ${result.name} | ${result.set_name ?? "?"} | ${result.year ?? "?"}\n${visual ? `Photo recognition suggests: ${visual.year ?? "?"} ${visual.releaseName ?? "?"} (${visual.confidence} confidence)\n` : ""}Candidates:\n` + cands.map((c, i) => `${i}. ${c.name} | ${c.releaseYear ?? "?"} ${c.releaseName ?? ""} | set: ${c.setName ?? "?"} | #${c.number ?? "?"}`).join("\n") },
                   { type: "input_image", image_url: data.image, detail: "high" },
                   ...backInput,
                 ],

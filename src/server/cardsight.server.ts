@@ -76,3 +76,32 @@ export async function cardsightCandidates(item: CardsightQuery): Promise<Cardsig
   }
   return rankCardsightCandidates(cards, item);
 }
+
+export type CardsightVisualMatch = { card: CardsightCard | null; confidence: "High" | "Medium" | "Low"; releaseName?: string | null; year?: string | null };
+
+/** CardSight photo recognition: matches the scanned picture against its catalog images. */
+export async function cardsightIdentifyImage(dataUrl: string): Promise<CardsightVisualMatch | null> {
+  const key = process.env["CARDSIGHT_API_KEY"];
+  const m = /^data:(image\/[a-z+]+);base64,(.+)$/i.exec(dataUrl);
+  if (!key || !m) return null;
+  try {
+    const bytes = Uint8Array.from(atob(m[2]!), (c) => c.charCodeAt(0));
+    const form = new FormData();
+    form.append("image", new Blob([bytes], { type: m[1] }), "scan.jpg");
+    const res = await fetch(`${BASE}/v1/identify/card`, { method: "POST", headers: { "X-API-Key": key }, body: form, signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) return null;
+    const j = (await res.json()) as { detections?: { confidence: "High" | "Medium" | "Low"; card?: { id?: string; name?: string; number?: string; year?: string; releaseName?: string; setName?: string } }[] };
+    const d = j.detections?.[0];
+    if (!d?.card) return null;
+    const c = d.card;
+    return {
+      confidence: d.confidence,
+      releaseName: c.releaseName ?? null,
+      year: c.year ?? null,
+      card: c.id ? { id: c.id, name: c.name ?? null, number: c.number ?? null, setName: c.setName ?? null, releaseName: c.releaseName ?? null, releaseYear: c.year ?? null } : null,
+    };
+  } catch (e) {
+    console.error("CardSight identify", e);
+    return null;
+  }
+}
