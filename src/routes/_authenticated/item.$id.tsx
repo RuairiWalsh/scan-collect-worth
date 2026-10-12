@@ -239,7 +239,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             {numistaTypeId != null && item.product_image && !item.product_image.includes("src=lymitz") && (
               <p className="text-xs text-muted-foreground">Image from Numista</p>
             )}
-            {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
+            {item.category === "cards" && !showScan && !showBack && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
           <div className="panel shadow-hard p-4">
             {(() => {
