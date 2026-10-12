@@ -209,6 +209,14 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             ) : (
               <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
             )}
+            {numistaTypeId != null && item.product_image && (
+              <p className="text-xs text-muted-foreground">
+                Coin image ©{" "}
+                <a href={`https://en.numista.com/${numistaTypeId}`} target="_blank" rel="noreferrer" className="underline">
+                  Numista
+                </a>
+              </p>
+            )}
             {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
           <div className="panel shadow-hard p-4">
