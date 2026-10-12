@@ -1,5 +1,5 @@
 // Server-only price sources.
-import { trimmedMedian, type PriceSource } from "@/lib/pricing";
+import { round2, trimmedMedian, type PriceSource } from "@/lib/pricing";
 import { conditionFor } from "@/lib/taxonomy";
 import { cardPriceSources, cardVariants } from "@/lib/card-pricing";
 import { cardsightConfigured, cardsightFindCard, cardsightGetPricing, type CardsightPriceRecord } from "./cardsight.server";

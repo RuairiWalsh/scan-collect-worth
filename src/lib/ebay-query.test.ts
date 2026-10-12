@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSearchQuery } from "@/server/prices.server";
+import { buildSearchQuery, ebayEstimate } from "@/server/prices.server";
 
 describe("buildSearchQuery — coins", () => {
   it("uses short collector wording, not the full catalog name", () => {
