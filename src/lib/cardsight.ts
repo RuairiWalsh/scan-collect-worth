@@ -62,3 +62,29 @@ export function pickCardsightCard(candidates: CardsightCard[], item: CardsightQu
   // set or year agreement so a same-named card from another set isn't used.
   return wantNum ? best.card : best.score >= 1 ? best.card : null;
 }
+
+/**
+ * Rank broad name-search candidates for a one-sided scan. Cards whose name
+ * contains the scanned first name always outrank same-surname players, so a
+ * search for "Earl Snyder" never offers Cory Snyder above Earl. Set-word
+ * overlap breaks ties so "Topps Gold Label" beats plain "Topps".
+ */
+export function rankCardsightCandidates(cards: CardsightCard[], item: CardsightQuery): CardsightCard[] {
+  const nameParts = item.name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 1);
+  const firstName = nameParts[0] ?? "";
+  const setWords = (item.set_name ?? "").toLowerCase().replace(/\b(19|20)\d\d\b/g, "").split(/[^a-z0-9]+/).filter((w) => w.length > 2);
+  const nameScore = (c: CardsightCard) => {
+    const n = (c.name ?? "").toLowerCase();
+    let s = 0;
+    if (firstName && n.includes(firstName)) s += 10;
+    for (const w of nameParts) if (n.includes(w)) s += 1;
+    return s;
+  };
+  const setScore = (c: CardsightCard) => {
+    const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase();
+    return setWords.filter((w) => hay.includes(w)).length;
+  };
+  const hasSetMatch = setWords.length > 0 && cards.some((c) => setScore(c) > 0);
+  const pool = hasSetMatch ? cards.filter((c) => setScore(c) > 0) : cards;
+  return [...pool].sort((a, b) => nameScore(b) - nameScore(a) || setScore(b) - setScore(a)).slice(0, 25);
+}

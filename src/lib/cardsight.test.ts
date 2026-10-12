@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardsightNumber, pickCardsightCard, type CardsightCard } from "./cardsight";
+import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard } from "./cardsight";
 
 const card = (over: Partial<CardsightCard>): CardsightCard => ({ id: crypto.randomUUID(), name: "Ken Griffey Jr.", ...over });
 
@@ -44,5 +44,27 @@ describe("pickCardsightCard", () => {
   it("rejects another year or player with the same card number", () => {
     expect(pickCardsightCard([card({ number: "1", releaseName: "Upper Deck", releaseYear: "1990" })], item)).toBeNull();
     expect(pickCardsightCard([card({ name: "Other Player", number: "1", releaseName: "Upper Deck", releaseYear: "1989" })], item)).toBeNull();
+  });
+});
+
+describe("rankCardsightCandidates", () => {
+  it("ranks the matching first name above same-surname players", () => {
+    const earl = card({ name: "Earl Snyder", releaseName: "Topps" });
+    const cory = card({ name: "Cory Snyder", releaseName: "Topps Gold Label" });
+    const ranked = rankCardsightCandidates([cory, earl], { name: "Earl Snyder", set_name: "Topps Gold Label" });
+    expect(ranked[0]).toBe(earl);
+  });
+
+  it("prefers the closer set match within the same player", () => {
+    const gold = card({ name: "Earl Snyder", releaseName: "Topps Gold Label" });
+    const base = card({ name: "Earl Snyder", releaseName: "Topps" });
+    const ranked = rankCardsightCandidates([base, gold], { name: "Earl Snyder", set_name: "Topps Gold Label" });
+    expect(ranked[0]).toBe(gold);
+  });
+
+  it("keeps all candidates when no set words match", () => {
+    const a = card({ name: "Earl Snyder", releaseName: "Topps" });
+    const b = card({ name: "Cory Snyder", releaseName: "Fleer" });
+    expect(rankCardsightCandidates([b, a], { name: "Earl Snyder", set_name: null })).toHaveLength(2);
   });
 });

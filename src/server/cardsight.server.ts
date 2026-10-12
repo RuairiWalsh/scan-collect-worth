@@ -1,5 +1,5 @@
 // Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
-import { cardsightNumber, pickCardsightCard, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
+import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
 import type { CardsightPricing } from "@/lib/cardsight-pricing";
 export type { CardsightPricing, CardsightPriceRecord } from "@/lib/cardsight-pricing";
 
@@ -74,12 +74,5 @@ export async function cardsightCandidates(item: CardsightQuery): Promise<Cardsig
   if (!cards.length && surname.length > 2 && surname !== item.name.trim()) {
     cards = await searchCards(new URLSearchParams({ name: surname, take: "50" }));
   }
-  const words = (item.set_name ?? "").toLowerCase().replace(/\b(19|20)\d\d\b/g, "").split(/[^a-z0-9]+/).filter(w => w.length > 2);
-  const setMatches = cards.filter(c => {
-    const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase();
-    return words.some(w => hay.includes(w));
-  });
-  // Rank by how many set words match so "Topps Gold Label" beats plain "Topps".
-  const score = (c: CardsightCard) => { const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase(); return words.filter(w => hay.includes(w)).length; };
-  return (setMatches.length ? setMatches : cards).sort((a, b) => score(b) - score(a)).slice(0, 25);
+  return rankCardsightCandidates(cards, item);
 }
