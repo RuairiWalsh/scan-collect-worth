@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Restore sports CardSight image approval, retain PDF imports, and verify admin review
+- [x] Restore sports CardSight image approval and retain PDF imports; tests passed
+- [ ] Verify approve/reject through the admin page — blocked: requesting user's account has no admin role
 
 - [x] Just listed: seller-uploaded photos with original-scan fallback; preserve other carousels
 
