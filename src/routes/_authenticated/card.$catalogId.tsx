@@ -2,6 +2,7 @@ import { trimPresale } from "@/lib/collection-history";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { catalogCardDetail } from "@/lib/search.functions";
 import { usd } from "@/lib/image";
