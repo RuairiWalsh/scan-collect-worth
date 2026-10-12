@@ -7,7 +7,7 @@ export type PcgsFacts = { PCGSNo?: string; Grade?: string; PriceGuideValue?: num
 /** PCGS cert number from the item's number field: digits before any dot, 6–10 long. */
 export function pcgsCertNo(number: string | null | undefined): string | null {
   const m = String(number ?? "").replace(/[\s#]/g, "").match(/^(\d{6,10})(?:\.\d+)?$/);
-  return m ? m[1] : null;
+  return m?.[1] ?? null;
 }
 
 /** PCGS auction dates are "MM-YYYY"; true when within `months` of `now`. */
