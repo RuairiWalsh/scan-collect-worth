@@ -26,3 +26,19 @@ describe("defaultRange", () => {
     expect(defaultRange([day(400, 9)], now)).toBe("All");
   });
 });
+
+import { dailyPoints, availableRanges } from "./PriceSparkline";
+describe("coin trend building", () => {
+  it("two checks on the same day count as one point with no ranges", () => {
+    const pts = dailyPoints([
+      { recorded_at: "2026-10-12T10:00:00Z", value: 30 },
+      { recorded_at: "2026-10-12T19:00:00Z", value: 31 },
+    ]);
+    expect(pts.length).toBe(1);
+    expect(availableRanges(pts)).toEqual([]);
+  });
+  it("a week of history unlocks the week view", () => {
+    const pts = [{ recorded_at: "2026-10-01T03:00:00Z", value: 30 }, { recorded_at: "2026-10-08T03:00:00Z", value: 32 }];
+    expect(availableRanges(pts)).toEqual(["1W", "All"]);
+  });
+});
