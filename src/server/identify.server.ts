@@ -15,7 +15,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
         "First transcribe the printed text, then base the identification on that text — never on artwork alone.",
         "Pokémon: name top-left; collector number like 025/165 at the bottom left or right; the set is defined by that number + set symbol, not by the artwork.",
         "Magic: collector number and 3-letter set code bottom-left. Yu-Gi-Oh!: set code like LOB-EN001 under the artwork, right side. One Piece/Lorcana/Digimon: code bottom-right.",
-        "Sports: player name, brand (Topps, Panini, Upper Deck…), year from the copyright line, card number on the back or corner.",
+        "Sports: player name, brand (Topps, Panini, Upper Deck…), card number on the back or corner. ALWAYS give `year`: use the copyright line (©1999), the year in the set name, or the season/stat line; only null if none is visible. Put the brand/product in set_name (e.g. 1999 Topps Chrome).",
         "Copy the number exactly as printed into `number` (keep leading zeros and the /total). If you can't read it, use null — do not guess numbers.",
         "Non-English cards (e.g. Japanese): set `language` accordingly, but write `name` and `set_name` as the official ENGLISH names (e.g. ピカチュウ → Pikachu) so the catalog can match; copy the number exactly as printed.",
         "If it's packaging (box, pack, tin) rather than a single card, set is_collectible false.",
@@ -32,6 +32,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
       effort: "low",
     });
 
+    if (!result.year) result.year = /\b(19[5-9]\d|20[0-4]\d)\b/.exec(`${result.set_name ?? ""} ${result.printed_text ?? ""}`)?.[1] ?? null;
     if (result.is_collectible && result.category === "cards") {
       const { cardsightConfigured, cardsightFindCard } = await import("@/server/cardsight.server");
       const { justtcgConfigured, findCatalogCandidates } = await import("@/server/prices.server");
@@ -93,6 +94,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
             result.name = csCard.name || result.name;
             result.set_name = csCard.releaseName || csCard.setName || result.set_name;
             result.number = csCard.number || result.number;
+            result.year = csCard.releaseYear || result.year;
             result.confidence = Math.max(result.confidence, 0.8);
             // For sports, we often dont have a JustTCG match, so this is our primary identity.
           }

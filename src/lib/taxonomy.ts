@@ -72,7 +72,9 @@ export const CONDITIONS: Record<CategoryKey, Condition[]> = {
   ],
 };
 
-export function defaultCondition(cat: CategoryKey): string {
+export function defaultCondition(cat: CategoryKey, subcategory?: string | null): string {
+  // Sports sale comps don't state condition, so new sports scans start as Ungraded to get a real price.
+  if (cat === "cards" && subcategory === "sports") return "raw_ungraded";
   return cat === "cards" ? "raw_nm" : cat === "stamps" ? "vf" : "au";
 }
 
