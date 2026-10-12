@@ -174,7 +174,7 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
           </div>
         </>
       )}
-      {rangeBar}
+      {pts.length > 1 && rangeBar}
     </div>
   );
 }
