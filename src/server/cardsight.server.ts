@@ -47,7 +47,7 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
 }
 
 export async function cardsightGetPricing(cardId: string): Promise<CardsightPricing | null> {
-  const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=90d&listing_type=auction`);
+  const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=90d`);
   if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");
   return res.json() as Promise<CardsightPricing>;
 }
@@ -57,7 +57,7 @@ export async function cardsightBulkPricing(ids: string[]) {
   const out = new Map<string, CardsightPricing>();
   if (!key) return out;
   for (let i = 0; i < ids.length; i += 100) {
-    const response = await fetch(`${BASE}/v1/pricing/`, { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, body: JSON.stringify({ card_ids: ids.slice(i, i + 100), period: "90d", listing_type: "auction", limit: 100 }), signal: AbortSignal.timeout(45_000) });
+    const response = await fetch(`${BASE}/v1/pricing/`, { method: "POST", headers: { "X-API-Key": key, "Content-Type": "application/json" }, body: JSON.stringify({ card_ids: ids.slice(i, i + 100), period: "90d", limit: 100 }), signal: AbortSignal.timeout(45_000) });
     if (!response.ok) throw new Error(`CardSight pricing unavailable (${response.status}).`);
     const data = await response.json() as { results: { card_id: string; success: boolean; data?: CardsightPricing }[] };
     for (const row of data.results ?? []) if (row.success && row.data) out.set(row.card_id, row.data);
@@ -79,5 +79,7 @@ export async function cardsightCandidates(item: CardsightQuery): Promise<Cardsig
     const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase();
     return words.some(w => hay.includes(w));
   });
-  return (setMatches.length ? setMatches : cards).slice(0, 25);
+  // Rank by how many set words match so "Topps Gold Label" beats plain "Topps".
+  const score = (c: CardsightCard) => { const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase(); return words.filter(w => hay.includes(w)).length; };
+  return (setMatches.length ? setMatches : cards).sort((a, b) => score(b) - score(a)).slice(0, 25);
 }

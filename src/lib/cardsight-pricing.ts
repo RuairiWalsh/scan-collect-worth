@@ -7,10 +7,10 @@ export type CardsightPricing = {
   graded: { company_name: string; grades: { grade_value: string; records: CardsightPriceRecord[] }[] }[];
 };
 function sourceFor(records: CardsightPriceRecord[]): PriceSource | null {
-  const sales = records.filter(r => r.listing_type === "auction" && Number.isFinite(r.price) && r.price > 0);
+  const sales = records.filter(r => (r.listing_type === "auction" || r.listing_type === "fixed") && Number.isFinite(r.price) && r.price > 0);
   if (!sales.length) return null;
   const marketplaces = [...new Set(sales.map(r => r.source))].join(", ");
-  return { source: "cardsight", label: `CardSight · completed auctions (${marketplaces})`, price: trimmedMedian(sales.map(r => r.price)), kind: "market", count: sales.length };
+  return { source: "cardsight", label: `CardSight · completed sales (${marketplaces})`, price: trimmedMedian(sales.map(r => r.price)), kind: "market", count: sales.length };
 }
 export function cardsightVariants(data: CardsightPricing): CardVariant[] {
   const out: CardVariant[] = [];
