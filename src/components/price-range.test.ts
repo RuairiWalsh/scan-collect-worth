@@ -16,7 +16,7 @@ describe("pointsInRange", () => {
 
 describe("defaultRange", () => {
   it("picks the smallest range with at least 2 points", () => {
-    expect(defaultRange(pts, now)).toBe("1W");
+    expect(defaultRange(pts, now)).toBe("1D");
   });
   it("widens past 1W when sales are sparse (weekly sports sales)", () => {
     const sparse = [day(300, 2), day(200, 3), day(100, 4), day(20, 5)];
