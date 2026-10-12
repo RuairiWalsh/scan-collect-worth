@@ -32,7 +32,28 @@ export function defaultRange(points: SparkPoint[], now = Date.now()): RangeKey {
   return "All";
 }
 
-export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
+/** One point per calendar day (the latest), so several checks on the same day don't look like history. */
+export function dailyPoints(points: SparkPoint[]): SparkPoint[] {
+  const byDay = new Map<string, SparkPoint>();
+  for (const p of points) {
+    if (p.value == null) continue;
+    byDay.set(p.recorded_at.slice(0, 10), p);
+  }
+  return [...byDay.values()].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at));
+}
+
+/** Ranges the data actually covers: a range appears once history spans its full length. */
+export function availableRanges(points: SparkPoint[]): RangeKey[] {
+  const pts = points.filter((p) => p.value != null);
+  if (pts.length < 2) return [];
+  const span = (new Date(pts[pts.length - 1]!.recorded_at).getTime() - new Date(pts[0]!.recorded_at).getTime()) / 86400000;
+  const keys = RANGES.filter((r) => r.key !== "1D" && Number.isFinite(r.days) && span >= r.days).map((r) => r.key as RangeKey);
+  return keys.length > 0 ? [...keys, "All"] : [];
+}
+
+export function PriceSparkline({ points: raw, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
+  const points = dailyPoints(raw);
+  const avail = availableRanges(points);
   const [range, setRange] = useState<RangeKey>(() => defaultRange(points));
   // When the data changes (e.g. sales history arrives after the first render), reopen on a range that has data.
   const sig = `${points.length}:${points[0]?.recorded_at ?? ""}`;
@@ -41,7 +62,8 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
     setLastSig(sig);
     setRange(defaultRange(points));
   }
-  const pts = pointsInRange(points, RANGES.find((r) => r.key === range)!.days);
+  const effRange: RangeKey = avail.length === 0 ? "All" : avail.includes(range) ? range : avail[avail.length - 2] ?? "All";
+  const pts = pointsInRange(points, RANGES.find((r) => r.key === effRange)!.days);
   const [active, setActive] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -50,12 +72,12 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
   }
   const rangeBar = (
     <div className="mt-2 flex gap-1">
-      {RANGES.map((r) => (
+      {RANGES.filter((r) => avail.includes(r.key)).map((r) => (
         <button
           key={r.key}
           type="button"
           onClick={() => setRange(r.key)}
-          className={`tabular flex-1 rounded border-2 px-1 py-0.5 text-xs font-bold ${range === r.key ? "border-ink bg-ink text-ink-foreground" : "border-transparent text-muted-foreground hover:border-ink"}`}
+          className={`tabular flex-1 rounded border-2 px-1 py-0.5 text-xs font-bold ${effRange === r.key ? "border-ink bg-ink text-ink-foreground" : "border-transparent text-muted-foreground hover:border-ink"}`}
         >
           {r.key}
         </button>
@@ -174,7 +196,7 @@ export function PriceSparkline({ points, emptyHint, tall = false }: { points: Sp
           </div>
         </>
       )}
-      {pts.length > 1 && rangeBar}
+      {avail.length > 0 && rangeBar}
     </div>
   );
 }
