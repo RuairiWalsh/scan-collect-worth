@@ -18,7 +18,7 @@ export function numistaPcgsNo(issues: NumistaIssue[] | null | undefined, issueId
     list.filter((i) => (i.gregorian_year ?? i.year) === y && !/proof/i.test(i.comment ?? "")).map(pcgsRef),
   );
   if (nums.size !== 1) return null;
-  return [...nums][0];
+  return [...nums][0] ?? null;
 }
 
 /** Numista's terms allow caching its data (including image links) for at most 7 days. */
