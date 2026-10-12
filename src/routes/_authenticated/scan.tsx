@@ -149,7 +149,7 @@ function ScanPage() {
             variant: r.variant,
             grader: r.grader,
             grade: r.grade,
-            condition: r.grader ? "graded" : defaultCondition(r.category),
+            condition: r.grader ? "graded" : defaultCondition(r.category, r.subcategory),
             ai_confidence: r.confidence,
             thumbnail: img.thumb,
             product_image: r.product_image ?? null,
