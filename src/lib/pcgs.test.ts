@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { pcgsCertNo, pcgsRecent, pcgsSources } from "./pcgs";
+import { pcgsCertNo, pcgsGrade, pcgsRecent, pcgsSources } from "./pcgs";
 
 describe("pcgs", () => {
   it("reads cert numbers and drops the holder suffix", () => {
     expect(pcgsCertNo("12345678.01")).toBe("12345678");
     expect(pcgsCertNo("#4 9")).toBeNull();
     expect(pcgsCertNo(null)).toBeNull();
+  });
+  it("normalizes slab grades for the PCGS API", () => {
+    expect(pcgsGrade("69")).toBe("MS69");
+    expect(pcgsGrade("ms 70")).toBe("MS70");
+    expect(pcgsGrade("PR69")).toBe("PR69");
+    expect(pcgsGrade("gem")).toBeNull();
+    expect(pcgsGrade(null)).toBeNull();
   });
   it("counts only auctions from the last 12 months", () => {
     const now = new Date("2026-10-12T00:00:00Z");

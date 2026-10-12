@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { numistaCacheFresh, numistaGrade, pickNumistaIssue, rankNumistaTypes, parseNumistaId, numistaCatalogId } from "./numista";
+import { numistaCacheFresh, numistaGrade, numistaPcgsNo, pickNumistaIssue, rankNumistaTypes, parseNumistaId, numistaCatalogId } from "./numista";
 
 describe("numista", () => {
   it("cached data expires after 7 days", () => {
@@ -31,6 +31,15 @@ describe("numista", () => {
     expect(pickNumistaIssue(issues, { year: "1964", mint: "D" })?.id).toBe(11);
     expect(pickNumistaIssue(issues, { year: "1964" })?.id).toBe(10);
     expect(pickNumistaIssue(issues, { year: "1964", proof: true })?.id).toBe(12);
+  });
+  it("reads the PCGS number from an issue's references", () => {
+    const issues = [
+      { id: 10, gregorian_year: 1964, references: [{ number: "6706", catalogue: { code: "PCGS" } }] },
+      { id: 11, gregorian_year: 1964, references: [{ number: "X1", catalogue: { code: "KM" } }] },
+    ];
+    expect(numistaPcgsNo(issues, 10)).toBe("6706");
+    expect(numistaPcgsNo(issues, 11)).toBeNull();
+    expect(numistaPcgsNo(issues, null)).toBeNull();
   });
   it("round-trips catalog ids", () => {
     expect(parseNumistaId(numistaCatalogId(943, 22280))).toEqual({ typeId: 943, issueId: 22280 });
