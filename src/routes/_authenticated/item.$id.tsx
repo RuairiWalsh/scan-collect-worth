@@ -87,8 +87,29 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const { data: itemFolders = new Map<string, string[]>() } = useQuery(itemFoldersQuery());
   const { data: variants = [] } = useCardVariants(item.category === "cards" ? item.catalog_id : null);
   const numistaTypeId = item.category === "coins" ? parseNumistaId(item.catalog_id)?.typeId ?? null : null;
+  // Catalog-matched cards: the shared image table keeps the scanned back; the collector's own back scan wins.
+  const catalogBackId = item.catalog_id;
+  const { data: catalogBack } = useQuery({
+    queryKey: ["card_back", catalogBackId],
+    queryFn: async () => {
+      if (!catalogBackId) return null;
+      const { data } = await supabase
+        .from("card_product_images")
+        .select("card_key")
+        .eq("catalog_id", catalogBackId)
+        .eq("status", "ready")
+        .eq("review_status", "approved")
+        .limit(1)
+        .maybeSingle();
+      return data?.card_key ? `/api/public/card-images/${data.card_key}?side=back` : null;
+    },
+    enabled: item.category === "cards" && !!catalogBackId,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const backImage = item.back_image ?? catalogBack ?? null;
   const [busy, setBusy] = useState(false);
   const [showScan, setShowScan] = useState(false);
+  const [showBack, setShowBack] = useState(false);
   const [priceStatus, setPriceStatus] = useState<{ ebay: boolean; justtcg: boolean } | null>(null);
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -202,12 +223,17 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
         <div className="space-y-4">
           <div className="space-y-2">
             {item.category === "cards" && (
-              <div className="flex gap-2" role="group" aria-label="Card images">
-                <Button size="sm" variant={showScan ? "outline" : "default"} aria-pressed={!showScan} onClick={() => setShowScan(false)}>Product image</Button>
-                <Button size="sm" variant={showScan ? "default" : "outline"} aria-pressed={showScan} disabled={!item.thumbnail} onClick={() => setShowScan(true)}>Your scan</Button>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Card images">
+                <Button size="sm" variant={showScan || showBack ? "outline" : "default"} aria-pressed={!showScan && !showBack} onClick={() => { setShowScan(false); setShowBack(false); }}>Product image</Button>
+                <Button size="sm" variant={showScan ? "default" : "outline"} aria-pressed={showScan} disabled={!item.thumbnail} onClick={() => { setShowScan(true); setShowBack(false); }}>Your scan</Button>
+                {item.category === "cards" && backImage && (
+                  <Button size="sm" variant={showBack ? "default" : "outline"} aria-pressed={showBack} onClick={() => { setShowBack(true); setShowScan(false); }}>Back</Button>
+                )}
               </div>
             )}
-            {showScan && item.thumbnail ? (
+            {showBack && backImage ? (
+              <img src={backImage} alt={`Back of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
+            ) : showScan && item.thumbnail ? (
               <img src={item.thumbnail} alt={`Your scan of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
             ) : (
               <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
@@ -215,7 +241,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             {numistaTypeId != null && item.product_image && !item.product_image.includes("src=lymitz") && (
               <p className="text-xs text-muted-foreground">Image from Numista</p>
             )}
-            {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
+            {item.category === "cards" && !showScan && !showBack && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
           <div className="panel shadow-hard p-4">
             {(() => {

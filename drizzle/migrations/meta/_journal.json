@@ -197,6 +197,13 @@
       "when": 1791832740429,
       "tag": "0027_stamp_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791843941287,
+      "tag": "0028_item_back_image",
+      "breakpoints": true
     }
   ]
 }

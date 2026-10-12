@@ -2,6 +2,7 @@ import { trimPresale } from "@/lib/collection-history";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { catalogCardDetail } from "@/lib/search.functions";
 import { usd } from "@/lib/image";
@@ -31,6 +32,7 @@ function CardPage() {
   const { catalogId } = Route.useParams();
   const [condition, setCondition] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
+  const [side, setSide] = useState<"front" | "back">("front");
   const fetchDetail = useServerFn(catalogCardDetail);
   const { data, isLoading } = useQuery({
     queryKey: ["catalog-card", catalogId],
@@ -57,17 +59,31 @@ function CardPage() {
         <p className="mt-8 text-sm text-muted-foreground">Card not found.</p>
       ) : (
         <>
-          {data.card.image ? (
-            <img
-              src={data.card.image}
-              alt={data.card.name}
-              className="mx-auto mt-4 w-full max-w-sm rounded-md border-2 border-foreground object-contain shadow-[4px_4px_0_0_var(--foreground)]"
-            />
-          ) : (
-            <div className="mx-auto mt-4 flex aspect-[63/88] w-full max-w-sm items-center justify-center rounded-md border-2 border-foreground bg-muted text-sm text-muted-foreground">
-              No image
-            </div>
-          )}
+          <div className="mx-auto mt-4 w-full max-w-sm">
+            {side === "back" && data.card.back_image ? (
+              <img
+                src={data.card.back_image}
+                alt={`Back of ${data.card.name}`}
+                className="aspect-[63/88] w-full rounded-md border-2 border-foreground bg-muted object-contain shadow-[4px_4px_0_0_var(--foreground)]"
+              />
+            ) : data.card.image ? (
+              <img
+                src={data.card.image}
+                alt={data.card.name}
+                className="w-full rounded-md border-2 border-foreground object-contain shadow-[4px_4px_0_0_var(--foreground)]"
+              />
+            ) : (
+              <div className="flex aspect-[63/88] items-center justify-center rounded-md border-2 border-foreground bg-muted text-sm text-muted-foreground">
+                No image
+              </div>
+            )}
+            {data.card.back_image && (
+              <div className="mt-2 flex justify-center gap-2">
+                <Button size="sm" variant={side === "front" ? "default" : "outline"} aria-pressed={side === "front"} onClick={() => setSide("front")}>Front</Button>
+                <Button size="sm" variant={side === "back" ? "default" : "outline"} aria-pressed={side === "back"} onClick={() => setSide("back")}>Back</Button>
+              </div>
+            )}
+          </div>
           <h1 className="mt-6 font-display text-2xl font-black">{data.card.name}</h1>
           <p className="text-sm text-muted-foreground">
             {[data.card.set_name, data.card.number ? `#${data.card.number}` : null, data.card.rarity]

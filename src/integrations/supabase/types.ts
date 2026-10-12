@@ -345,6 +345,7 @@ export type Database = {
       items: {
         Row: {
           ai_confidence: number | null
+          back_image: string | null
           catalog_id: string | null
           category: string
           condition: string
@@ -376,6 +377,7 @@ export type Database = {
         }
         Insert: {
           ai_confidence?: number | null
+          back_image?: string | null
           catalog_id?: string | null
           category?: string
           condition?: string
@@ -407,6 +409,7 @@ export type Database = {
         }
         Update: {
           ai_confidence?: number | null
+          back_image?: string | null
           catalog_id?: string | null
           category?: string
           condition?: string
