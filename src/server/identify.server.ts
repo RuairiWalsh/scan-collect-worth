@@ -89,6 +89,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
             number: result.number,
             year: result.year,
           });
+          const exact = csCard;
           let picked = csCard;
           // One-sided scan: no number/year. Let the AI pick using player, brand, set design and photo likeness.
           if (!picked) {
@@ -117,7 +118,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
             result.set_name = csCard.releaseName || csCard.setName || result.set_name;
             result.number = csCard.number || result.number;
             result.year = csCard.releaseYear || result.year;
-            if (csCard.number && csCard.number === result.number) result.confidence = Math.max(result.confidence, 0.8);
+            if (picked === exact) result.confidence = Math.max(result.confidence, 0.8);
             // For sports, we often dont have a JustTCG match, so this is our primary identity.
           }
         }
