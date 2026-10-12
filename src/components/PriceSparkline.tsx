@@ -25,9 +25,9 @@ export function pointsInRange(points: SparkPoint[], days: number, now = Date.now
 }
 
 /** Smallest range holding at least 2 points, so sparse data (e.g. weekly sports sales) doesn't open on a flat single-point view. */
-function defaultRange(points: SparkPoint[]): RangeKey {
+export function defaultRange(points: SparkPoint[], now = Date.now()): RangeKey {
   for (const r of RANGES) {
-    if (pointsInRange(points, r.days).length >= 2) return r.key;
+    if (pointsInRange(points, r.days, now).length >= 2) return r.key;
   }
   return "All";
 }

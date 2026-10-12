@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pointsInRange } from "./PriceSparkline";
+import { pointsInRange, defaultRange } from "./PriceSparkline";
 
 const now = Date.parse("2026-10-10T12:00:00Z");
 const day = (d: number, v: number) => ({ recorded_at: new Date(now - d * 86400000).toISOString(), value: v });
