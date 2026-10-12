@@ -153,5 +153,15 @@ export const catalogCardDetail = createServerFn({ method: "GET" })
     }
     const { catalogProductImages } = await import("@/server/cardmagic.server");
     const images = await catalogProductImages(context.supabase, [data.catalog_id]);
-    return { card: card ? { ...card, image: images.get(data.catalog_id) ?? null, variants: cardVariants(card.variants) } : null, history: rows ?? [] };
+    const { data: imgRow } = await context.supabase
+      .from("card_product_images")
+      .select("card_key")
+      .eq("catalog_id", data.catalog_id)
+      .eq("status", "ready")
+      .eq("review_status", "approved")
+      .not("card_key", "is", null)
+      .limit(1)
+      .maybeSingle();
+    const backImage = imgRow?.card_key ? `/api/public/card-images/${imgRow.card_key}?side=back` : null;
+    return { card: card ? { ...card, image: images.get(data.catalog_id) ?? null, back_image: backImage, variants: cardVariants(card.variants) } : null, history: rows ?? [] };
   });
