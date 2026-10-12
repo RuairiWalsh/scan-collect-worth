@@ -14,9 +14,7 @@
 - The front-screen featured card reads only its exact catalog entry through anonymous column-scoped access and is always included in shared daily cache refreshes even if nobody owns it, avoiding provider calls for visitors.
 - Exact card quality/printing selection lives in src/lib/card-pricing.ts and is shared by editing, search details, and nightly revaluation; missing provider combinations return no price, never a near-mint multiplier fallback.
 - Server functions live in src/lib/*.functions.ts; server-only helpers in src/server/*.server.ts (src/server is blocked from client bundles).
-- Item identification uses the AI Gateway Responses API via raw streamed fetch in src/server/ai.server.ts — keeps worker bundle small.
 - Reviewed imports create catalog_prices records with separate provider IDs or lymitz-prefixed local IDs; imported_card keeps unowned cards in daily refreshes.
-- CardSight sports prices use batched completed-auction comps, separated by parallel/grade. Raw comps are Ungraded, never Near Mint; failures preserve saved prices.
 - Collectible taxonomy and condition multipliers live in src/lib/taxonomy.ts — single source for categories.
 - Card scans are pinned to an exact JustTCG catalog card (items.catalog_id) in src/server/identify.server.ts; pricing fetches by that id, and editing a card's identity clears it — prevents prices from a look-alike printing.
 - JustTCG search must use the `q` parameter (the `name` parameter is silently ignored); match logic lives in src/lib/catalog.ts (tested).
@@ -28,9 +26,4 @@
 - Roles live only in public.user_roles, checked via public.has_role(); admin actions and cross-user reads (stats, user list, marketplace view of private items) go through SECURITY DEFINER SQL functions that verify the caller's role — never client-side flags.
 - Route loaders must never throw: wrap data lookups in try/catch and return an empty fallback, because a rejected loader renders the router error boundary and blanks the whole page.
 - Merchant order status changes go only through public.merchant_update_order (SECURITY DEFINER; transitions mirrored in src/lib/orders.ts, tested); orders has no client insert/update policy so future checkout and shipping webhooks write server-side.
-- CardMagic processing lives in src/server/cardmagic.server.ts: POST /v1/cardmagic/process uploads the user's scan, not catalog artwork. Exact printing/language identities share public.card_product_images through server-only atomic claims; ambiguous identities use a scan hash. Search, featured cards, collection and marketplace must use this cache or the original scan, never catalog_prices.image.
-- Shared images require approved RLS/RPC access. Sports CardSight processing enters pending via a DB trigger; admin-only review excludes confirmed PDF imports. Pending cache reuse is submitter-only; TCG Graph caching stays independent.
-- Coins match Numista types/issues (catalog_id `numista:{type}:{issue}`) in src/server/numista.server.ts; Numista data and picture links live only in public.numista_types and expire after 7 days (Numista terms), and items point at /api/public/coin-images/{type} instead of storing Numista URLs.
-- Coin scans missing required details (src/lib/coin-id.ts) prompt the reviewer to capture the other side; both sides are re-identified together.
-- Admin-uploaded coin images live in public.coin_images (type+year+side, private coin-images bucket) and are served through /api/public/coin-images/{type}?year=…&src=lymitz; they beat Numista and never expire, and a DB trigger repoints matching items — avoids the 7-day Numista refresh for curated coins.
-- Stamps match Lymitz's own public.stamp_catalog (catalog_id stamp:{uuid}) in src/server/stamps.server.ts — by catalog number+country first, else the normalized country|year|title|face-value key (src/lib/stamp-catalog.ts, tested); new scans add entries server-side, official images live in the private stamp-images bucket behind /api/public/stamp-images/{id} and a trigger repoints items — no public stamp API exists.
+- src/server has its own AGENTS.md (provider, coin and stamp catalog rules) — read it before changing files there.
