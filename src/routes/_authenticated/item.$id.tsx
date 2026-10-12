@@ -47,7 +47,8 @@ function ItemPage() {
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
   const fetchSales = useServerFn(sportsSalesHistory);
   const qc = useQueryClient();
-  const isSports = item?.subcategory === "sports" || item?.category === "coins";
+  // Coins build their own daily trend line from nightly price checks; sports cards use CardSight sales.
+  const isSports = item?.subcategory === "sports";
   const { data: sales } = useQuery({
     queryKey: ["sports_sales", id, item?.catalog_id, item?.condition, item?.variant, item?.grader, item?.grade],
     queryFn: async () => {
