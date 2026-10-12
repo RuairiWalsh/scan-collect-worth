@@ -12,6 +12,7 @@ export type SearchResult = {
   number: string | null;
   rarity: string | null;
   image: string | null;
+  back_image?: string | null;
   nm_price: number | null;
   updated_at: string | null;
   price_provider?: string;
