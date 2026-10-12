@@ -126,8 +126,9 @@ export function buildSearchQuery(item: PricedItem) {
     const name = (item.name ?? "")
       .replace(/\([^)]*\)/g, " ")
       .replace(/["']/g, " ")
-      .replace(/\b(half\s+)?(dollar|dollars|cent|cents|penny|pence|pound|pounds|euro|franc|francs|peso|pesos|yen|yuan|rupee|shilling|nickel|dime|quarter)s?\b/gi, " ")
-      .replace(/\b(silver|gold|bronze|copper|nickel|clad|bullion|coin|proof)\b/gi, " ")
+      // Drop a leading denomination like "1 Dollar" or "50 Cents" — the
+      // design name that follows is how collectors title listings.
+      .replace(/^\d+(\.\d+)?\s+[A-Za-z]+\s*/, " ")
       .replace(/\s+/g, " ")
       .trim();
     const bits = [item.year, name, item.variant];
