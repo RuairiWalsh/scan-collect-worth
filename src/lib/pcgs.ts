@@ -26,7 +26,7 @@ export function pcgsSources(f: PcgsFacts, now = new Date()): PriceSource[] {
   if ((f.PriceGuideValue ?? 0) > 0)
     out.push({
       source: "pcgs", label: `PCGS price guide · ${f.Grade ?? ""}`.trim(), price: f.PriceGuideValue as number, kind: "market",
-      url: f.PCGSNo ? `https://www.pcgs.com/coinfacts/coin/detail/${f.PCGSNo}` : undefined,
+      ...(f.PCGSNo ? { url: `https://www.pcgs.com/coinfacts/coin/detail/${f.PCGSNo}` } : {}),
     });
   return out;
 }
