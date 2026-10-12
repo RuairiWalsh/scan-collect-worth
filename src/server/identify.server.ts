@@ -89,13 +89,35 @@ export async function identifyImage(image: string, strip?: string | undefined, b
             number: result.number,
             year: result.year,
           });
-          if (csCard) {
+          let picked = csCard;
+          // One-sided scan: no number/year. Let the AI pick using player, brand, set design and photo likeness.
+          if (!picked) {
+            const { cardsightCandidates } = await import("@/server/cardsight.server");
+            const cands = await cardsightCandidates({ name: result.name, set_name: result.set_name });
+            if (cands.length) {
+              const pick = await streamJson<{ index: number }>({
+                instructions:
+                  "You match a photographed sports card to an exact catalog entry. Use the player, brand logo, card design/era, set name, team and uniform, and any visible text. The number may be on the back and not visible. Answer -1 only if no candidate is plausible.",
+                content: [
+                  { type: "input_text", text: `Read from the card: ${result.printed_text ?? ""}\nGuess: ${result.name} | ${result.set_name ?? "?"} | ${result.year ?? "?"}\nCandidates:\n` + cands.map((c, i) => `${i}. ${c.name} | ${c.releaseYear ?? "?"} ${c.releaseName ?? ""} | set: ${c.setName ?? "?"} | #${c.number ?? "?"}`).join("\n") },
+                  { type: "input_image", image_url: data.image, detail: "high" },
+                  ...backInput,
+                ],
+                schemaName: "cardsight_pick",
+                schema: { type: "object", additionalProperties: false, required: ["index"], properties: { index: { type: "integer" } } },
+              }).catch(() => ({ index: -1 }));
+              picked = cands[pick.index] ?? null;
+              if (picked) result.confidence = Math.min(Math.max(result.confidence, 0.6), 0.75);
+            }
+          }
+          if (picked) {
+            const csCard = picked;
             result.catalog_id = csCard.id;
             result.name = csCard.name || result.name;
             result.set_name = csCard.releaseName || csCard.setName || result.set_name;
             result.number = csCard.number || result.number;
             result.year = csCard.releaseYear || result.year;
-            result.confidence = Math.max(result.confidence, 0.8);
+            if (csCard.number && csCard.number === result.number) result.confidence = Math.max(result.confidence, 0.8);
             // For sports, we often dont have a JustTCG match, so this is our primary identity.
           }
         }

@@ -66,3 +66,18 @@ export async function cardsightBulkPricing(ids: string[]) {
 }
 
 
+
+/** Broad candidate list for a one-sided scan with no readable number or year (name, then surname). */
+export async function cardsightCandidates(item: CardsightQuery): Promise<CardsightCard[]> {
+  let cards = await searchCards(new URLSearchParams({ name: item.name, take: "50" }));
+  const surname = item.name.trim().split(/\s+/).pop() ?? "";
+  if (!cards.length && surname.length > 2 && surname !== item.name.trim()) {
+    cards = await searchCards(new URLSearchParams({ name: surname, take: "50" }));
+  }
+  const words = (item.set_name ?? "").toLowerCase().replace(/\b(19|20)\d\d\b/g, "").split(/[^a-z0-9]+/).filter(w => w.length > 2);
+  const setMatches = cards.filter(c => {
+    const hay = `${c.setName ?? ""} ${c.releaseName ?? ""}`.toLowerCase();
+    return words.some(w => hay.includes(w));
+  });
+  return (setMatches.length ? setMatches : cards).slice(0, 25);
+}
