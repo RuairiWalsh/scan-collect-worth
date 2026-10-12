@@ -187,7 +187,9 @@ async function matchNumista(result: Identification, image: string, back: string 
   const type = await numistaType(picked.id);
   const issue = type?.issues ? pickNumistaIssue(type.issues, { year: result.year, mint: result.variant, proof: /proof/i.test(result.variant ?? "") }) : null;
   result.catalog_id = numistaCatalogId(picked.id, issue?.id ?? null);
-  result.product_image = numistaImagePath(picked.id);
+  // Numista has one sample picture per type; for multi-year types it shows a different date, so keep the user's scan.
+  const singleYear = (type?.min_year ?? picked.min_year) != null && (type?.min_year ?? picked.min_year) === (type?.max_year ?? picked.max_year);
+  result.product_image = singleYear ? numistaImagePath(picked.id) : null;
   result.name = picked.title;
   result.set_name = picked.issuer?.name ?? result.set_name;
   result.confidence = Math.max(result.confidence, issue ? 0.85 : 0.7);
