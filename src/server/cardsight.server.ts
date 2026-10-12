@@ -46,8 +46,8 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
   return pickCardsightCard(cards, item);
 }
 
-export async function cardsightGetPricing(cardId: string): Promise<CardsightPricing | null> {
-  const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=90d`);
+export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {
+  const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=${period}`);
   if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");
   return res.json() as Promise<CardsightPricing>;
 }
