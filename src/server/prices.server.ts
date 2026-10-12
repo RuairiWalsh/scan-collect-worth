@@ -125,7 +125,8 @@ export function buildSearchQuery(item: PricedItem) {
   if (coin) {
     const name = (item.name ?? "")
       .replace(/\([^)]*\)/g, " ")
-      .replace(/\b\d+(\.\d+)?\s*(dollar|dollars|cent|cents|penny|pence|pound|pounds|euro|franc|francs|peso|pesos|yen|yuan|rupee|shilling|nickel|dime|quarter)s?\b/gi, " ")
+      .replace(/["']/g, " ")
+      .replace(/\b(half\s+)?(dollar|dollars|cent|cents|penny|pence|pound|pounds|euro|franc|francs|peso|pesos|yen|yuan|rupee|shilling|nickel|dime|quarter)s?\b/gi, " ")
       .replace(/\b(silver|gold|bronze|copper|nickel|clad|bullion|coin|proof)\b/gi, " ")
       .replace(/\s+/g, " ")
       .trim();
