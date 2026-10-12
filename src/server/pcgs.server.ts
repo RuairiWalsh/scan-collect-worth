@@ -26,17 +26,21 @@ async function pcgsNoFromNumista(item: PricedItem): Promise<string | null> {
  * PCGS CoinFacts pricing for a slab. Prefers the coin's identity (PCGS number from its
  * Numista match + the slab's grade); the label's cert number is only a fallback.
  */
-export async function pcgsPrice(item: PricedItem): Promise<PriceSource[]> {
+export async function pcgsFactsFor(item: PricedItem): Promise<PcgsFacts | null> {
   const grade = pcgsGrade(item.grade);
   const pcgsNo = await pcgsNoFromNumista(item);
   const gradeNo = grade?.match(/\d+/)?.[0];
   if (pcgsNo && gradeNo) {
     const facts = await coinFacts(`GetCoinFactsByGrade?PCGSNo=${pcgsNo}&GradeNo=${gradeNo}&PlusGrade=false`).catch(() => null);
-    if (facts?.PCGSNo && facts.IsValidRequest !== false) return pcgsSources(facts);
+    if (facts?.PCGSNo && facts.IsValidRequest !== false) return facts;
   }
   const cert = pcgsCertNo(item.number);
-  if (!cert) return [];
+  if (!cert) return null;
   const facts = await coinFacts(`GetCoinFactsByCertNo/${cert}`);
-  if (!facts?.PCGSNo) return [];
-  return pcgsSources(facts);
+  return facts?.PCGSNo ? facts : null;
+}
+
+export async function pcgsPrice(item: PricedItem): Promise<PriceSource[]> {
+  const facts = await pcgsFactsFor(item);
+  return facts ? pcgsSources(facts) : [];
 }

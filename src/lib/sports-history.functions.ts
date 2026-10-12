@@ -10,8 +10,15 @@ export const sportsSalesHistory = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<{ points: SalesPoint[] }> => {
     try {
       const { data: item } = await context.supabase.from("items")
-        .select("id, name, set_name, number, year, catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
-      if (!item || item.subcategory !== "sports") return { points: [] };
+        .select("id, category, name, set_name, number, year, catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
+      if (!item) return { points: [] };
+      // Graded coins: PCGS auction sales for this coin and grade.
+      if (item.category === "coins" && item.condition === "graded") {
+        const { pcgsFactsFor } = await import("@/server/pcgs.server");
+        const { pcgsSalesSeries } = await import("@/lib/pcgs");
+        return { points: pcgsSalesSeries(await pcgsFactsFor(item as never).catch(() => null)) };
+      }
+      if (item.subcategory !== "sports") return { points: [] };
       const { cardsightGetPricing, pinSportsCatalogCard } = await import("@/server/cardsight.server");
       // Hand-entered details: pin the exact catalog card first so the chart has real sales.
       const catalogId = await pinSportsCatalogCard(context.supabase, item);

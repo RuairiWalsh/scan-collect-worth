@@ -38,3 +38,18 @@ export function pcgsSources(f: PcgsFacts, now = new Date()): PriceSource[] {
     });
   return out;
 }
+
+/** Monthly auction history from PCGS CoinFacts ("MM-YYYY" dates): median sale per month, oldest first. */
+export function pcgsSalesSeries(f: PcgsFacts | null | undefined, now = new Date(), months = 60): { recorded_at: string; est_value: number; count: number }[] {
+  const byMonth = new Map<string, number[]>();
+  for (const a of f?.AuctionList ?? []) {
+    const m = String(a.Date ?? "").match(/^(\d{1,2})-(\d{4})$/);
+    if (!m || !(Number(a.Price) > 0) || !pcgsRecent(a.Date, now, months)) continue;
+    const key = `${m[2]}-${(m[1] ?? "").padStart(2, "0")}`;
+    byMonth.set(key, [...(byMonth.get(key) ?? []), Number(a.Price)]);
+  }
+  return [...byMonth.keys()].sort().map((k) => {
+    const v = byMonth.get(k)!;
+    return { recorded_at: `${k}-15T00:00:00.000Z`, est_value: Math.round(trimmedMedian(v) * 100) / 100, count: v.length };
+  });
+}
