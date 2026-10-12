@@ -34,6 +34,13 @@ export function defaultRange(points: SparkPoint[], now = Date.now()): RangeKey {
 
 export function PriceSparkline({ points, emptyHint, tall = false }: { points: SparkPoint[]; emptyHint: string; tall?: boolean }) {
   const [range, setRange] = useState<RangeKey>(() => defaultRange(points));
+  // When the data changes (e.g. sales history arrives after the first render), reopen on a range that has data.
+  const sig = `${points.length}:${points[0]?.recorded_at ?? ""}`;
+  const [lastSig, setLastSig] = useState(sig);
+  if (sig !== lastSig) {
+    setLastSig(sig);
+    setRange(defaultRange(points));
+  }
   const pts = pointsInRange(points, RANGES.find((r) => r.key === range)!.days);
   const [active, setActive] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
