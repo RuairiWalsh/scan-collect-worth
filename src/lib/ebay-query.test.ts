@@ -44,3 +44,18 @@ describe("buildSearchQuery — coins", () => {
     expect(q).toBe("1964 Kennedy Half Dollar proof");
   });
 });
+
+describe("ebayEstimate", () => {
+  it("prices graded coins at 75% of the median asking price", () => {
+    const price = ebayEstimate(
+      { category: "coins", condition: "graded" } as any,
+      [300, 320, 340],
+    );
+    expect(price).toBe(240); // median 320 × 0.75
+  });
+
+  it("keeps the full median for ungraded coins and other items", () => {
+    expect(ebayEstimate({ category: "coins", condition: "raw_ungraded" } as any, [100, 200, 300])).toBe(200);
+    expect(ebayEstimate({ category: "cards", condition: "graded" } as any, [100, 200, 300])).toBe(200);
+  });
+});
