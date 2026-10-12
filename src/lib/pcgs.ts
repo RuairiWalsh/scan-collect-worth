@@ -45,7 +45,7 @@ export function pcgsSalesSeries(f: PcgsFacts | null | undefined, now = new Date(
   for (const a of f?.AuctionList ?? []) {
     const m = String(a.Date ?? "").match(/^(\d{1,2})-(\d{4})$/);
     if (!m || !(Number(a.Price) > 0) || !pcgsRecent(a.Date, now, months)) continue;
-    const key = `${m[2]}-${m[1].padStart(2, "0")}`;
+    const key = `${m[2]}-${(m[1] ?? "").padStart(2, "0")}`;
     byMonth.set(key, [...(byMonth.get(key) ?? []), Number(a.Price)]);
   }
   return [...byMonth.keys()].sort().map((k) => {

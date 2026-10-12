@@ -30,6 +30,6 @@ describe("pcgsSalesSeries", () => {
   it("groups auctions by month, oldest first", () => {
     const s = pcgsSalesSeries({ AuctionList: [{ Date: "03-2026", Price: 100 }, { Date: "01-2026", Price: 80 }, { Date: "03-2026", Price: 120 }, { Date: "01-2010", Price: 5 }] }, new Date("2026-10-01"));
     expect(s.map((p) => p.recorded_at.slice(0, 7))).toEqual(["2026-01", "2026-03"]);
-    expect(s[1].count).toBe(2);
+    expect(s[1]?.count).toBe(2);
   });
 });
