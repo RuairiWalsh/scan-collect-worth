@@ -72,6 +72,17 @@ export const CONDITIONS: Record<CategoryKey, Condition[]> = {
   ],
 };
 
+const SPORTS_CARD_CONDITIONS: Condition[] = [
+  { key: "raw_ungraded", label: "Raw (ungraded)", mult: 1 },
+  { key: "graded", label: "Graded (PSA/BGS/SGC)", mult: 1 },
+];
+
+/** Sports sale comps only distinguish raw vs graded, so TCG wear grades are not offered there. */
+export function conditionsFor(category: string, subcategory?: string | null): Condition[] {
+  if (category === "cards" && subcategory === "sports") return SPORTS_CARD_CONDITIONS;
+  return CONDITIONS[(category as CategoryKey) in CONDITIONS ? (category as CategoryKey) : "cards"];
+}
+
 export function defaultCondition(cat: CategoryKey, subcategory?: string | null): string {
   // Sports sale comps don't state condition, so new sports scans start as Ungraded to get a real price.
   if (cat === "cards" && subcategory === "sports") return "raw_ungraded";

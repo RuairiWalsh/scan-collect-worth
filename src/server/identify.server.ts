@@ -108,6 +108,7 @@ export async function identifyImage(image: string, strip?: string | undefined, b
                 schema: { type: "object", additionalProperties: false, required: ["index"], properties: { index: { type: "integer" } } },
               }).catch(() => ({ index: -1 }));
               picked = cands[pick.index] ?? null;
+              result.alternatives = cands.filter(c => c !== picked).slice(0, 8).map(c => ({ catalog_id: c.id, name: c.name || result.name, set_name: [c.releaseName, c.setName && c.setName !== "Base Set" ? c.setName : null].filter(Boolean).join(" ") || null, number: c.number ?? null, year: c.releaseYear ?? null }));
               if (picked) result.confidence = Math.min(Math.max(result.confidence, 0.6), 0.75);
             }
           }

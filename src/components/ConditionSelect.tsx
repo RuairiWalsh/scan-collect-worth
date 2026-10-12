@@ -1,18 +1,20 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONDITIONS, type CategoryKey } from "@/lib/taxonomy";
+import { conditionsFor } from "@/lib/taxonomy";
 
 export function ConditionSelect({
   category,
+  subcategory,
   value,
   onChange,
   className,
 }: {
   category: string;
+  subcategory?: string | null;
   value: string;
   onChange: (v: string) => void;
   className?: string;
 }) {
-  const list = CONDITIONS[(category as CategoryKey) in CONDITIONS ? (category as CategoryKey) : "cards"];
+  const list = conditionsFor(category, subcategory);
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={className} aria-label="Condition">

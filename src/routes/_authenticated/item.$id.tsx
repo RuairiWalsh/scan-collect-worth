@@ -272,7 +272,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Variant">{f.category === "cards" ? <VariantSelect variants={identityUnchanged ? variants : []} value={f.variant} onChange={(v) => set("variant", v)} /> : <Input value={str(f.variant)} onChange={(e) => set("variant", nul(e.target.value))} />}</Field>
             <Field label="Condition">
-              <ConditionSelect category={f.category} value={f.condition} onChange={(v) => set("condition", v)} />
+              <ConditionSelect category={f.category} subcategory={f.subcategory} value={f.condition} onChange={(v) => set("condition", v)} />
             </Field>
             <Field label="Quantity">
               <Input type="number" min={1} value={f.quantity} onChange={(e) => set("quantity", Math.max(1, parseInt(e.target.value) || 1))} />

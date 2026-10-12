@@ -77,10 +77,10 @@ function CardPage() {
           <div className="mt-4 rounded-md border-2 border-foreground bg-card p-4 shadow-[4px_4px_0_0_var(--foreground)]">
             <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1"><p className="text-xs font-semibold">Variant</p><VariantSelect variants={variants} value={printing} onChange={setPrinting} /></div>
-              <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" value={resolvedCondition} onChange={setCondition} /></div>
+              <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" subcategory={data.card.price_provider === "cardsight" ? "sports" : null} value={resolvedCondition} onChange={setCondition} /></div>
             </div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
-            {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed auction sales · USD</p>}
+            {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed sales · USD</p>}
             {data.card.price_status === "failed" && <p className="text-xs text-destructive">{variants.length ? "Latest price check unavailable; showing the last saved price." : "No exact price match available yet; daily checks will retry."}</p>}
             {data.card.price_status === "pending" && <p className="text-xs text-muted-foreground">Awaiting daily price check.</p>}
             {data.card.price_status === "no_comps" && <p className="text-xs text-muted-foreground">No matching sale prices available yet.</p>}

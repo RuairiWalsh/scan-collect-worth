@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Camera, CameraOff, ImagePlus, Loader2, Trash2, CheckCheck, ChevronRight, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { identifyItem } from "@/lib/scan.functions";
+import { identifyItem, type CardAlternative } from "@/lib/scan.functions";
 import { refreshItemPrice } from "@/lib/prices.functions";
 import { itemsQuery, type Item } from "@/lib/items";
 import { boxToScreen, boxToVideoRect, captureRegion, fileToImages, frameGray, frameSignature, screenToBox, sharpness, sigDiff, usd } from "@/lib/image";
@@ -52,6 +52,7 @@ function ScanPage() {
   const [pending, setPending] = useState<Pending[]>([]);
   const [folderIds, setFolderIds] = useState<string[]>([]);
   const [pricing, setPricing] = useState<Set<string>>(new Set());
+  const [alts, setAlts] = useState<Record<string, CardAlternative[]>>({});
   const qc = useQueryClient();
   const identify = useServerFn(identifyItem);
   const reprice = useServerFn(refreshItemPrice);
@@ -160,6 +161,7 @@ function ScanPage() {
         if (error) throw error;
         setPending((p) => p.filter((x) => x.id !== tempId));
         await qc.invalidateQueries({ queryKey: ["items", "batch"] });
+        if (r.alternatives?.length) setAlts((a) => ({ ...a, [row.id]: r.alternatives! }));
         doPrice(row.id);
       } catch (e) {
         // In live mode, silently drop frames with nothing collectible in them.
@@ -277,6 +279,18 @@ function ScanPage() {
     if (error) { toast.error(error.message); return; }
     await qc.invalidateQueries({ queryKey: ["items", "batch"] });
     if (repriceAfter) doPrice(id);
+  }
+
+  async function chooseAlt(b: Item, a: CardAlternative) {
+    const prev: CardAlternative = { catalog_id: b.catalog_id ?? "", name: b.name, set_name: b.set_name, number: b.number, year: b.year };
+    const { error } = await supabase
+      .from("items")
+      .update({ catalog_id: a.catalog_id, name: a.name, set_name: a.set_name, number: a.number, year: a.year, product_image: null, ai_confidence: 0.9 })
+      .eq("id", b.id);
+    if (error) { toast.error(error.message); return; }
+    setAlts((s) => ({ ...s, [b.id]: [...(prev.catalog_id ? [prev] : []), ...(s[b.id] ?? []).filter((x) => x.catalog_id !== a.catalog_id)] }));
+    await qc.invalidateQueries({ queryKey: ["items", "batch"] });
+    doPrice(b.id);
   }
 
   async function remove(id: string) {
@@ -493,10 +507,30 @@ function ScanPage() {
                   )}
                 </div>
               </div>
+              {(alts[b.id]?.length ?? 0) > 0 && (
+                <div className="rounded border-2 border-foreground bg-secondary/40 p-2 text-xs">
+                  <p className="mb-1 font-semibold">
+                    {(b.ai_confidence ?? 1) < 0.8 ? "Not sure this is right — it may also be:" : "It may also be:"}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {alts[b.id]!.map((a) => (
+                      <button
+                        key={a.catalog_id}
+                        type="button"
+                        className="rounded border border-foreground bg-background px-2 py-1 text-left hover:bg-accent"
+                        onClick={() => chooseAlt(b, a)}
+                      >
+                        {[a.year, a.set_name, a.number && `#${a.number}`].filter(Boolean).join(" · ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 {b.category === "cards" && <ItemVariantSelect catalogId={b.catalog_id} value={b.variant} onChange={(v) => updateItem(b.id, { variant: v }, true)} className="h-8 min-w-32 flex-1 text-xs" />}
                 <ConditionSelect
                   category={b.category}
+                  subcategory={b.subcategory}
                   value={b.condition}
                   onChange={(v) => updateItem(b.id, { condition: v }, true)}
                   className="h-8 flex-1 text-xs"

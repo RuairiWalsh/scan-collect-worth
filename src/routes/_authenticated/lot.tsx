@@ -168,7 +168,7 @@ function LotRow({ item, draft, patch }: { item: Item; draft: Draft; patch: (p: P
               {condition === "graded" && item.grader ? (
                 <p className="font-semibold">{item.grader} {item.grade}</p>
               ) : (
-                <ConditionSelect category={item.category} value={condition} onChange={changeCondition} />
+                <ConditionSelect category={item.category} subcategory={item.subcategory} value={condition} onChange={changeCondition} />
               )}
             </div>
             <div>

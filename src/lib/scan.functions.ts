@@ -19,7 +19,10 @@ export type Identification = {
   catalog_id?: string | null;
   official_image?: string | null;
   product_image?: string | null;
+  alternatives?: CardAlternative[];
 };
+
+export type CardAlternative = { catalog_id: string; name: string; set_name: string | null; number: string | null; year: string | null };
 
 export const identifyItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
