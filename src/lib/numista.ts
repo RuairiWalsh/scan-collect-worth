@@ -1,6 +1,14 @@
 // Pure Numista helpers (coins): matching, grade mapping and the 7-day cache rule.
 export type NumistaTypeSummary = { id: number; title: string; issuer?: { name?: string } | null; min_year?: number | null; max_year?: number | null; object_type?: { name?: string } | null };
-export type NumistaIssue = { id: number; year?: number | null; gregorian_year?: number | null; mint_letter?: string | null; comment?: string | null };
+export type NumistaIssue = { id: number; year?: number | null; gregorian_year?: number | null; mint_letter?: string | null; comment?: string | null; references?: { number?: string | null; catalogue?: { code?: string | null } | null }[] | null };
+
+/** PCGS CoinFacts number recorded on a Numista issue; null when the issue is unknown or unlisted. */
+export function numistaPcgsNo(issues: NumistaIssue[] | null | undefined, issueId: number | null): string | null {
+  if (!issueId) return null;
+  const issue = (issues ?? []).find((i) => i.id === issueId);
+  const ref = issue?.references?.find((r) => r.catalogue?.code === "PCGS" && r.number);
+  return ref?.number ?? null;
+}
 
 /** Numista's terms allow caching its data (including image links) for at most 7 days. */
 export const NUMISTA_CACHE_MS = 7 * 24 * 60 * 60 * 1000;
