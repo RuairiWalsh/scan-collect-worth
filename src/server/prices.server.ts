@@ -1,5 +1,5 @@
 // Server-only price sources.
-import { trimmedMedian, type PriceSource } from "@/lib/pricing";
+import { round2, trimmedMedian, type PriceSource } from "@/lib/pricing";
 import { conditionFor } from "@/lib/taxonomy";
 import { cardPriceSources, cardVariants } from "@/lib/card-pricing";
 import { cardsightConfigured, cardsightFindCard, cardsightGetPricing, type CardsightPriceRecord } from "./cardsight.server";
@@ -119,11 +119,38 @@ export async function testEbayAuth(): Promise<boolean> {
 
 export function buildSearchQuery(item: PricedItem) {
   const coin = item.category === "coins";
-  // Coin numbers are slab cert numbers, never in listing titles.
-  const bits = [item.year, item.set_name, item.name, !coin && item.number ? `#${item.number}` : null, item.variant];
+  // Coins: short collector-style wording — year, design name (no country,
+  // denomination, or parenthetical catalog text), special-issue variant, grade.
+  // Long word-for-word catalog names match almost no listing titles.
+  if (coin) {
+    const name = (item.name ?? "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/["']/g, " ")
+      // Drop a leading denomination like "1 Dollar" or "50 Cents" — the
+      // design name that follows is how collectors title listings.
+      .replace(/^\d+(\.\d+)?\s+[A-Za-z]+\s*/, " ")
+      .replace(/\b(silver|gold|bronze|copper|clad|bullion|coin)\s*$/i, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const bits = [item.year, name, item.variant];
+    if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
+    if (item.condition === "proof") bits.push("proof");
+    return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  }
+  const bits = [item.year, item.set_name, item.name, item.number ? `#${item.number}` : null, item.variant];
   if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
-  if (item.category === "coins" && item.condition === "proof") bits.push("proof");
   return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Estimate from eBay asking prices. Slabbed coins (special issues like the
+ * WTC silver dollar) sell well below asking, so until sold-listing access is
+ * available they are estimated at 75% of the median asking price.
+ */
+export function ebayEstimate(item: PricedItem, prices: number[]): number {
+  const med = trimmedMedian(prices);
+  if (item.category === "coins" && item.condition === "graded") return round2(med * 0.75);
+  return med;
 }
 
 /** eBay Browse API — current listings (fixed price) matching the item. */
@@ -132,7 +159,7 @@ export async function ebay(item: PricedItem): Promise<PriceSource[]> {
   if (!token) return [];
   const query = buildSearchQuery(item);
   const data = await getJson(
-    `https://api.ebay.com/buy/browse/v1/item_summary/search?limit=30${item.category === "coins" ? "&category_ids=11116" : ""}&filter=buyingOptions:%7BFIXED_PRICE%7D,priceCurrency:USD&q=${encodeURIComponent(query)}`,
+    `https://api.ebay.com/buy/browse/v1/item_summary/search?limit=50${item.category === "coins" ? "&category_ids=11116" : ""}&filter=buyingOptions:%7BFIXED_PRICE%7D,priceCurrency:USD&q=${encodeURIComponent(query)}`,
     { headers: { Authorization: `Bearer ${token}`, "X-EBAY-C-MARKETPLACE-ID": "EBAY_US" } },
   );
   const prices: number[] = (data?.itemSummaries ?? [])
@@ -146,7 +173,7 @@ export async function ebay(item: PricedItem): Promise<PriceSource[]> {
     {
       source: "ebay",
       label: "eBay asking prices",
-      price: trimmedMedian(prices),
+      price: ebayEstimate(item, prices),
       kind,
       count: prices.length,
       url: `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(query)}&LH_Sold=1`,
