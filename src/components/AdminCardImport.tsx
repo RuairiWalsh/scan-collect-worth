@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
