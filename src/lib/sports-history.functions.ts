@@ -12,8 +12,8 @@ export const sportsSalesHistory = createServerFn({ method: "GET" })
       const { data: item } = await context.supabase.from("items")
         .select("id, category, name, set_name, number, year, catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
       if (!item) return { points: [] };
-      // Graded coins: PCGS auction sales for this coin and grade.
-      if (item.category === "coins" && item.condition === "graded") {
+      // Coins: PCGS auction sales for this coin at its grade (raw coins map condition to a grade).
+      if (item.category === "coins") {
         const { pcgsFactsFor } = await import("@/server/pcgs.server");
         const { pcgsSalesSeries } = await import("@/lib/pcgs");
         return { points: pcgsSalesSeries(await pcgsFactsFor(item as never).catch(() => null)) };
