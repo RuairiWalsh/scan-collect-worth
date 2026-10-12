@@ -217,8 +217,16 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}
           </div>
           <div className="panel shadow-hard p-4">
-            <p className="tabular text-xs text-muted-foreground">ESTIMATED VALUE</p>
-            <p className="tabular text-3xl font-bold">{usd(selectedPrice)}</p>
+            {(() => {
+              const askingOnly = !exactPricing && sources.length > 0 && sources.every((s) => s.source === "ebay");
+              return (
+                <>
+                  <p className="tabular text-xs text-muted-foreground">{askingOnly ? "CURRENT AVERAGE ASKING PRICE" : "ESTIMATED VALUE"}</p>
+                  <p className="tabular text-3xl font-bold">{usd(selectedPrice)}</p>
+                  {askingOnly && <p className="text-xs text-muted-foreground">Based on active eBay listings. Recent sold prices may be lower.</p>}
+                </>
+              );
+            })()}
             {exactPricing && selectedPrice == null && <p className="text-xs text-muted-foreground">No market price for this condition and variant.</p>}
             {!exactPricing && item.price_low != null && item.price_high != null && item.price_low !== item.price_high && (
               <p className="tabular text-xs text-muted-foreground">

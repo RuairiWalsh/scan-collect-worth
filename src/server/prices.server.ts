@@ -143,7 +143,7 @@ export async function ebay(item: PricedItem): Promise<PriceSource[]> {
   return [
     {
       source: "ebay",
-      label: "eBay listings",
+      label: "eBay asking prices",
       price: trimmedMedian(prices),
       kind,
       count: prices.length,
