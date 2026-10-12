@@ -10,6 +10,14 @@ export function pcgsCertNo(number: string | null | undefined): string | null {
   return m?.[1] ?? null;
 }
 
+/** PCGS API grade code from the slab's grade: bare numbers are mint state ("69" → "MS69"). */
+export function pcgsGrade(grade: string | null | undefined): string | null {
+  const g = String(grade ?? "").replace(/[\s#]/g, "").toUpperCase();
+  if (!g) return null;
+  if (/^\d+$/.test(g)) return `MS${g}`;
+  return /^[A-Z]+\d+$/.test(g) ? g : null;
+}
+
 /** PCGS auction dates are "MM-YYYY"; true when within `months` of `now`. */
 export function pcgsRecent(date: string | null | undefined, now: Date, months = 12): boolean {
   const m = String(date ?? "").match(/^(\d{1,2})-(\d{4})$/);
