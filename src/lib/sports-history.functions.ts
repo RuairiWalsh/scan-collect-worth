@@ -10,7 +10,7 @@ export const sportsSalesHistory = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<{ points: SalesPoint[] }> => {
     try {
       const { data: item } = await context.supabase.from("items")
-        .select("id, category, name, set_name, number, year, catalog_id, subcondition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
+        .select("id, category, name, set_name, number, year, catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
       if (!item) return { points: [] };
       // Graded coins: PCGS auction sales for this coin and grade.
       if (item.category === "coins" && item.condition === "graded") {
