@@ -24,6 +24,11 @@ export const refreshItemPrice = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .single();
     if (error || !item) throw new Error("Item not found");
+    if (item.subcategory === "sports" && !item.catalog_id) {
+      // Details typed in by hand: pin the exact CardSight card so it's priced from that card's sales.
+      const { pinSportsCatalogCard } = await import("@/server/cardsight.server");
+      item.catalog_id = await pinSportsCatalogCard(context.supabase, item).catch(() => null);
+    }
 
     // Editing quality/printing uses the shared variants, with no provider request.
     const { data: cached } = item.category === "cards" && item.catalog_id

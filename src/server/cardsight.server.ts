@@ -105,3 +105,25 @@ export async function cardsightIdentifyImage(dataUrl: string): Promise<Cardsight
     return null;
   }
 }
+
+/**
+ * Sports cards saved without a catalog match (e.g. details typed in by hand) get pinned to
+ * the exact CardSight card when name + details identify it unambiguously. Returns the card id or null.
+ */
+export async function pinSportsCatalogCard(
+  db: { from: (t: "items") => any }, // eslint-disable-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
+  item: { id: string; catalog_id: string | null; subcategory: string | null; name: string | null; set_name: string | null; number: string | null; year: string | null },
+): Promise<string | null> {
+  if (item.catalog_id) return item.catalog_id;
+  if (item.subcategory !== "sports" || !item.name || !cardsightConfigured()) return null;
+  if (!item.number && !item.year && !item.set_name) return null;
+  const card = await cardsightFindCard({ name: item.name, set_name: item.set_name, number: item.number, year: item.year });
+  if (!card) return null;
+  await db.from("items").update({
+    catalog_id: card.id,
+    set_name: card.releaseName || card.setName || item.set_name,
+    year: item.year || card.releaseYear || null,
+    number: item.number || card.number || null,
+  }).eq("id", item.id);
+  return card.id;
+}

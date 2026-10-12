@@ -10,11 +10,14 @@ export const sportsSalesHistory = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<{ points: SalesPoint[] }> => {
     try {
       const { data: item } = await context.supabase.from("items")
-        .select("catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
-      if (!item?.catalog_id || item.subcategory !== "sports") return { points: [] };
-      const { cardsightGetPricing } = await import("@/server/cardsight.server");
+        .select("id, name, set_name, number, year, catalog_id, subcategory, condition, variant, grader, grade").eq("id", data.itemId).maybeSingle();
+      if (!item || item.subcategory !== "sports") return { points: [] };
+      const { cardsightGetPricing, pinSportsCatalogCard } = await import("@/server/cardsight.server");
+      // Hand-entered details: pin the exact catalog card first so the chart has real sales.
+      const catalogId = await pinSportsCatalogCard(context.supabase, item);
+      if (!catalogId) return { points: [] };
       const { cardsightSalesSeries } = await import("@/lib/cardsight-pricing");
-      const pricing = await cardsightGetPricing(item.catalog_id, "1y");
+      const pricing = await cardsightGetPricing(catalogId, "1y");
       return { points: pricing ? cardsightSalesSeries(pricing, item) : [] };
     } catch {
       return { points: [] };

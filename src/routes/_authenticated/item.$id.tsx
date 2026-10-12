@@ -45,10 +45,16 @@ function ItemPage() {
   const { data: history } = useQuery(priceHistoryQuery(id));
   const { data: market } = useQuery(catalogHistoryForQuery(item?.catalog_id ? [item.catalog_id] : []));
   const fetchSales = useServerFn(sportsSalesHistory);
-  const isSports = item?.subcategory === "sports" && !!item?.catalog_id;
+  const qc = useQueryClient();
+  const isSports = item?.subcategory === "sports";
   const { data: sales } = useQuery({
     queryKey: ["sports_sales", id, item?.catalog_id, item?.condition, item?.variant, item?.grader, item?.grade],
-    queryFn: () => fetchSales({ data: { itemId: id } }),
+    queryFn: async () => {
+      const res = await fetchSales({ data: { itemId: id } });
+      // The server may have just linked a hand-edited card to its catalog entry; reload its details.
+      if (!item?.catalog_id) void qc.invalidateQueries({ queryKey: ["item", id] });
+      return res;
+    },
     enabled: isSports,
     staleTime: 24 * 60 * 60 * 1000,
   });
