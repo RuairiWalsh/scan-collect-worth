@@ -224,13 +224,13 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               <div className="flex flex-wrap gap-2" role="group" aria-label="Card images">
                 <Button size="sm" variant={showScan || showBack ? "outline" : "default"} aria-pressed={!showScan && !showBack} onClick={() => { setShowScan(false); setShowBack(false); }}>Product image</Button>
                 <Button size="sm" variant={showScan ? "default" : "outline"} aria-pressed={showScan} disabled={!item.thumbnail} onClick={() => { setShowScan(true); setShowBack(false); }}>Your scan</Button>
-                {item.category === "cards" && item.back_image && (
+                {item.category === "cards" && backImage && (
                   <Button size="sm" variant={showBack ? "default" : "outline"} aria-pressed={showBack} onClick={() => { setShowBack(true); setShowScan(false); }}>Back</Button>
                 )}
               </div>
             )}
-            {showBack && item.back_image ? (
-              <img src={item.back_image} alt={`Back of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
+            {showBack && backImage ? (
+              <img src={backImage} alt={`Back of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
             ) : showScan && item.thumbnail ? (
               <img src={item.thumbnail} alt={`Your scan of ${item.name}`} className="aspect-[63/88] w-full border-2 border-ink bg-muted object-contain" />
             ) : (
