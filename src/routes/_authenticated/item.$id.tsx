@@ -211,7 +211,7 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
             ) : (
               <ItemArtwork item={item} className="aspect-[63/88] w-full border-2 border-ink" />
             )}
-            {numistaTypeId != null && item.product_image && (
+            {numistaTypeId != null && item.product_image && !item.product_image.includes("src=lymitz") && (
               <p className="text-xs text-muted-foreground">Image from Numista</p>
             )}
             {item.category === "cards" && !showScan && !item.product_image && <p className="text-xs text-muted-foreground">{item.thumbnail ? "Original scan" : "Image unavailable"}</p>}

@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminCoinImagesRouteImport } from './routes/_authenticated/admin-coin-images'
 import { Route as AuthenticatedAdminImagesRouteImport } from './routes/_authenticated/admin-images'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin-import'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
@@ -55,6 +56,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminCoinImagesRoute =
+  AuthenticatedAdminCoinImagesRouteImport.update({
+    id: '/admin-coin-images',
+    path: '/admin-coin-images',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminImagesRoute =
   AuthenticatedAdminImagesRouteImport.update({
     id: '/admin-images',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
   '/collection': typeof AuthenticatedCollectionRoute
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
   '/collection': typeof AuthenticatedCollectionRoute
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/_authenticated/admin-images': typeof AuthenticatedAdminImagesRoute
   '/_authenticated/admin-import': typeof AuthenticatedAdminImportRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
     | '/collection'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/admin'
+    | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
     | '/collection'
@@ -262,6 +274,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/admin-coin-images'
     | '/_authenticated/admin-images'
     | '/_authenticated/admin-import'
     | '/_authenticated/collection'
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin-coin-images': {
+      id: '/_authenticated/admin-coin-images'
+      path: '/admin-coin-images'
+      fullPath: '/admin-coin-images'
+      preLoaderRoute: typeof AuthenticatedAdminCoinImagesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin-images': {
@@ -448,6 +468,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminCoinImagesRoute: typeof AuthenticatedAdminCoinImagesRoute
   AuthenticatedAdminImagesRoute: typeof AuthenticatedAdminImagesRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
@@ -461,6 +482,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminCoinImagesRoute: AuthenticatedAdminCoinImagesRoute,
   AuthenticatedAdminImagesRoute: AuthenticatedAdminImagesRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,

@@ -258,6 +258,33 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_images: {
+        Row: {
+          created_at: string
+          side: string
+          storage_path: string
+          type_id: number
+          uploaded_by: string | null
+          year: string
+        }
+        Insert: {
+          created_at?: string
+          side?: string
+          storage_path: string
+          type_id: number
+          uploaded_by?: string | null
+          year: string
+        }
+        Update: {
+          created_at?: string
+          side?: string
+          storage_path?: string
+          type_id?: number
+          uploaded_by?: string | null
+          year?: string
+        }
+        Relationships: []
+      }
       folders: {
         Row: {
           created_at: string
@@ -706,6 +733,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_coin_image_queue: {
+        Args: never
+        Returns: {
+          country: string
+          has_obverse: boolean
+          has_reverse: boolean
+          item_count: number
+          name: string
+          scan: string
+          type_id: number
+          year: string
+        }[]
+      }
       admin_image_queue: {
         Args: { _status?: string }
         Returns: {
