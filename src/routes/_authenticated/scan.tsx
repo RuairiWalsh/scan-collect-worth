@@ -143,6 +143,7 @@ function ScanPage() {
         const { error } = await supabase.from("items").update({
           subcategory: r.subcategory, line: r.line, name: r.name, set_name: r.set_name, number: r.number,
           year: r.year, variant: r.variant, ai_confidence: r.confidence,
+          catalog_id: r.catalog_id ?? null, product_image: r.product_image ?? null,
         }).eq("id", id);
         if (error) throw error;
         const missing = r.missing_info ?? [];

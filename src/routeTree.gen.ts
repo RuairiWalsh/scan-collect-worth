@@ -26,6 +26,7 @@ import { Route as AuthenticatedItemIdRouteImport } from './routes/_authenticated
 import { Route as ApiPublicEbayAccountDeletionRouteImport } from './routes/api/public/ebay-account-deletion'
 import { Route as ApiPublicEbayTestRouteImport } from './routes/api/public/ebay-test'
 import { Route as ApiPublicCardImagesKeyRouteImport } from './routes/api/public/card-images.$key'
+import { Route as ApiPublicCoinImagesTypeIdRouteImport } from './routes/api/public/coin-images.$typeId'
 import { Route as ApiPublicCronDailyPricesRouteImport } from './routes/api/public/cron/daily-prices'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -118,6 +119,12 @@ const ApiPublicCardImagesKeyRoute = ApiPublicCardImagesKeyRouteImport.update({
   path: '/api/public/card-images/$key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCoinImagesTypeIdRoute =
+  ApiPublicCoinImagesTypeIdRouteImport.update({
+    id: '/api/public/coin-images/$typeId',
+    path: '/api/public/coin-images/$typeId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronDailyPricesRoute =
   ApiPublicCronDailyPricesRouteImport.update({
     id: '/api/public/cron/daily-prices',
@@ -152,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
+  '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
+  '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   '/api/public/ebay-account-deletion': typeof ApiPublicEbayAccountDeletionRoute
   '/api/public/ebay-test': typeof ApiPublicEbayTestRoute
   '/api/public/card-images/$key': typeof ApiPublicCardImagesKeyRoute
+  '/api/public/coin-images/$typeId': typeof ApiPublicCoinImagesTypeIdRoute
   '/api/public/cron/daily-prices': typeof ApiPublicCronDailyPricesRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/card-images/$key'
+    | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/card-images/$key'
+    | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -262,6 +274,7 @@ export interface FileRouteTypes {
     | '/api/public/ebay-account-deletion'
     | '/api/public/ebay-test'
     | '/api/public/card-images/$key'
+    | '/api/public/coin-images/$typeId'
     | '/api/public/cron/daily-prices'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -275,6 +288,7 @@ export interface RootRouteChildren {
   ApiPublicEbayAccountDeletionRoute: typeof ApiPublicEbayAccountDeletionRoute
   ApiPublicEbayTestRoute: typeof ApiPublicEbayTestRoute
   ApiPublicCardImagesKeyRoute: typeof ApiPublicCardImagesKeyRoute
+  ApiPublicCoinImagesTypeIdRoute: typeof ApiPublicCoinImagesTypeIdRoute
   ApiPublicCronDailyPricesRoute: typeof ApiPublicCronDailyPricesRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -401,6 +415,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCardImagesKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/coin-images/$typeId': {
+      id: '/api/public/coin-images/$typeId'
+      path: '/api/public/coin-images/$typeId'
+      fullPath: '/api/public/coin-images/$typeId'
+      preLoaderRoute: typeof ApiPublicCoinImagesTypeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/daily-prices': {
       id: '/api/public/cron/daily-prices'
       path: '/api/public/cron/daily-prices'
@@ -463,6 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEbayAccountDeletionRoute: ApiPublicEbayAccountDeletionRoute,
   ApiPublicEbayTestRoute: ApiPublicEbayTestRoute,
   ApiPublicCardImagesKeyRoute: ApiPublicCardImagesKeyRoute,
+  ApiPublicCoinImagesTypeIdRoute: ApiPublicCoinImagesTypeIdRoute,
   ApiPublicCronDailyPricesRoute: ApiPublicCronDailyPricesRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

@@ -3,7 +3,7 @@ import { ImageOff } from "lucide-react";
 import type { Item } from "@/lib/items";
 
 export function ItemArtwork({ item, className = "" }: { item: Item; className?: string }) {
-  const primary = item.category === "cards" ? item.product_image : item.thumbnail;
+  const primary = item.category === "cards" || item.category === "coins" ? item.product_image : item.thumbnail;
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const src = primary && primary !== failedSrc ? primary : item.thumbnail;
   return src && src !== failedSrc ? (
