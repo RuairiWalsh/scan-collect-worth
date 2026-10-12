@@ -75,8 +75,31 @@ export const Route = createFileRoute("/api/public/cron/daily-prices")({
       }
       if (items.length < 500) break;
     }
+    // Coins: re-price daily and record a history point, so every coin builds its own trend line.
+    // Identical coins (same identity + condition + grade) share one lookup.
+    let coins = 0;
+    try {
+      const { collectPrices } = await import("@/server/prices.server");
+      const { conditionFor } = await import("@/lib/taxonomy");
+      const memo = new Map<string, Promise<import("@/lib/pricing").PriceSource[]>>();
+      for (let offset = 0; ; offset += 500) {
+        const { data: list, error } = await db.from("items").select("*").eq("category", "coins").eq("status", "collection").order("id").range(offset, offset + 499);
+        if (error || !list) break;
+        for (const item of list) {
+          const key = [item.catalog_id, item.name, item.set_name, item.year, item.variant, item.condition, item.grader, item.grade, item.number].join("|");
+          if (!memo.has(key)) memo.set(key, collectPrices(item).catch(() => []));
+          const sources = await memo.get(key)!;
+          if (!sources.length) continue; // provider failure never clears a saved price
+          const est = estimateValue(sources, conditionFor(item.category, item.condition).mult);
+          if (!est) continue;
+          const { error: saveError } = await db.from("items").update({ est_value: est.est, price_low: est.low, price_high: est.high, price_sources: sources as never, price_updated_at: new Date().toISOString() }).eq("id", item.id);
+          if (!saveError) { coins++; await db.from("price_history").insert({ item_id: item.id, user_id: item.user_id, est_value: est.est, price_low: est.low, price_high: est.high }); }
+        }
+        if (list.length < 500) break;
+      }
+    } catch { /* coin refresh is best-effort; cards above are already saved */ }
     const { cachedTcgGraphImages } = await import("@/server/cardmagic.server");
     for (let i = 0; i < ids.length; i += 200) await cachedTcgGraphImages(ids.slice(i, i + 200)).catch(() => null);
-    return Response.json({ ok: true, cards: ids.length, updated, failed, revalued });
+    return Response.json({ ok: true, cards: ids.length, updated, failed, revalued, coins });
   } } },
 });
