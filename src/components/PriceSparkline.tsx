@@ -133,9 +133,6 @@ export function PriceSparkline({ points: raw, emptyHint, tall = false }: { point
             <p className="tabular text-sm font-bold">{usd(first.value as number)}</p>
             <p className="tabular text-xs text-muted-foreground">{fmtDate(first.recorded_at)}</p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Building price history — one new point is added each day, so the trend line appears as the days add up.
-          </p>
         </>
       ) : (
         <>
