@@ -31,6 +31,7 @@ function CardPage() {
   const { catalogId } = Route.useParams();
   const [condition, setCondition] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
+  const [side, setSide] = useState<"front" | "back">("front");
   const fetchDetail = useServerFn(catalogCardDetail);
   const { data, isLoading } = useQuery({
     queryKey: ["catalog-card", catalogId],
