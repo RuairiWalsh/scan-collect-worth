@@ -36,3 +36,5 @@
 
 - CardMagic processing lives in src/server/cardmagic.server.ts: POST /v1/cardmagic/process uploads the user's scan, not catalog artwork. Exact printing/language identities share public.card_product_images through server-only atomic claims; ambiguous identities use a scan hash. Search, featured cards, collection and marketplace must use this cache or the original scan, never catalog_prices.image.
 - Shared images require approved RLS/RPC access. Sports CardSight processing enters pending via a DB trigger; admin-only review excludes confirmed PDF imports. Pending cache reuse is submitter-only; TCG Graph caching stays independent.
+- Coins match Numista types/issues (catalog_id `numista:{type}:{issue}`) in src/server/numista.server.ts; Numista data and picture links live only in public.numista_types and expire after 7 days (Numista terms), and items point at /api/public/coin-images/{type} instead of storing Numista URLs.
+- Coin scans missing required details (src/lib/coin-id.ts) prompt the reviewer to capture the other side; both sides are re-identified together.
