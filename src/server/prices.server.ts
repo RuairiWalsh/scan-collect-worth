@@ -118,7 +118,9 @@ export async function testEbayAuth(): Promise<boolean> {
 }
 
 export function buildSearchQuery(item: PricedItem) {
-  const bits = [item.year, item.set_name, item.name, item.number ? `#${item.number}` : null, item.variant];
+  const coin = item.category === "coins";
+  // Coin numbers are slab cert numbers, never in listing titles.
+  const bits = [item.year, item.set_name, item.name, !coin && item.number ? `#${item.number}` : null, item.variant];
   if (item.condition === "graded" && item.grader) bits.push(`${item.grader} ${item.grade ?? ""}`);
   if (item.category === "coins" && item.condition === "proof") bits.push("proof");
   return bits.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
