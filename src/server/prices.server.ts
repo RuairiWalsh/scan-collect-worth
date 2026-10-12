@@ -130,7 +130,7 @@ export async function ebay(item: PricedItem): Promise<PriceSource[]> {
   if (!token) return [];
   const query = buildSearchQuery(item);
   const data = await getJson(
-    `https://api.ebay.com/buy/browse/v1/item_summary/search?limit=30&filter=buyingOptions:%7BFIXED_PRICE%7D,priceCurrency:USD&q=${encodeURIComponent(query)}`,
+    `https://api.ebay.com/buy/browse/v1/item_summary/search?limit=30${item.category === "coins" ? "&category_ids=11116" : ""}&filter=buyingOptions:%7BFIXED_PRICE%7D,priceCurrency:USD&q=${encodeURIComponent(query)}`,
     { headers: { Authorization: `Bearer ${token}`, "X-EBAY-C-MARKETPLACE-ID": "EBAY_US" } },
   );
   const prices: number[] = (data?.itemSummaries ?? [])

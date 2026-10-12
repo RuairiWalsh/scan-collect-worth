@@ -20,13 +20,16 @@ export type Identification = {
   official_image?: string | null;
   product_image?: string | null;
   alternatives?: CardAlternative[];
+  missing_info?: string[];
 };
 
 export type CardAlternative = { catalog_id: string; name: string; set_name: string | null; number: string | null; year: string | null };
 
 export const identifyItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { image: string; strip?: string | undefined }) => {
+  .inputValidator((input: { image: string; strip?: string | undefined; back?: string | undefined }) => {
+    if (input.back !== undefined && (typeof input.back !== "string" || !input.back.startsWith("data:image/") || input.back.length > 3_000_000))
+      throw new Error("Invalid image");
     if (input.strip !== undefined && (typeof input.strip !== "string" || !input.strip.startsWith("data:image/") || input.strip.length > 2_000_000))
       throw new Error("Invalid image");
     if (typeof input?.image !== "string" || !input.image.startsWith("data:image/"))
@@ -36,7 +39,11 @@ export const identifyItem = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { identifyImage } = await import("@/server/identify.server");
-    const result = await identifyImage(data.image, data.strip);
+    const result = await identifyImage(data.image, data.strip, data.back);
+    if (result.ok) {
+      const { coinMissingInfo } = await import("@/lib/coin-id");
+      result.result.missing_info = coinMissingInfo(result.result);
+    }
     if (result.ok && result.result.is_collectible && result.result.category === "cards") {
       const { cachedCardMagic } = await import("@/server/cardmagic.server");
       try {
