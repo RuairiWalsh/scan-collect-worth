@@ -93,6 +93,51 @@ export const searchCards = createServerFn({ method: "POST" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed client hits TS2589
       if (withHistory) await seedCatalogHistory((await adminDb()) as any, withHistory);
     }
+    // Sports cards live in CardSight, not JustTCG: search it too and cache what we find.
+    const { cardsightSearchByName, cardsightGetPricing } = await import("@/server/cardsight.server");
+    const { cardsightVariants } = await import("@/lib/cardsight-pricing");
+    for (const card of await cardsightSearchByName(q)) {
+      if (!card.name) continue;
+      let variants: CardVariant[] = [];
+      let nm: CardVariant | undefined;
+      try {
+        const pricing = await cardsightGetPricing(card.id);
+        if (pricing) {
+          variants = cardsightVariants(pricing);
+          nm = variants.find((v) => v.condition === "Ungraded" && (v.printing === "Normal" || v.printing === "Base")) ?? variants.find((v) => v.condition === "Ungraded") ?? variants[0];
+        }
+      } catch {
+        // Pricing is retried by the daily queue; the card still shows up in search.
+      }
+      const row = {
+        catalog_id: card.id,
+        name: card.name,
+        set_name: card.releaseName ?? card.setName ?? null,
+        number: card.number ?? null,
+        rarity: null,
+        image: null,
+        variants,
+        nm_price: nm?.price ?? null,
+        updated_at: new Date().toISOString(),
+        card_metadata: { year: card.releaseYear ?? null, subcategory: "sports" },
+        price_provider: "cardsight",
+        provider_card_id: card.id,
+        imported_card: true,
+        price_status: variants.length ? "ok" : "pending",
+      };
+      results.push({
+        catalog_id: row.catalog_id,
+        name: row.name,
+        set_name: row.set_name,
+        number: row.number,
+        rarity: null,
+        image: null,
+        nm_price: row.nm_price,
+        updated_at: row.updated_at,
+        price_provider: "cardsight",
+      });
+      await (await adminDb()).from("catalog_prices").upsert(row);
+    }
     // Prefer fresh cache rows merged with live ones, deduped by catalog_id.
     const seen = new Set<string>();
     const merged = [...results, ...(cached ?? [])].filter((r) => {
