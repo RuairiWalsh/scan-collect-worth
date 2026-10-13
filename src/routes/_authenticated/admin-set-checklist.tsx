@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { missingScannedSetCards, missingSetCards, scannedSets, searchCardSets } from "@/lib/admin-set-checklist.functions";
+import { missingSetCards, scannedSetCards, scannedSets, searchCardSets } from "@/lib/admin-set-checklist.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
   head: () => ({ meta: [
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
 
 type SetRow = { id: string; name: string; cardCount: number; releaseName: string; releaseYear: string };
 type Missing = { total: number; have: number; missing: { number: string; name: string }[]; sizeKnown?: boolean };
+type Have = { have: number; cards: { number: string; name: string }[] };
 
 function Page() {
   const { isAdmin, isLoading } = useRoles();
@@ -51,6 +52,23 @@ function MissingList({ title, result }: { title: string; result: Missing }) {
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+function HaveList({ title, result }: { title: string; result: Have }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <p className="text-sm">
+        <ListChecks className="mr-1 inline size-4" />
+        We have <strong>{result.have}</strong> cards from this set:
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {result.cards.map((c, i) => (
+          <span key={i} title={c.name} className="rounded border px-2 py-0.5 font-mono text-sm">#{c.number}</span>
+        ))}
+      </div>
     </section>
   );
 }
