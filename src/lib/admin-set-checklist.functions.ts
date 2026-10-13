@@ -68,9 +68,8 @@ export const scannedSets = createServerFn({ method: "GET" })
     return [...sets.values()].sort((a, b) => b.count - a.count);
   });
 
-/** Missing numbers for a set we already have, computed purely from our own catalog —
- *  set size comes from one cached set-list lookup; falls back to the highest number we've seen. */
-export const missingScannedSetCards = createServerFn({ method: "POST" })
+/** The cards we already have for a set, read purely from our own catalog — no external calls. */
+export const scannedSetCards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ setName: z.string().min(1).max(200), year: z.string().max(20).optional() }))
   .handler(async ({ data, context }) => {
@@ -83,26 +82,18 @@ export const missingScannedSetCards = createServerFn({ method: "POST" })
       .ilike("set_name", data.setName.trim());
     if (error) throw new Error("Could not read the catalog.");
     const yearFilter = (data.year ?? "").trim();
-    const have = new Map<number, string>();
+    const have = new Map<string, string>();
     for (const row of rows ?? []) {
       if (yearFilter) {
         const meta = row.card_metadata && typeof row.card_metadata === "object" && !Array.isArray(row.card_metadata) ? row.card_metadata as Record<string, unknown> : {};
         if ((typeof meta["year"] === "string" ? meta["year"] : "") !== yearFilter) continue;
       }
-      const n = Number.parseInt((row.number ?? "").trim(), 10);
-      if (Number.isFinite(n) && n > 0 && !have.has(n)) have.set(n, row.name ?? "");
+      const num = (row.number ?? "").trim() || "—";
+      if (!have.has(num)) have.set(num, row.name ?? "");
     }
-    if (!have.size) throw new Error(`No cards from "${data.setName}" in the catalog yet.`);
-    const highest = Math.max(...have.keys());
-    // Our own catalog says which numbers we have; the set's printed size (one cached
-    // set-list lookup, no card list) says where the set ends.
-    let setSize: number | null = null;
-    try {
-      const { cardsightConfigured, cardsightSetSize } = await import("@/server/cardsight.server");
-      if (cardsightConfigured()) setSize = await cardsightSetSize(data.setName.trim(), yearFilter || null);
-    } catch { setSize = null; }
-    const total = Math.max(highest, setSize ?? 0);
-    const missing: { number: string; name: string }[] = [];
-    for (let n = 1; n <= total; n++) if (!have.has(n)) missing.push({ number: String(n), name: "" });
-    return { total, have: have.size, missing, sizeKnown: setSize !== null };
+    const cards = [...have.entries()]
+      .map(([number, name]) => ({ number, name }))
+      .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }));
+    if (!cards.length) throw new Error(`No cards from "${data.setName}" in the catalog yet.`);
+    return { have: cards.length, cards };
   });
