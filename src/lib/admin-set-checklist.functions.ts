@@ -56,10 +56,13 @@ export const scannedSets = createServerFn({ method: "GET" })
     if (error) throw new Error("Could not read the catalog.");
     const sets = new Map<string, { setName: string; year: string; count: number }>();
     for (const row of data ?? []) {
-      const setName = (row.set_name ?? "").trim();
+      let setName = (row.set_name ?? "").trim();
       if (!setName) continue;
       const meta = row.card_metadata && typeof row.card_metadata === "object" && !Array.isArray(row.card_metadata) ? row.card_metadata as Record<string, unknown> : {};
       const year = typeof meta["year"] === "string" ? meta["year"] : "";
+      // Merge "Topps" (year 1999) and "1999 Topps" into one set: strip a leading year.
+      const leadingYear = setName.match(/^(\d{4})\s+/);
+      if (leadingYear && (!year || leadingYear[1] === year)) setName = setName.slice(leadingYear[0].length).trim();
       const key = `${setName}|${year}`;
       const entry = sets.get(key) ?? { setName, year, count: 0 };
       entry.count++;
@@ -75,13 +78,16 @@ export const scannedSetCards = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { assertImportAdmin } = await import("@/server/admin-import.server");
     await assertImportAdmin(context.supabase, context.userId);
+    // Match the set name with or without its leading year, so "Topps" and "1999 Topps" count as one set.
+    const base = data.setName.trim();
+    const yearFilter = (data.year ?? "").trim();
+    const names = yearFilter && !base.startsWith(yearFilter) ? [base, `${yearFilter} ${base}`] : [base];
     const { data: rows, error } = await context.supabase
       .from("catalog_prices")
       .select("number, name, card_metadata")
       .eq("price_provider", "cardsight")
-      .ilike("set_name", data.setName.trim());
+      .in("set_name", names);
     if (error) throw new Error("Could not read the catalog.");
-    const yearFilter = (data.year ?? "").trim();
     const have = new Map<string, string>();
     for (const row of rows ?? []) {
       if (yearFilter) {
