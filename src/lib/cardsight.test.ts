@@ -69,19 +69,19 @@ describe("rankCardsightCandidates", () => {
   });
 });
 
-describe("bulk-import set shortcut (empty name, number + known set)", () => {
-  const inSet = { name: "", set_name: "2002 Topps Gold Label", number: "49", year: "2002" };
+describe("bulk-import set shortcut (exact set + number)", () => {
+  it("treats only the identical set as the same set", () => {
+    expect(cardsightSameSet("2002 Topps Gold Label", "2002 Topps Gold Label")).toBe(true);
+    expect(cardsightSameSet("2002 Topps", "2002 Topps Gold Label")).toBe(false);
+    expect(cardsightSameSet(null, "2002 Topps")).toBe(false);
+  });
   it("pins by number inside the remembered set without a player name", () => {
     const match = card({ name: "Earl Snyder", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
-    expect(pickCardsightCard([match], inSet)).toBe(match);
-  });
-  it("rejects a same-numbered card from a different set", () => {
-    const other = card({ name: "Someone Else", number: "49", releaseName: "2002 Topps", releaseYear: "2002" });
-    expect(pickCardsightCard([other], inSet)).toBeNull();
+    expect(pickCardsightCard([match], { name: "", set_name: "2002 Topps Gold Label", number: "49", year: "2002" })).toBe(match);
   });
   it("returns null when two cards in the set share the number", () => {
     const a = card({ name: "Player A", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
     const b = card({ name: "Player B", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
-    expect(pickCardsightCard([a, b], inSet)).toBeNull();
+    expect(pickCardsightCard([a, b], { name: "", set_name: "2002 Topps Gold Label", number: "49", year: "2002" })).toBeNull();
   });
 });
