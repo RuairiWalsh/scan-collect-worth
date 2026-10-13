@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { beginCardImport, importCardPair, importCardPairs, confirmCardImport } from "@/lib/admin-import.functions";
+import { beginCardImport, importCardPair, importCardPairs, confirmCardImport, correctCardImport } from "@/lib/admin-import.functions";
 import { searchCardSets } from "@/lib/admin-set-checklist.functions";
 import { isImportedPair, pdfCardPair } from "@/lib/pdf-card-pairs";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ export function AdminCardImport() {
   const processPair = useServerFn(importCardPair);
   const processPairs = useServerFn(importCardPairs);
   const confirm = useServerFn(confirmCardImport);
+  const correct = useServerFn(correctCardImport);
   const findSets = useServerFn(searchCardSets);
   const [setQuery, setSetQuery] = useState({ name: "", year: "" });
   const [setResults, setSetResults] = useState<{ id: string; name: string; releaseName: string; releaseYear: string; cardCount: number }[]>([]);
@@ -196,8 +197,14 @@ export function AdminCardImport() {
     event.preventDefault(); if (!editing) return;
     setSaving(true);
     try {
-      await confirm({ data: { pairId: editing.id, ...details } });
-      toast.success("Card added to the database and daily price updates"); setEditing(null);
+      if (editing.status === "approved") {
+        await correct({ data: { pairId: editing.id, ...details } });
+        toast.success("Card corrected — the wrong entry was replaced");
+      } else {
+        await confirm({ data: { pairId: editing.id, ...details } });
+        toast.success("Card added to the database and daily price updates");
+      }
+      setEditing(null);
       qc.invalidateQueries({ queryKey: ["catalog-card"] });
       await loadStatuses(editing.import_id);
       qc.invalidateQueries({ queryKey: ["admin-import-pairs"] }); qc.invalidateQueries({ queryKey: ["admin-images"] });
@@ -250,14 +257,15 @@ export function AdminCardImport() {
             <div className="flex gap-2">{[row.front_path, row.back_path].map((path, i) => <div key={path} className="space-y-1"><img src={images.data?.get(path) ?? undefined} alt={`Card ${row.pair_index + 1} ${i ? "back" : "front"}`} className="h-24 w-16 bg-muted object-contain" loading="lazy" /><Button variant="outline" size="sm" className="w-full" disabled={rotating === path || running} aria-label={`Rotate ${i ? "back" : "front"} image`} onClick={() => void rotateImage(path)}><RotateCw className={rotating === path ? "animate-spin" : undefined} />{rotating === path ? "…" : "Rotate"}</Button></div>)}</div>
             <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">Card {row.pair_index + 1} · Pages {row.pair_index * 2 + 1}–{row.pair_index * 2 + 2}</p><h3 className="break-words font-bold">{typeof metadata["name"] === "string" ? metadata["name"] : "Scanned card"}</h3><p className="text-xs text-muted-foreground">{[metadata["set_name"], metadata["number"], metadata["year"]].filter(v => typeof v === "string").join(" · ")}</p><p className="mt-1 text-sm font-semibold">{labels[row.status] ?? row.status}</p>{row.error && <p className="mt-1 text-xs text-destructive">{row.error}</p>}</div>
             {row.status === "needs_details" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Review card match</Button>}
+            {row.status === "approved" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Edit card</Button>}
           </article>;
         })}</div>
         <div className="flex items-center justify-end gap-3"><Button variant="outline" size="icon" aria-label="Previous cards" disabled={pageIndex === 0} onClick={() => setPageIndex(p => p - 1)}><ChevronLeft /></Button><span className="text-sm">Page {pageIndex + 1}</span><Button variant="outline" size="icon" aria-label="Next cards" disabled={(pairs.data?.length ?? 0) < 50} onClick={() => setPageIndex(p => p + 1)}><ChevronRight /></Button></div>
       </>}
     </section>
-    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Review card match</DialogTitle></DialogHeader>
+    <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !saving) setEditing(null); }}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl"><DialogHeader><DialogTitle>{editing?.status === "approved" ? "Correct published card" : "Review card match"}</DialogTitle></DialogHeader>
       {editing && <div className="grid grid-cols-2 gap-3">{[editing.front_path, editing.back_path].map((path, i) => <div key={path} className="space-y-2"><a href={images.data?.get(path) ?? undefined} target="_blank" rel="noreferrer"><img src={images.data?.get(path) ?? undefined} alt={`Review ${i ? "back" : "front"}`} className="h-64 w-full bg-muted object-contain" /></a><Button type="button" variant="outline" size="sm" disabled={rotating === path} onClick={() => void rotateImage(path)}><RotateCw className={rotating === path ? "animate-spin" : undefined} />Rotate {i ? "back" : "front"}</Button></div>)}</div>}
-      <form onSubmit={saveDetails} className="space-y-4"><div className="grid grid-cols-2 gap-3">{(["name", "set_name", "number", "year", "line", "variant", "language"] as const).map(key => <label key={key} className="space-y-1 text-xs font-semibold">{{name:"Card / player name",set_name:"Set",number:"Card number",year:"Year",line:"Game / sport",variant:"Variant",language:"Language"}[key]}<Input required={key !== "variant"} value={details[key]} onChange={e => setDetails(d => ({ ...d, [key]: e.target.value }))} /></label>)}<label className="space-y-1 text-xs font-semibold">Category<select className="block h-9 w-full rounded-md border border-input bg-background px-2" value={details.subcategory} onChange={e => { const v = e.target.value; if (v === "sports" || v === "tcg" || v === "nonsport") setDetails(d => ({ ...d, subcategory: v })); }}><option value="sports">Sports</option><option value="tcg">TCG</option><option value="nonsport">Non-sport</option></select></label></div><Button type="submit" disabled={saving}>{saving ? "Saving…" : "Confirm match & publish card"}</Button></form>
+      <form onSubmit={saveDetails} className="space-y-4"><div className="grid grid-cols-2 gap-3">{(["name", "set_name", "number", "year", "line", "variant", "language"] as const).map(key => <label key={key} className="space-y-1 text-xs font-semibold">{{name:"Card / player name",set_name:"Set",number:"Card number",year:"Year",line:"Game / sport",variant:"Variant",language:"Language"}[key]}<Input required={key !== "variant"} value={details[key]} onChange={e => setDetails(d => ({ ...d, [key]: e.target.value }))} /></label>)}<label className="space-y-1 text-xs font-semibold">Category<select className="block h-9 w-full rounded-md border border-input bg-background px-2" value={details.subcategory} onChange={e => { const v = e.target.value; if (v === "sports" || v === "tcg" || v === "nonsport") setDetails(d => ({ ...d, subcategory: v })); }}><option value="sports">Sports</option><option value="tcg">TCG</option><option value="nonsport">Non-sport</option></select></label></div><Button type="submit" disabled={saving}>{saving ? "Saving…" : editing?.status === "approved" ? "Save correction" : "Confirm match & publish card"}</Button></form>
     </DialogContent></Dialog>
   </div>;
 }
