@@ -77,6 +77,12 @@ export async function cardsightCandidates(item: CardsightQuery): Promise<Cardsig
   return rankCardsightCandidates(cards, item);
 }
 
+/** Free-text catalog search for the Browse Collectables search bar. */
+export async function cardsightSearchByName(q: string): Promise<CardsightCard[]> {
+  if (!cardsightConfigured()) return [];
+  return searchCards(new URLSearchParams({ name: q, take: "20" }));
+}
+
 export type CardsightVisualMatch = { card: CardsightCard | null; confidence: "High" | "Medium" | "Low"; releaseName?: string | null; year?: string | null };
 
 /** CardSight photo recognition: matches the scanned picture against its catalog images. */
