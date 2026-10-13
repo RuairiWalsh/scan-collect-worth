@@ -101,9 +101,10 @@ export function rankCardsightCandidates(cards: CardsightCard[], item: CardsightQ
  * breaks the tie, otherwise no pin so the admin reviews it.
  */
 export function matchSetCardByNumber(cards: CardsightCard[], number: string | null | undefined, name?: string | null): CardsightCard | null {
-  const num = cardsightNumber(number);
+  const norm = (v: string | null | undefined) => (cardsightNumber(v) ?? "").replace(/^(no\.?|#)\s*/i, "").replace(/^0+(?=\w)/, "").toUpperCase();
+  const num = norm(number);
   if (!num) return null;
-  const hits = cards.filter((c) => cardsightNumber(c.number) === num);
+  const hits = cards.filter((c) => norm(c.number) === num);
   if (hits.length <= 1) return hits[0] ?? null;
   const n = (name ?? "").toLowerCase().replace(/[^a-z]/g, "");
   if (!n) return null;
