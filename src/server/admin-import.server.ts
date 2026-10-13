@@ -97,6 +97,7 @@ async function publishPair(pair: Pair, item: Identification, userId: string, con
   // Publishing succeeds even when pricing is unavailable; the daily queue retries it.
   const { refreshImportedPrice } = await import("@/server/imported-prices.server");
   await refreshImportedPrice(catalogId).catch(() => undefined);
+  await addToFounderCollection(db, catalogId, item, frontUrl, backUrl).catch(() => undefined);
   return "approved";
 }
 
