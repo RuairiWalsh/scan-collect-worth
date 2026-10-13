@@ -114,10 +114,12 @@ export async function processImportPair(importId: string, index: number, userId:
   try {
     const [front, back] = await Promise.all([db.storage.from("admin-card-scans").download(frontPath), db.storage.from("admin-card-scans").download(backPath)]);
     if (!front.data || !back.data || front.error || back.error) throw new Error("Both scan pages must be uploaded before identification.");
-    const { identifyImage } = await import("@/server/identify.server");
-    const result = await identifyImage(await imageData(front.data), undefined, await imageData(back.data));
-    if (!result.ok) throw new Error(result.error);
-    return { status: await publishPair(pair, result.result, userId) };
+    // Catalog imports never send images to CardSight: the cheap reader extracts
+    // text, and only name/set/number/year go to the catalog lookup.
+    const { identifyImportBatch } = await import("@/server/identify.server");
+    const [result] = await identifyImportBatch([{ front: await imageData(front.data), back: await imageData(back.data) }]);
+    if (!result) throw new Error("The card could not be read.");
+    return { status: await publishPair(pair, result, userId) };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Card import failed.";
     await db.from("card_image_import_pairs").update({ status: "failed", error: message, updated_at: new Date().toISOString() }).eq("id", pair.id);

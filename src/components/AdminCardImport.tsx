@@ -96,7 +96,7 @@ export function AdminCardImport() {
       if (!session.user) throw new Error("Please sign in again.");
       let failures = 0;
       const total = batch.page_count / 2;
-      const CHUNK = 6;
+      const CHUNK = 8;
       const uploadPair = async (index: number) => {
         const pair = pdfCardPair(batch.page_count, index);
         for (const side of ["front", "back"] as const) {
