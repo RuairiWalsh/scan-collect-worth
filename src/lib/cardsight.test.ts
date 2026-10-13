@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard } from "./cardsight";
+import { cardsightNumber, cardsightSameSet, pickCardsightCard, rankCardsightCandidates, type CardsightCard } from "./cardsight";
 
 const card = (over: Partial<CardsightCard>): CardsightCard => ({ id: crypto.randomUUID(), name: "Ken Griffey Jr.", ...over });
 
