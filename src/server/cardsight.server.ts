@@ -97,6 +97,16 @@ export async function cardsightSetCards(setId: string): Promise<CardsightCard[]>
   return out;
 }
 
+const setCache = new Map<string, { at: number; cards: CardsightCard[] }>();
+/** One set checklist per bulk import (≤100 cards per request), cached for an hour per worker. */
+export async function cardsightSetCardsCached(setId: string): Promise<CardsightCard[]> {
+  const hit = setCache.get(setId);
+  if (hit && Date.now() - hit.at < 3_600_000) return hit.cards;
+  const cards = await cardsightSetCards(setId);
+  if (cards.length) setCache.set(setId, { at: Date.now(), cards });
+  return cards;
+}
+
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {
   const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=${period}`);
   if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");

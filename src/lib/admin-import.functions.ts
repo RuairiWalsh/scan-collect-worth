@@ -20,20 +20,20 @@ export const beginCardImport = createServerFn({ method: "POST" })
 
 export const importCardPair = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ importId: z.string().uuid(), index: z.number().int().nonnegative() }))
+  .inputValidator(z.object({ importId: z.string().uuid(), index: z.number().int().nonnegative(), set: z.object({ id: z.string().uuid(), name: z.string().min(1).max(200), year: z.string().max(20).nullable().optional() }).nullable().optional() }))
   .handler(async ({ data, context }) => {
     const { assertImportAdmin, processImportPair } = await import("@/server/admin-import.server");
     await assertImportAdmin(context.supabase, context.userId);
-    return processImportPair(data.importId, data.index, context.userId);
+    return processImportPair(data.importId, data.index, context.userId, data.set);
   });
 
 export const importCardPairs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({ importId: z.string().uuid(), start: z.number().int().nonnegative(), count: z.number().int().min(1).max(8) }))
+  .inputValidator(z.object({ importId: z.string().uuid(), start: z.number().int().nonnegative(), count: z.number().int().min(1).max(8), set: z.object({ id: z.string().uuid(), name: z.string().min(1).max(200), year: z.string().max(20).nullable().optional() }).nullable().optional() }))
   .handler(async ({ data, context }) => {
     const { assertImportAdmin, processImportBatch } = await import("@/server/admin-import.server");
     await assertImportAdmin(context.supabase, context.userId);
-    return processImportBatch(data.importId, data.start, data.count, context.userId);
+    return processImportBatch(data.importId, data.start, data.count, context.userId, data.set);
   });
 
 export const confirmCardImport = createServerFn({ method: "POST" })

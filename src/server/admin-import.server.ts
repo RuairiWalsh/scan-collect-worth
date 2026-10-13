@@ -61,7 +61,7 @@ async function publishPair(pair: Pair, item: Identification, userId: string, con
 }
 
 /** Identify several pairs in one light-model AI call, then publish each for review. */
-export async function processImportBatch(importId: string, start: number, count: number, userId: string) {
+export async function processImportBatch(importId: string, start: number, count: number, userId: string, set?: import("@/server/identify.server").ImportSet | null) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: batch } = await db.from("card_image_imports").select("*").eq("id", importId).eq("user_id", userId).single();
   if (!batch) throw new Error("Import unavailable.");
@@ -86,7 +86,7 @@ export async function processImportBatch(importId: string, start: number, count:
     pairs.push({ index, pair, front: await imageData(front.data), back: await imageData(back.data) });
   }
   const { identifyImportBatch } = await import("@/server/identify.server");
-  const identified = await identifyImportBatch(pairs.map((p) => ({ front: p.front, back: p.back })));
+  const identified = await identifyImportBatch(pairs.map((p) => ({ front: p.front, back: p.back })), set);
   for (let i = 0; i < pairs.length; i++) {
     const { index, pair } = pairs[i]!;
     try {
@@ -100,7 +100,7 @@ export async function processImportBatch(importId: string, start: number, count:
   return { statuses };
 }
 
-export async function processImportPair(importId: string, index: number, userId: string) {
+export async function processImportPair(importId: string, index: number, userId: string, set?: import("@/server/identify.server").ImportSet | null) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: batch } = await db.from("card_image_imports").select("*").eq("id", importId).eq("user_id", userId).single();
   if (!batch) throw new Error("Import unavailable.");
@@ -117,7 +117,7 @@ export async function processImportPair(importId: string, index: number, userId:
     // Catalog imports never send images to CardSight: the cheap reader extracts
     // text, and only name/set/number/year go to the catalog lookup.
     const { identifyImportBatch } = await import("@/server/identify.server");
-    const [result] = await identifyImportBatch([{ front: await imageData(front.data), back: await imageData(back.data) }]);
+    const [result] = await identifyImportBatch([{ front: await imageData(front.data), back: await imageData(back.data) }], set);
     if (!result) throw new Error("The card could not be read.");
     return { status: await publishPair(pair, result, userId) };
   } catch (error) {

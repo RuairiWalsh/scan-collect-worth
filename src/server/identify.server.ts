@@ -173,10 +173,13 @@ type StreamJson = typeof import("@/server/ai.server").streamJson;
  * to its exact catalog entry with direct provider lookups only — no extra AI pick
  * calls. Anything uncertain stays "needs_details" for admin review.
  */
-export async function identifyImportBatch(pairs: { front: string; back: string }[]): Promise<Identification[]> {
+export type ImportSet = { id: string; name: string; year?: string | null | undefined };
+export async function identifyImportBatch(pairs: { front: string; back: string }[], knownSet?: ImportSet | null): Promise<Identification[]> {
   const { streamJson, AiError } = await import("@/server/ai.server");
   const content: Record<string, unknown>[] = [
-    { type: "input_text", text: `These are ${pairs.length} trading cards from one scanner batch (usually the same set). For each card the front image comes first, then its back. Identify every card, in order.` },
+    { type: "input_text", text: knownSet
+      ? `These are ${pairs.length} sports cards, all from the set "${knownSet.name}"${knownSet.year ? ` (${knownSet.year})` : ""}. For each card the front image comes first, then its back. The most important field is the card number exactly as printed; also give the player name. Use subcategory "sports" and set_name "${knownSet.name}".`
+      : `These are ${pairs.length} trading cards from one scanner batch (usually the same set). For each card the front image comes first, then its back. Identify every card, in order.` },
   ];
   pairs.forEach((p, i) => {
     content.push(
@@ -222,7 +225,27 @@ export async function identifyImportBatch(pairs: { front: string; back: string }
   // Batches are usually one set: once a card pins, later cards in the batch are
   // looked up by number inside that set first — one cheap text search, no images.
   let batchSet: string | null = null;
+  // Admin named the set: fetch its checklist once and match every card by number locally.
+  const setCards = knownSet && cardsightConfigured() ? await (await import("@/server/cardsight.server")).cardsightSetCardsCached(knownSet.id).catch(() => []) : [];
+  const { matchSetCardByNumber } = await import("@/lib/cardsight");
   for (const result of identified) {
+    if (setCards.length) {
+      result.category = "cards"; result.subcategory = "sports"; result.is_collectible = true;
+      const card = matchSetCardByNumber(setCards, result.number, result.name);
+      if (card) {
+        result.catalog_id = card.id;
+        result.name = card.name || result.name;
+        result.set_name = card.releaseName || card.setName || knownSet!.name;
+        result.number = card.number || result.number;
+        result.year = card.releaseYear || knownSet!.year || result.year;
+        result.confidence = Math.max(result.confidence, 0.85);
+      } else {
+        result.set_name = knownSet!.name;
+        result.year = result.year || knownSet!.year || null;
+        result.confidence = Math.min(result.confidence, 0.5);
+      }
+      continue;
+    }
     if (!result.year) result.year = /\b(19[5-9]\d|20[0-4]\d)\b/.exec(`${result.set_name ?? ""} ${result.printed_text ?? ""}`)?.[1] ?? null;
     if (!result.is_collectible || result.category !== "cards") continue;
     try {

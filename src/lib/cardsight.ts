@@ -94,3 +94,20 @@ export function rankCardsightCandidates(cards: CardsightCard[], item: CardsightQ
   const pool = hasSetMatch ? cards.filter((c) => setScore(c) > 0) : cards;
   return [...pool].sort((a, b) => nameScore(b) - nameScore(a) || setScore(b) - setScore(a)).slice(0, 25);
 }
+
+/**
+ * Bulk import with an admin-chosen set: match a read card number against that
+ * set's checklist. Several cards can share a number (parallels); the read name
+ * breaks the tie, otherwise no pin so the admin reviews it.
+ */
+export function matchSetCardByNumber(cards: CardsightCard[], number: string | null | undefined, name?: string | null): CardsightCard | null {
+  const norm = (v: string | null | undefined) => (cardsightNumber(v) ?? "").replace(/^(no\.?|#)\s*/i, "").replace(/^0+(?=\w)/, "").toUpperCase();
+  const num = norm(number);
+  if (!num) return null;
+  const hits = cards.filter((c) => norm(c.number) === num);
+  if (hits.length <= 1) return hits[0] ?? null;
+  const n = (name ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  if (!n) return null;
+  const named = hits.filter((c) => (c.name ?? "").toLowerCase().replace(/[^a-z]/g, "") === n);
+  return named.length === 1 ? named[0]! : null;
+}
