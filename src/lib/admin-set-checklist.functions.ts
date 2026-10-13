@@ -69,7 +69,7 @@ export const scannedSets = createServerFn({ method: "GET" })
   });
 
 /** Missing numbers for a set we already have, computed purely from our own catalog —
- *  no sports-card service calls. Total = highest card number we've seen for the set. */
+ *  set size comes from one cached set-list lookup; falls back to the highest number we've seen. */
 export const missingScannedSetCards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ setName: z.string().min(1).max(200), year: z.string().max(20).optional() }))
@@ -93,8 +93,16 @@ export const missingScannedSetCards = createServerFn({ method: "POST" })
       if (Number.isFinite(n) && n > 0 && !have.has(n)) have.set(n, row.name ?? "");
     }
     if (!have.size) throw new Error(`No cards from "${data.setName}" in the catalog yet.`);
-    const total = Math.max(...have.keys());
+    const highest = Math.max(...have.keys());
+    // Our own catalog says which numbers we have; the set's printed size (one cached
+    // set-list lookup, no card list) says where the set ends.
+    let setSize: number | null = null;
+    try {
+      const { cardsightConfigured, cardsightSetSize } = await import("@/server/cardsight.server");
+      if (cardsightConfigured()) setSize = await cardsightSetSize(data.setName.trim(), yearFilter || null);
+    } catch { setSize = null; }
+    const total = Math.max(highest, setSize ?? 0);
     const missing: { number: string; name: string }[] = [];
     for (let n = 1; n <= total; n++) if (!have.has(n)) missing.push({ number: String(n), name: "" });
-    return { total, have: have.size, missing };
+    return { total, have: have.size, missing, sizeKnown: setSize !== null };
   });

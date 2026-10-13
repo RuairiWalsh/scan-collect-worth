@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
 });
 
 type SetRow = { id: string; name: string; cardCount: number; releaseName: string; releaseYear: string };
-type Missing = { total: number; have: number; missing: { number: string; name: string }[] };
+type Missing = { total: number; have: number; missing: { number: string; name: string }[]; sizeKnown?: boolean };
 
 function Page() {
   const { isAdmin, isLoading } = useRoles();
@@ -41,6 +41,9 @@ function MissingList({ title, result }: { title: string; result: Missing }) {
           ? " Nothing missing — the set is complete."
           : ` Missing ${result.missing.length}:`}
       </p>
+      {result.sizeKnown === false && (
+        <p className="text-xs text-muted-foreground">Couldn't confirm this set's full size, so the list stops at the highest card number we have.</p>
+      )}
       {result.missing.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {result.missing.map((m, i) => (
