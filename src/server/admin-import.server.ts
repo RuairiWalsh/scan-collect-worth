@@ -21,6 +21,46 @@ async function imageData(blob: Blob) {
   return `data:${blob.type};base64,${btoa(text)}`;
 }
 
+const FOUNDER_EMAIL = "rory@datroai.com";
+let founderId: string | null | undefined;
+
+/** Every confirmed scanner card is also added to the founder's collection. */
+async function addToFounderCollection(db: SupabaseClient<Database>, catalogId: string, item: Identification, frontUrl: string, backUrl: string) {
+  if (founderId === undefined) {
+    const { data } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    founderId = data?.users?.find((u) => u.email?.toLowerCase() === FOUNDER_EMAIL)?.id ?? null;
+  }
+  if (!founderId) return;
+  const { count } = await db.from("items").select("id", { count: "exact", head: true }).eq("user_id", founderId).eq("catalog_id", catalogId);
+  if (count) return;
+  const { defaultCondition } = await import("@/lib/taxonomy");
+  const { data: priced } = await db.from("catalog_prices").select("nm_price").eq("catalog_id", catalogId).maybeSingle();
+  const { error } = await db.from("items").insert({
+    user_id: founderId,
+    status: "collection",
+    category: "cards",
+    subcategory: item.subcategory,
+    line: item.line,
+    name: item.name,
+    set_name: item.set_name,
+    number: item.number,
+    year: item.year,
+    variant: item.variant,
+    grader: null,
+    grade: null,
+    condition: defaultCondition("cards", item.subcategory),
+    quantity: 1,
+    ai_confidence: item.confidence,
+    thumbnail: frontUrl,
+    product_image: frontUrl,
+    back_image: backUrl,
+    catalog_id: catalogId,
+    est_value: priced?.nm_price ?? null,
+    price_sources: [],
+  });
+  if (error) console.error("Founder collection insert failed:", error.message);
+}
+
 async function publishPair(pair: Pair, item: Identification, userId: string, confirmed = false) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const identity = cardImageIdentity(item);
@@ -57,6 +97,7 @@ async function publishPair(pair: Pair, item: Identification, userId: string, con
   // Publishing succeeds even when pricing is unavailable; the daily queue retries it.
   const { refreshImportedPrice } = await import("@/server/imported-prices.server");
   await refreshImportedPrice(catalogId).catch(() => undefined);
+  await addToFounderCollection(db, catalogId, item, frontUrl, backUrl).catch(() => undefined);
   return "approved";
 }
 
