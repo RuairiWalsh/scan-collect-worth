@@ -63,7 +63,7 @@ export async function cardsightFindInSet(setName: string, number: string | null 
   }
   // Exact set only — a base "2002 Topps" card must never satisfy a "2002 Topps Gold Label" batch.
   const inSet = cards.filter((c) => cardsightSameSet(c.releaseName, setName) || cardsightSameSet(c.setName, setName));
-  return pickCardsightCard(inSet, { name: "", set_name: setName, number, year: year ?? null });
+  return pickCardsightCard(inSet, { name: "", set_name: setName, number: number ?? null, year: year ?? null });
 }
 
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {

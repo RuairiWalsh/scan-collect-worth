@@ -227,7 +227,7 @@ export async function identifyImportBatch(pairs: { front: string; back: string }
     if (!result.is_collectible || result.category !== "cards") continue;
     try {
       if (result.subcategory === "sports" && cardsightConfigured()) {
-        const card = (batchSet ? await cardsightFindInSet(batchSet, result.number, result.year) : null)
+        const card: Awaited<ReturnType<typeof cardsightFindCard>> = (batchSet ? await cardsightFindInSet(batchSet, result.number, result.year) : null)
           ?? await cardsightFindCard({ name: result.name, set_name: result.set_name, number: result.number, year: result.year });
         if (card) {
           batchSet = card.releaseName || card.setName || batchSet;
