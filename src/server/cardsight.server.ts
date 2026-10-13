@@ -1,5 +1,5 @@
 // Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
-import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
+import { cardsightNumber, cardsightSameSet, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
 import type { CardsightPricing } from "@/lib/cardsight-pricing";
 export type { CardsightPricing, CardsightPriceRecord } from "@/lib/cardsight-pricing";
 
@@ -44,6 +44,57 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
     cards = await searchCards(params);
   }
   return pickCardsightCard(cards, item);
+}
+
+/**
+ * Bulk-import shortcut: batches are usually one set, so once the set is known a
+ * card is found by number (+ year) alone — one cheap text search, no images and
+ * no per-card name guessing. Returns null unless exactly one card fits the set.
+ */
+export async function cardsightFindInSet(setName: string, number: string | null | undefined, year?: string | null): Promise<CardsightCard | null> {
+  const num = cardsightNumber(number);
+  if (!num) return null;
+  const params = new URLSearchParams({ number: num, take: "50" });
+  if (year) params.set("year", year);
+  let cards = await searchCards(params);
+  if (!cards.length && year) {
+    params.delete("year");
+    cards = await searchCards(params);
+  }
+  // Exact set only — a base "2002 Topps" card must never satisfy a "2002 Topps Gold Label" batch.
+  const inSet = cards.filter((c) => cardsightSameSet(c.releaseName, setName) || cardsightSameSet(c.setName, setName));
+  return pickCardsightCard(inSet, { name: "", set_name: setName, number: number ?? null, year: year ?? null });
+}
+
+export type CardsightSet = {
+  id: string;
+  name: string;
+  cardCount: number;
+  releaseName: string;
+  releaseYear: string;
+};
+
+/** Admin set checklist: find sets by name (+ optional year). */
+export async function cardsightSearchSets(name: string, year?: string | null): Promise<CardsightSet[]> {
+  const params = new URLSearchParams({ name, take: "50" });
+  if (year) params.set("year", year);
+  const res = await csFetch(`/v1/catalog/sets?${params}`);
+  if (!res) return [];
+  const j = (await res.json()) as { sets?: CardsightSet[] };
+  return j.sets ?? [];
+}
+
+/** Every card in a set, paginated. Text metadata only — no images. */
+export async function cardsightSetCards(setId: string): Promise<CardsightCard[]> {
+  const out: CardsightCard[] = [];
+  for (let skip = 0; ; skip += 100) {
+    const res = await csFetch(`/v1/catalog/cards?setId=${encodeURIComponent(setId)}&take=100&skip=${skip}`);
+    if (!res) break;
+    const j = (await res.json()) as { cards?: CardsightCard[]; total_count?: number };
+    out.push(...(j.cards ?? []));
+    if (!j.cards?.length || out.length >= (j.total_count ?? out.length)) break;
+  }
+  return out;
 }
 
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {

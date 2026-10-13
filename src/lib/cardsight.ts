@@ -18,6 +18,12 @@ export type CardsightQuery = {
 
 const norm = (s: string | null | undefined) => (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
+/** Exact normalized set match for the bulk-import set shortcut: "2002 Topps" must not satisfy "2002 Topps Gold Label". */
+export function cardsightSameSet(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = norm(a), y = norm(b);
+  return Boolean(x && y && x === y);
+}
+
 /** Printed collector number without the set total: "025/165" → "025". */
 export function cardsightNumber(number: string | null | undefined): string | null {
   const n = (number ?? "").split(/[;/,]/)[0]?.trim() ?? "";

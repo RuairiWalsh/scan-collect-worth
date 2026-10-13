@@ -216,16 +216,21 @@ export async function identifyImportBatch(pairs: { front: string; back: string }
     throw e;
   }
   if (identified.length !== pairs.length) throw new Error(`The AI read ${identified.length} of ${pairs.length} cards; try a smaller batch.`);
-  const { cardsightConfigured, cardsightFindCard } = await import("@/server/cardsight.server");
+  const { cardsightConfigured, cardsightFindCard, cardsightFindInSet } = await import("@/server/cardsight.server");
   const { justtcgConfigured, findCatalogCandidates } = await import("@/server/prices.server");
   const { confidentMatch, baseName } = await import("@/lib/catalog");
+  // Batches are usually one set: once a card pins, later cards in the batch are
+  // looked up by number inside that set first — one cheap text search, no images.
+  let batchSet: string | null = null;
   for (const result of identified) {
     if (!result.year) result.year = /\b(19[5-9]\d|20[0-4]\d)\b/.exec(`${result.set_name ?? ""} ${result.printed_text ?? ""}`)?.[1] ?? null;
     if (!result.is_collectible || result.category !== "cards") continue;
     try {
       if (result.subcategory === "sports" && cardsightConfigured()) {
-        const card = await cardsightFindCard({ name: result.name, set_name: result.set_name, number: result.number, year: result.year });
+        const card: Awaited<ReturnType<typeof cardsightFindCard>> = (batchSet ? await cardsightFindInSet(batchSet, result.number, result.year) : null)
+          ?? await cardsightFindCard({ name: result.name, set_name: result.set_name, number: result.number, year: result.year });
         if (card) {
+          batchSet = card.releaseName || card.setName || batchSet;
           result.catalog_id = card.id;
           result.name = card.name || result.name;
           result.set_name = card.releaseName || card.setName || result.set_name;

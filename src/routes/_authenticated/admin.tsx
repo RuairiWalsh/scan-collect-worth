@@ -116,6 +116,7 @@ function AdminDashboard() {
         <Button asChild variant="outline">
           <Link to="/admin-import"><Images className="size-4" />Scanner PDF imports</Link>
         </Button>
+        <Button asChild variant="outline"><Link to="/admin-set-checklist"><Images className="size-4" />Set checklist</Link></Button>
         </div>
       </div>
 
