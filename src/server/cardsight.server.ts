@@ -128,6 +128,26 @@ export async function cardsightSetCards(setId: string): Promise<CardsightCard[]>
   return out;
 }
 
+const sizeCache = new Map<string, { at: number; size: number }>();
+/** Printed size of a set we already carry (e.g. "Topps" 1999 → 462). Only the set list
+ *  is read — never the card list — and the answer is cached for a day per worker. */
+export async function cardsightSetSize(setName: string, year?: string | null): Promise<number | null> {
+  const key = `${setName.toLowerCase()}|${year ?? ""}`;
+  const hit = sizeCache.get(key);
+  if (hit && Date.now() - hit.at < 86_400_000) return hit.size;
+  const y = (year ?? "").match(/\b(18|19|20)\d{2}\b/)?.[0] ?? null;
+  const sets = await cardsightSearchSets(setName, y);
+  const yearless = setName.replace(/\b(18|19|20)\d{2}\b/g, "").trim();
+  const isBase = (s: CardsightSet) => /^base/i.test(s.name);
+  const pick =
+    sets.find((s) => cardsightSameSet(s.name, setName)) ??
+    sets.find((s) => isBase(s) && (cardsightSameSet(s.releaseName, setName) || cardsightSameSet(s.releaseName, yearless))) ??
+    null;
+  const size = pick?.cardCount && pick.cardCount > 0 ? pick.cardCount : null;
+  if (size) sizeCache.set(key, { at: Date.now(), size });
+  return size;
+}
+
 const setCache = new Map<string, { at: number; cards: CardsightCard[] }>();
 /** One set checklist per bulk import (≤100 cards per request), cached for an hour per worker. */
 export async function cardsightSetCardsCached(setId: string): Promise<CardsightCard[]> {
