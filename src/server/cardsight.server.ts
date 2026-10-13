@@ -66,6 +66,37 @@ export async function cardsightFindInSet(setName: string, number: string | null 
   return pickCardsightCard(inSet, { name: "", set_name: setName, number: number ?? null, year: year ?? null });
 }
 
+export type CardsightSet = {
+  id: string;
+  name: string;
+  cardCount: number;
+  releaseName: string;
+  releaseYear: string;
+};
+
+/** Admin set checklist: find sets by name (+ optional year). */
+export async function cardsightSearchSets(name: string, year?: string | null): Promise<CardsightSet[]> {
+  const params = new URLSearchParams({ name, take: "50" });
+  if (year) params.set("year", year);
+  const res = await csFetch(`/v1/catalog/sets?${params}`);
+  if (!res) return [];
+  const j = (await res.json()) as { sets?: CardsightSet[] };
+  return j.sets ?? [];
+}
+
+/** Every card in a set, paginated. Text metadata only — no images. */
+export async function cardsightSetCards(setId: string): Promise<CardsightCard[]> {
+  const out: CardsightCard[] = [];
+  for (let skip = 0; ; skip += 100) {
+    const res = await csFetch(`/v1/catalog/cards?setId=${encodeURIComponent(setId)}&take=100&skip=${skip}`);
+    if (!res) break;
+    const j = (await res.json()) as { cards?: CardsightCard[]; total_count?: number };
+    out.push(...(j.cards ?? []));
+    if (!j.cards?.length || out.length >= (j.total_count ?? out.length)) break;
+  }
+  return out;
+}
+
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {
   const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=${period}`);
   if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");
