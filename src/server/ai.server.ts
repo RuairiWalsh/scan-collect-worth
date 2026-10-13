@@ -17,6 +17,7 @@ export async function streamJson<T>(opts: {
   schemaName: string;
   schema: Record<string, unknown>;
   effort?: "low" | "medium" | "high";
+  model?: string;
 }): Promise<T> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AiError("AI is not configured.", 401);
@@ -29,7 +30,7 @@ export async function streamJson<T>(opts: {
       "X-Lovable-AIG-SDK": "fetch",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: opts.model ?? MODEL,
       instructions: opts.instructions,
       input: [{ role: "user", content: opts.content }],
       stream: true,
