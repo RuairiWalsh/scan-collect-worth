@@ -127,6 +127,29 @@ export async function processImportPair(importId: string, index: number, userId:
   }
 }
 
+/** Re-match an already-approved pair with corrected details and remove the old wrong entry. */
+export async function correctImportPair(pairId: string, item: Identification, userId: string) {
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+  const { data: pair } = await db.from("card_image_import_pairs").select("*").eq("id", pairId).single();
+  if (!pair) throw new Error("Scan unavailable.");
+  if (pair.status !== "approved" || !pair.card_key) throw new Error("Only published cards can be corrected.");
+  const oldKey = pair.card_key;
+  const oldCatalogId = reviewedCatalogId(oldKey, (pair.metadata as unknown as Identification).catalog_id);
+  const result = await confirmImportPair(pairId, item, userId);
+  // Clean up the previous wrong entry once the card lives under its corrected identity.
+  if (result.status === "approved") {
+    const { data: updated } = await db.from("card_image_import_pairs").select("card_key").eq("id", pairId).single();
+    if (updated?.card_key && updated.card_key !== oldKey) {
+      const { count } = await db.from("items").select("id", { count: "exact", head: true }).eq("catalog_id", oldCatalogId);
+      if (!count) {
+        await db.from("card_product_images").delete().eq("card_key", oldKey);
+        await db.from("catalog_prices").delete().eq("catalog_id", oldCatalogId);
+      }
+    }
+  }
+  return result;
+}
+
 export async function confirmImportPair(pairId: string, item: Identification, userId: string) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: pair } = await db.from("card_image_import_pairs").select("*").eq("id", pairId).single();

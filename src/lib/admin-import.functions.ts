@@ -36,6 +36,15 @@ export const importCardPairs = createServerFn({ method: "POST" })
     return processImportBatch(data.importId, data.start, data.count, context.userId, data.set);
   });
 
+export const correctCardImport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ pairId: z.string().uuid(), name: z.string().min(1).max(200), set_name: z.string().min(1).max(200), number: z.string().min(1).max(80), year: z.string().min(1).max(20), line: z.string().min(1).max(100), subcategory: z.enum(["tcg", "sports", "nonsport"]), variant: z.string().max(100), language: z.string().min(1).max(50) }))
+  .handler(async ({ data, context }) => {
+    const { assertImportAdmin, correctImportPair } = await import("@/server/admin-import.server");
+    await assertImportAdmin(context.supabase, context.userId);
+    return correctImportPair(data.pairId, { ...data, catalog_id: null, category: "cards", is_collectible: true, confidence: 1, grader: null, grade: null }, context.userId);
+  });
+
 export const confirmCardImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ pairId: z.string().uuid(), name: z.string().min(1).max(200), set_name: z.string().min(1).max(200), number: z.string().min(1).max(80), year: z.string().min(1).max(20), line: z.string().min(1).max(100), subcategory: z.enum(["tcg", "sports", "nonsport"]), variant: z.string().max(100), language: z.string().min(1).max(50) }))
