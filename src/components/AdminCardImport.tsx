@@ -112,12 +112,12 @@ export function AdminCardImport() {
       const CHUNK = 8;
       const uploadPair = async (index: number) => {
         const pair = pdfCardPair(batch.page_count, index);
-        for (const side of ["front", "back"] as const) {
+        await Promise.all((["front", "back"] as const).map(async (side) => {
           const blob = await scannerPage(document, pair[side], dpi);
-          const path = `${session.user.id}/${batch.id}/${index}-${side}.png`;
-          const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+          const path = `${session.user.id}/${batch.id}/${index}-${side}.jpg`;
+          const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
           if (error) throw new Error(error.message);
-        }
+        }));
       };
       for (let start = 0; start < total; start += CHUNK) {
         if (stop.current) break;
@@ -125,7 +125,8 @@ export function AdminCardImport() {
         if (!indexes.length) continue;
         try {
           setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Uploading`);
-          for (const index of indexes) await uploadPair(index);
+          // Upload a few pairs at a time so big PDFs don't crawl.
+          for (let i = 0; i < indexes.length; i += 4) await Promise.all(indexes.slice(i, i + 4).map(uploadPair));
           setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Identifying`);
           await processPairs({ data: { importId: batch.id, start: indexes[0]!, count: indexes.length, set: importSet } });
           failures = 0;
@@ -176,8 +177,10 @@ export function AdminCardImport() {
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
-      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Could not save rotated image.")), "image/png"));
-      const { error: uploadError } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+      const jpeg = path.endsWith(".jpg") || path.endsWith(".jpeg");
+      if (jpeg) { ctx.globalCompositeOperation = "destination-over"; ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+      const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Could not save rotated image.")), jpeg ? "image/jpeg" : "image/png", 0.9));
+      const { error: uploadError } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: jpeg ? "image/jpeg" : "image/png" });
       if (uploadError) throw new Error(uploadError.message);
       await qc.invalidateQueries({ queryKey: ["admin-import-previews"] });
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not rotate image."); }
