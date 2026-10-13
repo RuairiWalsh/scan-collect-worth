@@ -58,7 +58,7 @@ export const scannedSets = createServerFn({ method: "GET" })
       const setName = (row.set_name ?? "").trim();
       if (!setName) continue;
       const meta = row.card_metadata && typeof row.card_metadata === "object" && !Array.isArray(row.card_metadata) ? row.card_metadata as Record<string, unknown> : {};
-      const year = typeof meta.year === "string" ? meta.year : "";
+      const year = typeof meta["year"] === "string" ? meta["year"] : "";
       const key = `${setName}|${year}`;
       const entry = sets.get(key) ?? { setName, year, count: 0 };
       entry.count++;
