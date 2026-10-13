@@ -80,8 +80,17 @@ export type CardsightSet = {
  * ("1999 Topps"), so search releases first and list each release's sets.
  */
 export async function cardsightSearchSets(name: string, year?: string | null): Promise<CardsightSet[]> {
-  const params = new URLSearchParams({ name, take: "10" });
-  if (year) params.set("year", year);
+  // CardSight release search matches the release name only ("Topps"), not a full
+  // query like "1999 topps baseball" — pull the year and sport words out ourselves.
+  const yearMatch = name.match(/\b(18|19|20)\d{2}\b/);
+  const effectiveYear = year ?? yearMatch?.[0] ?? null;
+  const core = name
+    .replace(/\b(18|19|20)\d{2}\b/g, "")
+    .replace(/\b(baseball|basketball|football|hockey|soccer|cards?|set)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const params = new URLSearchParams({ name: core || name, take: "10" });
+  if (effectiveYear) params.set("year", effectiveYear);
   const res = await csFetch(`/v1/catalog/releases?${params}`);
   if (!res) return [];
   const j = (await res.json()) as { releases?: { id: string }[] };
