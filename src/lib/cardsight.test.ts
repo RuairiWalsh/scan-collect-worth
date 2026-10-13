@@ -85,3 +85,12 @@ describe("bulk-import set shortcut (exact set + number)", () => {
     expect(pickCardsightCard([a, b], { name: "", set_name: "2002 Topps Gold Label", number: "49", year: "2002" })).toBeNull();
   });
 });
+
+import { matchSetCardByNumber } from "./cardsight";
+describe("matchSetCardByNumber", () => {
+  const set = [{ id: "a", number: "49", name: "Earl Snyder" }, { id: "b", number: "50", name: "X" }, { id: "c", number: "50", name: "Y" }];
+  it("pins the single card with that number", () => { expect(matchSetCardByNumber(set, "#49", null)?.id).toBe("a"); });
+  it("uses the name when numbers repeat", () => { expect(matchSetCardByNumber(set, "50", "Y")?.id).toBe("c"); });
+  it("does not guess between repeated numbers", () => { expect(matchSetCardByNumber(set, "50", null)).toBeNull(); });
+  it("returns null for numbers not in the set", () => { expect(matchSetCardByNumber(set, "999", "Earl Snyder")).toBeNull(); });
+});
