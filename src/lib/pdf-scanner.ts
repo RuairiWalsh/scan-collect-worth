@@ -23,8 +23,12 @@ export async function scannerPage(pdf: PDFDocumentProxy, pageNumber: number, dpi
   const context = canvas.getContext("2d");
   if (!context) throw new Error("PDF rendering is unavailable.");
   try {
+    // JPEG needs an opaque background; scanned pages are white anyway.
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
     await page.render({ canvas, canvasContext: context, viewport }).promise;
-    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not extract scan page.")), "image/png"));
+    // JPEG keeps multi-hundred-card PDFs quick to upload; PNGs at 300 DPI are several MB each.
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not extract scan page.")), "image/jpeg", 0.85));
     if (blob.size > 20 * 1024 * 1024) throw new Error("Scan page exceeds 20 MB. Choose a lower resolution.");
     return blob;
   } finally { canvas.width = 0; canvas.height = 0; page.cleanup(); }
