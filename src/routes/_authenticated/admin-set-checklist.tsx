@@ -104,7 +104,7 @@ function Checklist() {
         <Button asChild variant="ghost" size="icon"><Link to="/admin"><ArrowLeft className="size-4" /></Link></Button>
         <h1 className="font-display text-3xl font-black">Set checklist</h1>
       </div>
-      <p className="text-sm text-muted-foreground">Sets already in our catalog, and which card numbers are still missing from each — handy before scanning a batch.</p>
+      <p className="text-sm text-muted-foreground">Sets already in our catalog, and the card numbers we have for each — handy before scanning a batch.</p>
 
       <section className="space-y-2">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sets we've scanned</h2>
@@ -118,7 +118,7 @@ function Checklist() {
                 key={`${s.setName}|${s.year}`}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
                 disabled={checkScanned.isPending}
-                onClick={() => { setResult(null); checkScanned.mutate(s); }}
+                onClick={() => { setResult(null); setHaveResult(null); checkScanned.mutate(s); }}
               >
                 <span className="font-medium">{s.year} {s.setName}</span>
                 <span className="text-sm text-muted-foreground">{s.count} in catalog</span>
@@ -128,8 +128,8 @@ function Checklist() {
         )}
       </section>
 
-      {checkScanned.isPending && <p className="text-muted-foreground">Checking the catalog…</p>}
-      {picked && result && <MissingList title={picked} result={result} />}
+      {checkScanned.isPending && <p className="text-muted-foreground">Reading the catalog…</p>}
+      {picked && haveResult && <HaveList title={picked} result={haveResult} />}
 
       <section className="space-y-2 border-t-2 border-ink pt-4">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Look up any other set</h2>
@@ -146,7 +146,7 @@ function Checklist() {
               <button
                 key={s.id}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
-                onClick={() => { setPicked(`${s.releaseYear} ${s.releaseName} — ${s.name}`); setResult(null); check.mutate(s.id); }}
+                onClick={() => { setPicked(`${s.releaseYear} ${s.releaseName} — ${s.name}`); setResult(null); setHaveResult(null); check.mutate(s.id); }}
               >
                 <span className="font-medium">{s.releaseYear} {s.releaseName} — {s.name}</span>
                 <span className="text-sm text-muted-foreground">{s.cardCount} cards</span>
