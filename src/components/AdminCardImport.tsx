@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { beginCardImport, importCardPair, confirmCardImport } from "@/lib/admin-import.functions";
+import { beginCardImport, importCardPair, importCardPairs, confirmCardImport } from "@/lib/admin-import.functions";
 import { isImportedPair, pdfCardPair } from "@/lib/pdf-card-pairs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ const labels: Record<string, string> = { approved: "Added to card database", nee
 export function AdminCardImport() {
   const startImport = useServerFn(beginCardImport);
   const processPair = useServerFn(importCardPair);
+  const processPairs = useServerFn(importCardPairs);
   const confirm = useServerFn(confirmCardImport);
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
