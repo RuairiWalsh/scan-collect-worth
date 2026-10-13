@@ -7,6 +7,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { beginCardImport, importCardPair, importCardPairs, confirmCardImport } from "@/lib/admin-import.functions";
+import { searchCardSets } from "@/lib/admin-set-checklist.functions";
 import { isImportedPair, pdfCardPair } from "@/lib/pdf-card-pairs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,18 @@ export function AdminCardImport() {
   const processPair = useServerFn(importCardPair);
   const processPairs = useServerFn(importCardPairs);
   const confirm = useServerFn(confirmCardImport);
+  const findSets = useServerFn(searchCardSets);
+  const [setQuery, setSetQuery] = useState({ name: "", year: "" });
+  const [setResults, setSetResults] = useState<{ id: string; name: string; releaseName: string; releaseYear: string; cardCount: number }[]>([]);
+  const [importSet, setImportSet] = useState<{ id: string; name: string; year: string | null } | null>(null);
+  const [findingSets, setFindingSets] = useState(false);
+  async function lookupSets(e: React.FormEvent) {
+    e.preventDefault(); if (!setQuery.name.trim()) return;
+    setFindingSets(true);
+    try { const r = await findSets({ data: { name: setQuery.name.trim(), year: setQuery.year.trim() || undefined } }); setSetResults(r); if (!r.length) toast.error("No sets found."); }
+    catch (err) { toast.error(err instanceof Error ? err.message : "Set search failed."); }
+    finally { setFindingSets(false); }
+  }
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const pdf = useRef<PDFDocumentProxy | null>(null);
@@ -114,7 +127,7 @@ export function AdminCardImport() {
           setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Uploading`);
           for (const index of indexes) await uploadPair(index);
           setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Identifying`);
-          await processPairs({ data: { importId: batch.id, start: indexes[0]!, count: indexes.length } });
+          await processPairs({ data: { importId: batch.id, start: indexes[0]!, count: indexes.length, set: importSet } });
           failures = 0;
         } catch (error) {
           // Batch read failed — fall back to one card at a time for this chunk.
@@ -123,7 +136,7 @@ export function AdminCardImport() {
             if (stop.current) break;
             try {
               setPhase(`Card ${index + 1} of ${total} · Identifying`);
-              await processPair({ data: { importId: batch.id, index } });
+              await processPair({ data: { importId: batch.id, index, set: importSet } });
               failures = 0;
             } catch (e) {
               failures++;
@@ -200,6 +213,18 @@ export function AdminCardImport() {
           </label>
         </div>
         {batch && <Button variant={running ? "outline" : "default"} disabled={busy} onClick={() => running ? (stop.current = true, setPhase("Pausing after current card…")) : void run()}>{running ? <Pause /> : <Play />}{running ? "Pause" : progress.saved ? "Resume import" : "Start import"}</Button>}
+      </div>
+      <div className="space-y-2 border-2 border-ink p-3">
+        <p className="text-sm font-bold">Which set are these cards from?</p>
+        <p className="text-xs text-muted-foreground">Optional, for sports cards. The set's checklist is loaded once and each card is matched by its number only — no images go to the card service.</p>
+        {importSet
+          ? <div className="flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold">{importSet.name}{importSet.year ? ` · ${importSet.year}` : ""}</span><Button size="sm" variant="outline" disabled={running} onClick={() => setImportSet(null)}>Change</Button></div>
+          : <form onSubmit={lookupSets} className="flex flex-wrap items-end gap-2">
+              <Input aria-label="Set name" placeholder="Set name, e.g. Topps" className="w-56" value={setQuery.name} onChange={e => setSetQuery(q => ({ ...q, name: e.target.value }))} />
+              <Input aria-label="Year" placeholder="Year" className="w-24" value={setQuery.year} onChange={e => setSetQuery(q => ({ ...q, year: e.target.value }))} />
+              <Button type="submit" size="sm" disabled={findingSets}>{findingSets ? "Searching…" : "Find set"}</Button>
+            </form>}
+        {!importSet && setResults.length > 0 && <div className="flex flex-wrap gap-2">{setResults.slice(0, 20).map(s => <Button key={s.id} size="sm" variant="outline" onClick={() => { setImportSet({ id: s.id, name: [s.releaseName, s.name && s.name !== "Base Set" ? s.name : null].filter(Boolean).join(" ") || s.name, year: s.releaseYear || null }); setSetResults([]); }}>{s.releaseName}{s.name && s.name !== "Base Set" ? ` · ${s.name}` : ""} · {s.releaseYear} · {s.cardCount} cards</Button>)}</div>}
       </div>
       {phase && <p role="status" className="text-sm font-semibold">{phase}</p>}
       {batch && <>
