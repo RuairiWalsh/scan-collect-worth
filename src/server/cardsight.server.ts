@@ -12,12 +12,21 @@ export function cardsightConfigured() {
 async function csFetch(path: string): Promise<Response | null> {
   const key = process.env["CARDSIGHT_API_KEY"];
   if (!key) return null;
-  const res = await fetch(`${BASE}${path}`, { headers: { "X-API-Key": key } });
-  if (!res.ok) {
-    console.error("CardSight", path, res.status);
-    return null;
+  // CardSight allows 4 requests/second; back off and retry instead of silently returning nothing.
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(`${BASE}${path}`, { headers: { "X-API-Key": key } });
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 1100 * (attempt + 1)));
+      continue;
+    }
+    if (!res.ok) {
+      console.error("CardSight", path, res.status);
+      return null;
+    }
+    return res;
   }
-  return res;
+  console.error("CardSight rate limited", path);
+  return null;
 }
 
 async function searchCards(params: URLSearchParams): Promise<CardsightCard[]> {
