@@ -60,6 +60,46 @@ async function publishPair(pair: Pair, item: Identification, userId: string, con
   return "approved";
 }
 
+/** Identify several pairs in one light-model AI call, then publish each for review. */
+export async function processImportBatch(importId: string, start: number, count: number, userId: string) {
+  const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+  const { data: batch } = await db.from("card_image_imports").select("*").eq("id", importId).eq("user_id", userId).single();
+  if (!batch) throw new Error("Import unavailable.");
+  const total = batch.page_count / 2;
+  if (count < 1 || count > 8 || start < 0 || start + count > total) throw new Error("Invalid batch range.");
+  const indexes = Array.from({ length: count }, (_, i) => start + i);
+  const { data: existingRows } = await db.from("card_image_import_pairs").select("pair_index,status").eq("import_id", importId).in("pair_index", indexes);
+  const done = new Set((existingRows ?? []).filter((r) => isImportedPair(r.status)).map((r) => r.pair_index));
+  const todo = indexes.filter((i) => !done.has(i));
+  const statuses: Record<number, string> = {};
+  for (const i of indexes) if (done.has(i)) statuses[i] = existingRows!.find((r) => r.pair_index === i)!.status;
+  if (!todo.length) return { statuses };
+  const pairs: { index: number; pair: Pair; front: string; back: string }[] = [];
+  for (const index of todo) {
+    pdfCardPair(batch.page_count, index);
+    const frontPath = `${userId}/${importId}/${index}-front.png`;
+    const backPath = `${userId}/${importId}/${index}-back.png`;
+    const { data: pair, error: saveError } = await db.from("card_image_import_pairs").upsert({ import_id: importId, pair_index: index, front_path: frontPath, back_path: backPath, status: "pending" }, { onConflict: "import_id,pair_index" }).select("*").single();
+    if (saveError || !pair) throw new Error("Could not start card import.");
+    const [front, back] = await Promise.all([db.storage.from("admin-card-scans").download(frontPath), db.storage.from("admin-card-scans").download(backPath)]);
+    if (!front.data || !back.data || front.error || back.error) throw new Error("Both scan pages must be uploaded before identification.");
+    pairs.push({ index, pair, front: await imageData(front.data), back: await imageData(back.data) });
+  }
+  const { identifyImportBatch } = await import("@/server/identify.server");
+  const identified = await identifyImportBatch(pairs.map((p) => ({ front: p.front, back: p.back })));
+  for (let i = 0; i < pairs.length; i++) {
+    const { index, pair } = pairs[i]!;
+    try {
+      statuses[index] = await publishPair(pair, identified[i]!, userId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Card import failed.";
+      await db.from("card_image_import_pairs").update({ status: "failed", error: message, updated_at: new Date().toISOString() }).eq("id", pair.id);
+      statuses[index] = "failed";
+    }
+  }
+  return { statuses };
+}
+
 export async function processImportPair(importId: string, index: number, userId: string) {
   const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
   const { data: batch } = await db.from("card_image_imports").select("*").eq("id", importId).eq("user_id", userId).single();

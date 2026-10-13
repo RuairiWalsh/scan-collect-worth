@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { beginCardImport, importCardPair, confirmCardImport } from "@/lib/admin-import.functions";
+import { beginCardImport, importCardPair, importCardPairs, confirmCardImport } from "@/lib/admin-import.functions";
 import { isImportedPair, pdfCardPair } from "@/lib/pdf-card-pairs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ const labels: Record<string, string> = { approved: "Added to card database", nee
 export function AdminCardImport() {
   const startImport = useServerFn(beginCardImport);
   const processPair = useServerFn(importCardPair);
+  const processPairs = useServerFn(importCardPairs);
   const confirm = useServerFn(confirmCardImport);
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
@@ -94,27 +95,45 @@ export function AdminCardImport() {
       const { data: session } = await supabase.auth.getUser();
       if (!session.user) throw new Error("Please sign in again.");
       let failures = 0;
-      for (let index = 0; index < batch.page_count / 2; index++) {
-        if (stop.current) break;
-        if (isImportedPair(statuses.get(index) ?? "")) continue;
+      const total = batch.page_count / 2;
+      const CHUNK = 6;
+      const uploadPair = async (index: number) => {
         const pair = pdfCardPair(batch.page_count, index);
-        setPhase(`Card ${index + 1} of ${batch.page_count / 2} · Uploading`);
+        for (const side of ["front", "back"] as const) {
+          const blob = await scannerPage(document, pair[side], dpi);
+          const path = `${session.user.id}/${batch.id}/${index}-${side}.png`;
+          const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+          if (error) throw new Error(error.message);
+        }
+      };
+      for (let start = 0; start < total; start += CHUNK) {
+        if (stop.current) break;
+        const indexes = Array.from({ length: Math.min(CHUNK, total - start) }, (_, i) => start + i).filter((i) => !isImportedPair(statuses.get(i) ?? ""));
+        if (!indexes.length) continue;
         try {
-          for (const side of ["front", "back"] as const) {
-            const blob = await scannerPage(document, pair[side], dpi);
-            const path = `${session.user.id}/${batch.id}/${index}-${side}.png`;
-            const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
-            if (error) throw new Error(error.message);
-          }
-          setPhase(`Card ${index + 1} of ${batch.page_count / 2} · Identifying`);
-          await processPair({ data: { importId: batch.id, index } });
+          setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Uploading`);
+          for (const index of indexes) await uploadPair(index);
+          setPhase(`Cards ${indexes[0]! + 1}–${indexes[indexes.length - 1]! + 1} of ${total} · Identifying`);
+          await processPairs({ data: { importId: batch.id, start: indexes[0]!, count: indexes.length } });
           failures = 0;
         } catch (error) {
-          failures++;
-          toast.error(`Card ${index + 1}: ${error instanceof Error ? error.message : "Import failed"}`);
-          if (failures >= 3) { stop.current = true; setPhase("Paused after repeated errors"); }
+          // Batch read failed — fall back to one card at a time for this chunk.
+          toast.error(`Batch failed (${error instanceof Error ? error.message : "error"}); trying cards one by one.`);
+          for (const index of indexes) {
+            if (stop.current) break;
+            try {
+              setPhase(`Card ${index + 1} of ${total} · Identifying`);
+              await processPair({ data: { importId: batch.id, index } });
+              failures = 0;
+            } catch (e) {
+              failures++;
+              toast.error(`Card ${index + 1}: ${e instanceof Error ? e.message : "Import failed"}`);
+              if (failures >= 3) { stop.current = true; setPhase("Paused after repeated errors"); }
+            }
+          }
         }
-        if (index % 5 === 0 || stop.current) { await loadStatuses(batch.id); qc.invalidateQueries({ queryKey: ["admin-import-pairs"] }); }
+        await loadStatuses(batch.id);
+        qc.invalidateQueries({ queryKey: ["admin-import-pairs"] });
       }
       await loadStatuses(batch.id);
       qc.invalidateQueries({ queryKey: ["admin-import-pairs"] });

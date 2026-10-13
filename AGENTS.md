@@ -27,3 +27,5 @@
 - Route loaders must never throw: wrap data lookups in try/catch and return an empty fallback, because a rejected loader renders the router error boundary and blanks the whole page.
 - Merchant order status changes go only through public.merchant_update_order (SECURITY DEFINER; transitions mirrored in src/lib/orders.ts, tested); orders has no client insert/update policy so future checkout and shipping webhooks write server-side.
 - src/server has its own AGENTS.md (provider, coin and stamp catalog rules) — read it before changing files there.
+
+- Bulk PDF imports identify cards in batches of up to 8 per AI call (identifyImportBatch in src/server/identify.server.ts) using the light model openai/gpt-5.4-mini with direct provider pinning only; single-card scans keep the full identifyImage pipeline. Chunk failures fall back to per-card processing in AdminCardImport.

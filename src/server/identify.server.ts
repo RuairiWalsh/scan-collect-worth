@@ -167,6 +167,91 @@ export async function identifyImage(image: string, strip?: string | undefined, b
 
 type StreamJson = typeof import("@/server/ai.server").streamJson;
 
+/**
+ * Bulk scanner imports: one light-model call identifies several cards at once
+ * (batches are usually one set, so this stays accurate), then each card is pinned
+ * to its exact catalog entry with direct provider lookups only — no extra AI pick
+ * calls. Anything uncertain stays "needs_details" for admin review.
+ */
+export async function identifyImportBatch(pairs: { front: string; back: string }[]): Promise<Identification[]> {
+  const { streamJson, AiError } = await import("@/server/ai.server");
+  const content: Record<string, unknown>[] = [
+    { type: "input_text", text: `These are ${pairs.length} trading cards from one scanner batch (usually the same set). For each card the front image comes first, then its back. Identify every card, in order.` },
+  ];
+  pairs.forEach((p, i) => {
+    content.push(
+      { type: "input_text", text: `Card ${i + 1} front:` },
+      { type: "input_image", image_url: p.front, detail: "high" },
+      { type: "input_text", text: `Card ${i + 1} back:` },
+      { type: "input_image", image_url: p.back, detail: "high" },
+    );
+  });
+  let identified: Identification[];
+  try {
+    const out = await streamJson<{ cards: Identification[] }>({
+      instructions: [
+        "You are an expert identifier of trading cards and sports cards.",
+        "Identify EACH card from its front and back. First transcribe the printed text, then base the identification on that text — never on artwork alone.",
+        "Pokémon: name top-left; collector number like 025/165 at the bottom left or right; the set is defined by that number + set symbol, not by the artwork.",
+        "Magic: collector number and 3-letter set code bottom-left. Yu-Gi-Oh!: set code like LOB-EN001 under the artwork, right side. One Piece/Lorcana/Digimon: code bottom-right.",
+        "Sports: player name, brand (Topps, Panini, Upper Deck…), card number on the back or corner. ALWAYS give `year`: use the copyright line (©1999), the year in the set name, or the season/stat line; only null if none is visible. Put the brand/product in set_name (e.g. 1999 Topps Chrome).",
+        "Copy the number exactly as printed into `number` (keep leading zeros and the /total). If you can't read it, use null — do not guess numbers.",
+        "Non-English cards (e.g. Japanese): set `language` accordingly, but write `name` and `set_name` as the official ENGLISH names so the catalog can match; copy the number exactly as printed.",
+        "Use confidence below 0.5 when the text is unreadable.",
+      ].join("\n"),
+      content,
+      schemaName: "import_batch",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["cards"],
+        properties: { cards: { type: "array", items: schema } },
+      },
+      effort: "low",
+      model: "openai/gpt-5.4-mini",
+    });
+    identified = out.cards ?? [];
+  } catch (e) {
+    if (e instanceof AiError) throw e;
+    throw e;
+  }
+  if (identified.length !== pairs.length) throw new Error(`The AI read ${identified.length} of ${pairs.length} cards; try a smaller batch.`);
+  const { cardsightConfigured, cardsightFindCard } = await import("@/server/cardsight.server");
+  const { justtcgConfigured, findCatalogCandidates } = await import("@/server/prices.server");
+  const { confidentMatch, baseName } = await import("@/lib/catalog");
+  for (const result of identified) {
+    if (!result.year) result.year = /\b(19[5-9]\d|20[0-4]\d)\b/.exec(`${result.set_name ?? ""} ${result.printed_text ?? ""}`)?.[1] ?? null;
+    if (!result.is_collectible || result.category !== "cards") continue;
+    try {
+      if (result.subcategory === "sports" && cardsightConfigured()) {
+        const card = await cardsightFindCard({ name: result.name, set_name: result.set_name, number: result.number, year: result.year });
+        if (card) {
+          result.catalog_id = card.id;
+          result.name = card.name || result.name;
+          result.set_name = card.releaseName || card.setName || result.set_name;
+          result.number = card.number || result.number;
+          result.year = card.releaseYear || result.year;
+          result.confidence = Math.max(result.confidence, 0.8);
+        }
+      } else if (justtcgConfigured()) {
+        const card = confidentMatch(await findCatalogCandidates(result));
+        if (card) {
+          const lang = result.language && result.language !== "English" ? result.language : null;
+          if (lang && !new RegExp(lang, "i").test(result.variant ?? "")) result.variant = [result.variant, lang].filter(Boolean).join(" ");
+          result.name = baseName(card.name) || result.name;
+          result.set_name = card.set_name ?? result.set_name;
+          result.number = card.number ?? result.number;
+          result.catalog_id = card.id;
+          result.confidence = Math.max(result.confidence, 0.85);
+        }
+      }
+    } catch (e) {
+      console.error("Batch catalog match failed", e);
+    }
+  }
+  return identified;
+}
+
 /** Pin a coin to its exact Numista type/issue; images then come from Numista (cached ≤7 days). */
 async function matchNumista(result: Identification, image: string, back: string | undefined, streamJson: StreamJson) {
   const { numistaConfigured, numistaSearch, numistaType, rankNumistaTypes, pickNumistaIssue } = await import("@/server/numista.server");

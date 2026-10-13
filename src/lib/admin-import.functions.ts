@@ -27,6 +27,15 @@ export const importCardPair = createServerFn({ method: "POST" })
     return processImportPair(data.importId, data.index, context.userId);
   });
 
+export const importCardPairs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ importId: z.string().uuid(), start: z.number().int().nonnegative(), count: z.number().int().min(1).max(8) }))
+  .handler(async ({ data, context }) => {
+    const { assertImportAdmin, processImportBatch } = await import("@/server/admin-import.server");
+    await assertImportAdmin(context.supabase, context.userId);
+    return processImportBatch(data.importId, data.start, data.count, context.userId);
+  });
+
 export const confirmCardImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ pairId: z.string().uuid(), name: z.string().min(1).max(200), set_name: z.string().min(1).max(200), number: z.string().min(1).max(80), year: z.string().min(1).max(20), line: z.string().min(1).max(100), subcategory: z.enum(["tcg", "sports", "nonsport"]), variant: z.string().max(100), language: z.string().min(1).max(50) }))
