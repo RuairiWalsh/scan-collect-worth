@@ -16,6 +16,7 @@ export const searchCardSets = createServerFn({ method: "POST" })
 async function missingForSet(supabase: import("@supabase/supabase-js").SupabaseClient<import("@/integrations/supabase/types").Database>, setId: string) {
   const { cardsightSetCards } = await import("@/server/cardsight.server");
   const cards = await cardsightSetCards(setId);
+  if (!cards.length) throw new Error("Couldn't load this set's card list from the sports-card service. Please try again in a moment.");
   const have = new Set<string>();
   for (let i = 0; i < cards.length; i += 200) {
     const ids = cards.slice(i, i + 200).map((c) => c.id);
