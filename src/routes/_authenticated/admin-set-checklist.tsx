@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ListChecks, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { missingSetCards, searchCardSets } from "@/lib/admin-set-checklist.functions";
+import { missingScannedSetCards, missingSetCards, scannedSets, searchCardSets } from "@/lib/admin-set-checklist.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
   head: () => ({ meta: [
@@ -30,12 +30,36 @@ function Page() {
   return <Checklist />;
 }
 
+function MissingList({ title, result }: { title: string; result: Missing }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <p className="text-sm">
+        <ListChecks className="mr-1 inline size-4" />
+        We have <strong>{result.have}</strong> of <strong>{result.total}</strong> cards.
+        {result.missing.length === 0
+          ? " Nothing missing — the set is complete."
+          : ` Missing ${result.missing.length}:`}
+      </p>
+      {result.missing.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {result.missing.map((m, i) => (
+            <span key={i} title={m.name} className="rounded border px-2 py-0.5 font-mono text-sm">#{m.number}</span>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Checklist() {
   const [name, setName] = useState("");
   const [year, setYear] = useState("");
   const [sets, setSets] = useState<SetRow[]>([]);
-  const [picked, setPicked] = useState<SetRow | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<Missing | null>(null);
+
+  const scanned = useQuery({ queryKey: ["admin-scanned-sets"], queryFn: () => scannedSets() });
 
   const findSets = useMutation({
     mutationFn: () => searchCardSets({ data: { name: name.trim(), year: year.trim() || undefined } }),
@@ -44,7 +68,11 @@ function Checklist() {
   });
   const check = useMutation({
     mutationFn: (setId: string) => missingSetCards({ data: { setId } }),
-    onSuccess: (r) => setResult(r as Missing),
+    onError: (e) => toast.error(e.message),
+  });
+  const checkScanned = useMutation({
+    mutationFn: (s: { setName: string; year: string }) => missingScannedSetCards({ data: { setName: s.setName, year: s.year || undefined } }),
+    onSuccess: (r, s) => { setPicked(`${s.year} ${s.setName}`.trim()); setResult(r as Missing); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -54,57 +82,59 @@ function Checklist() {
         <Button asChild variant="ghost" size="icon"><Link to="/admin"><ArrowLeft className="size-4" /></Link></Button>
         <h1 className="font-display text-3xl font-black">Set checklist</h1>
       </div>
-      <p className="text-sm text-muted-foreground">Find which card numbers of a sports set are still missing from our catalog — handy before scanning a batch.</p>
+      <p className="text-sm text-muted-foreground">Sets already in our catalog, and which card numbers are still missing from each — handy before scanning a batch.</p>
 
-      <div className="flex flex-wrap gap-2">
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Set name, e.g. Topps Gold Label" className="max-w-xs" />
-        <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Year (optional)" className="w-32" />
-        <Button disabled={!name.trim() || findSets.isPending} onClick={() => findSets.mutate()}>
-          <Search className="size-4" />{findSets.isPending ? "Searching…" : "Find sets"}
-        </Button>
-      </div>
+      <section className="space-y-2">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sets we've scanned</h2>
+        {scanned.isPending && <p className="text-sm text-muted-foreground">Loading sets…</p>}
+        {scanned.isError && <p className="text-sm text-destructive">Sets could not be loaded.</p>}
+        {scanned.data?.length === 0 && <p className="text-sm text-muted-foreground">No sports sets in the catalog yet.</p>}
+        {scanned.data && scanned.data.length > 0 && (
+          <div className="divide-y rounded-md border">
+            {scanned.data.map((s) => (
+              <button
+                key={`${s.setName}|${s.year}`}
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
+                disabled={checkScanned.isPending}
+                onClick={() => { setResult(null); checkScanned.mutate(s); }}
+              >
+                <span className="font-medium">{s.year} {s.setName}</span>
+                <span className="text-sm text-muted-foreground">{s.count} in catalog</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
 
-      {sets.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Matching sets</h2>
+      {checkScanned.isPending && <p className="text-muted-foreground">Checking the catalog…</p>}
+      {picked && result && <MissingList title={picked} result={result} />}
+
+      <section className="space-y-2 border-t-2 border-ink pt-4">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Look up any other set</h2>
+        <div className="flex flex-wrap gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Set name, e.g. Topps Gold Label" className="max-w-xs" />
+          <Input value={year} onChange={(e) => setYear(e.target.value)} placeholder="Year (optional)" className="w-32" />
+          <Button disabled={!name.trim() || findSets.isPending} onClick={() => findSets.mutate()}>
+            <Search className="size-4" />{findSets.isPending ? "Searching…" : "Find sets"}
+          </Button>
+        </div>
+        {sets.length > 0 && (
           <div className="divide-y rounded-md border">
             {sets.map((s) => (
               <button
                 key={s.id}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
-                onClick={() => { setPicked(s); setResult(null); check.mutate(s.id); }}
+                onClick={() => { setPicked(`${s.releaseYear} ${s.releaseName} — ${s.name}`); setResult(null); check.mutate(s.id); }}
               >
                 <span className="font-medium">{s.releaseYear} {s.releaseName} — {s.name}</span>
                 <span className="text-sm text-muted-foreground">{s.cardCount} cards</span>
               </button>
             ))}
           </div>
-        </section>
-      )}
-
-      {check.isPending && <p className="text-muted-foreground">Checking the catalog…</p>}
-
-      {picked && result && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-            {picked.releaseYear} {picked.releaseName} — {picked.name}
-          </h2>
-          <p className="text-sm">
-            <ListChecks className="mr-1 inline size-4" />
-            We have <strong>{result.have}</strong> of <strong>{result.total}</strong> cards.
-            {result.missing.length === 0
-              ? " Nothing missing — the set is complete."
-              : ` Missing ${result.missing.length}:`}
-          </p>
-          {result.missing.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {result.missing.map((m, i) => (
-                <span key={i} title={m.name} className="rounded border px-2 py-0.5 font-mono text-sm">#{m.number}</span>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
+        )}
+        {check.isPending && <p className="text-muted-foreground">Checking the catalog…</p>}
+        {picked && result && !checkScanned.isPending && check.isSuccess && <MissingList title={picked} result={result} />}
+      </section>
     </main>
   );
 }
