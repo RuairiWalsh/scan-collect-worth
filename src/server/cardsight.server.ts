@@ -74,14 +74,27 @@ export type CardsightSet = {
   releaseYear: string;
 };
 
-/** Admin set checklist: find sets by name (+ optional year). */
+/**
+ * Admin set checklist: find sets by name (+ optional year).
+ * CardSight's set search only matches subset names ("New Breed"), never the release
+ * ("1999 Topps"), so search releases first and list each release's sets.
+ */
 export async function cardsightSearchSets(name: string, year?: string | null): Promise<CardsightSet[]> {
-  const params = new URLSearchParams({ name, take: "50" });
+  const params = new URLSearchParams({ name, take: "10" });
   if (year) params.set("year", year);
-  const res = await csFetch(`/v1/catalog/sets?${params}`);
+  const res = await csFetch(`/v1/catalog/releases?${params}`);
   if (!res) return [];
-  const j = (await res.json()) as { sets?: CardsightSet[] };
-  return j.sets ?? [];
+  const j = (await res.json()) as { releases?: { id: string }[] };
+  const releases = (j.releases ?? []).slice(0, 10);
+  const out: CardsightSet[] = [];
+  for (const rel of releases) {
+    const sres = await csFetch(`/v1/catalog/sets?releaseId=${encodeURIComponent(rel.id)}&take=50`);
+    if (!sres) continue;
+    const sj = (await sres.json()) as { sets?: CardsightSet[] };
+    out.push(...(sj.sets ?? []));
+  }
+  // Base Set first within each release, then by card count descending.
+  return out.sort((a, b) => Number(/^base/i.test(b.name)) - Number(/^base/i.test(a.name)) || b.cardCount - a.cardCount);
 }
 
 /** Every card in a set, paginated. Text metadata only — no images. */
