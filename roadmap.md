@@ -28,4 +28,4 @@
 
 - [x] Coins: Numista identification, pictures and prices
 - [x] Bulk import set memory: later cards matched by number+set via text search, no images to CardSight
-- [ ] Admin panel: missing card numbers for a given set
+- [x] Admin panel: missing card numbers for a given set
