@@ -79,6 +79,7 @@ function Checklist() {
   const [sets, setSets] = useState<SetRow[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<Missing | null>(null);
+  const [haveResult, setHaveResult] = useState<Have | null>(null);
 
   const scanned = useQuery({ queryKey: ["admin-scanned-sets"], queryFn: () => scannedSets() });
 
@@ -92,8 +93,8 @@ function Checklist() {
     onError: (e) => toast.error(e.message),
   });
   const checkScanned = useMutation({
-    mutationFn: (s: { setName: string; year: string }) => missingScannedSetCards({ data: { setName: s.setName, year: s.year || undefined } }),
-    onSuccess: (r, s) => { setPicked(`${s.year} ${s.setName}`.trim()); setResult(r as Missing); },
+    mutationFn: (s: { setName: string; year: string }) => scannedSetCards({ data: { setName: s.setName, year: s.year || undefined } }),
+    onSuccess: (r, s) => { setPicked(`${s.year} ${s.setName}`.trim()); setResult(null); setHaveResult(r as Have); },
     onError: (e) => toast.error(e.message),
   });
 
