@@ -46,6 +46,24 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
   return pickCardsightCard(cards, item);
 }
 
+/**
+ * Bulk-import shortcut: batches are usually one set, so once the set is known a
+ * card is found by number (+ year) alone — one cheap text search, no images and
+ * no per-card name guessing. Returns null unless exactly one card fits the set.
+ */
+export async function cardsightFindInSet(setName: string, number: string | null | undefined, year?: string | null): Promise<CardsightCard | null> {
+  const num = cardsightNumber(number);
+  if (!num) return null;
+  const params = new URLSearchParams({ number: num, take: "50" });
+  if (year) params.set("year", year);
+  let cards = await searchCards(params);
+  if (!cards.length && year) {
+    params.delete("year");
+    cards = await searchCards(params);
+  }
+  return pickCardsightCard(cards, { name: "", set_name: setName, number, year: year ?? null });
+}
+
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {
   const res = await csFetch(`/v1/pricing/${encodeURIComponent(cardId)}?period=${period}`);
   if (!res) throw new Error("CardSight pricing is unavailable; the previous price is preserved.");
