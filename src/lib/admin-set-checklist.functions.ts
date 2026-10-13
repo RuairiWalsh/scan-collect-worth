@@ -68,18 +68,33 @@ export const scannedSets = createServerFn({ method: "GET" })
     return [...sets.values()].sort((a, b) => b.count - a.count);
   });
 
-/** Missing numbers for a set we already have, found by its catalog name. */
+/** Missing numbers for a set we already have, computed purely from our own catalog —
+ *  no sports-card service calls. Total = highest card number we've seen for the set. */
 export const missingScannedSetCards = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ setName: z.string().min(1).max(200), year: z.string().max(20).optional() }))
   .handler(async ({ data, context }) => {
     const { assertImportAdmin } = await import("@/server/admin-import.server");
     await assertImportAdmin(context.supabase, context.userId);
-    const { cardsightConfigured, cardsightSearchSets } = await import("@/server/cardsight.server");
-    if (!cardsightConfigured()) throw new Error("The sports-card service is not configured.");
-    const { cardsightSameSet } = await import("@/lib/cardsight");
-    const candidates = await cardsightSearchSets(data.setName, data.year || null);
-    const match = candidates.find((s) => cardsightSameSet([s.releaseName, s.name !== "Base Set" ? s.name : ""].filter(Boolean).join(" "), data.setName) || cardsightSameSet(s.releaseName, data.setName));
-    if (!match) throw new Error(`Could not find "${data.setName}" in the sports-card service.`);
-    return { set: match, ...(await missingForSet(context.supabase, match.id)) };
+    const { data: rows, error } = await context.supabase
+      .from("catalog_prices")
+      .select("number, name, card_metadata")
+      .eq("price_provider", "cardsight")
+      .ilike("set_name", data.setName.trim());
+    if (error) throw new Error("Could not read the catalog.");
+    const yearFilter = (data.year ?? "").trim();
+    const have = new Map<number, string>();
+    for (const row of rows ?? []) {
+      if (yearFilter) {
+        const meta = row.card_metadata && typeof row.card_metadata === "object" && !Array.isArray(row.card_metadata) ? row.card_metadata as Record<string, unknown> : {};
+        if ((typeof meta["year"] === "string" ? meta["year"] : "") !== yearFilter) continue;
+      }
+      const n = Number.parseInt((row.number ?? "").trim(), 10);
+      if (Number.isFinite(n) && n > 0 && !have.has(n)) have.set(n, row.name ?? "");
+    }
+    if (!have.size) throw new Error(`No cards from "${data.setName}" in the catalog yet.`);
+    const total = Math.max(...have.keys());
+    const missing: { number: string; name: string }[] = [];
+    for (let n = 1; n <= total; n++) if (!have.has(n)) missing.push({ number: String(n), name: "" });
+    return { total, have: have.size, missing };
   });
