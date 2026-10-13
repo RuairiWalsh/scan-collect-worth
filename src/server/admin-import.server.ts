@@ -77,8 +77,8 @@ export async function processImportBatch(importId: string, start: number, count:
   const pairs: { index: number; pair: Pair; front: string; back: string }[] = [];
   for (const index of todo) {
     pdfCardPair(batch.page_count, index);
-    const frontPath = `${userId}/${importId}/${index}-front.png`;
-    const backPath = `${userId}/${importId}/${index}-back.png`;
+    const frontPath = `${userId}/${importId}/${index}-front.jpg`;
+    const backPath = `${userId}/${importId}/${index}-back.jpg`;
     const { data: pair, error: saveError } = await db.from("card_image_import_pairs").upsert({ import_id: importId, pair_index: index, front_path: frontPath, back_path: backPath, status: "pending" }, { onConflict: "import_id,pair_index" }).select("*").single();
     if (saveError || !pair) throw new Error("Could not start card import.");
     const [front, back] = await Promise.all([db.storage.from("admin-card-scans").download(frontPath), db.storage.from("admin-card-scans").download(backPath)]);
@@ -105,8 +105,8 @@ export async function processImportPair(importId: string, index: number, userId:
   const { data: batch } = await db.from("card_image_imports").select("*").eq("id", importId).eq("user_id", userId).single();
   if (!batch) throw new Error("Import unavailable.");
   pdfCardPair(batch.page_count, index);
-  const frontPath = `${userId}/${importId}/${index}-front.png`;
-  const backPath = `${userId}/${importId}/${index}-back.png`;
+  const frontPath = `${userId}/${importId}/${index}-front.jpg`;
+  const backPath = `${userId}/${importId}/${index}-back.jpg`;
   const { data: existing } = await db.from("card_image_import_pairs").select("*").eq("import_id", importId).eq("pair_index", index).maybeSingle();
   if (existing && isImportedPair(existing.status)) return { status: existing.status };
   const { data: pair, error: saveError } = await db.from("card_image_import_pairs").upsert({ import_id: importId, pair_index: index, front_path: frontPath, back_path: backPath, status: "pending" }, { onConflict: "import_id,pair_index" }).select("*").single();
