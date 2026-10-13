@@ -173,7 +173,7 @@ type StreamJson = typeof import("@/server/ai.server").streamJson;
  * to its exact catalog entry with direct provider lookups only — no extra AI pick
  * calls. Anything uncertain stays "needs_details" for admin review.
  */
-export type ImportSet = { id: string; name: string; year?: string | null };
+export type ImportSet = { id: string; name: string; year?: string | null | undefined };
 export async function identifyImportBatch(pairs: { front: string; back: string }[], knownSet?: ImportSet | null): Promise<Identification[]> {
   const { streamJson, AiError } = await import("@/server/ai.server");
   const content: Record<string, unknown>[] = [
