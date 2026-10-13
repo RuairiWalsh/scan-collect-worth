@@ -17,6 +17,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminCoinImagesRouteImport } from './routes/_authenticated/admin-coin-images'
 import { Route as AuthenticatedAdminImagesRouteImport } from './routes/_authenticated/admin-images'
 import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/admin-import'
+import { Route as AuthenticatedAdminSetChecklistRouteImport } from './routes/_authenticated/admin-set-checklist'
 import { Route as AuthenticatedAdminStampsRouteImport } from './routes/_authenticated/admin-stamps'
 import { Route as AuthenticatedCollectionRouteImport } from './routes/_authenticated/collection'
 import { Route as AuthenticatedLotRouteImport } from './routes/_authenticated/lot'
@@ -74,6 +75,12 @@ const AuthenticatedAdminImportRoute =
   AuthenticatedAdminImportRouteImport.update({
     id: '/admin-import',
     path: '/admin-import',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminSetChecklistRoute =
+  AuthenticatedAdminSetChecklistRouteImport.update({
+    id: '/admin-set-checklist',
+    path: '/admin-set-checklist',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminStampsRoute =
@@ -170,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
+  '/admin-set-checklist': typeof AuthenticatedAdminSetChecklistRoute
   '/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
@@ -195,6 +203,7 @@ export interface FileRoutesByTo {
   '/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/admin-images': typeof AuthenticatedAdminImagesRoute
   '/admin-import': typeof AuthenticatedAdminImportRoute
+  '/admin-set-checklist': typeof AuthenticatedAdminSetChecklistRoute
   '/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/collection': typeof AuthenticatedCollectionRoute
   '/lot': typeof AuthenticatedLotRoute
@@ -222,6 +231,7 @@ export interface FileRoutesById {
   '/_authenticated/admin-coin-images': typeof AuthenticatedAdminCoinImagesRoute
   '/_authenticated/admin-images': typeof AuthenticatedAdminImagesRoute
   '/_authenticated/admin-import': typeof AuthenticatedAdminImportRoute
+  '/_authenticated/admin-set-checklist': typeof AuthenticatedAdminSetChecklistRoute
   '/_authenticated/admin-stamps': typeof AuthenticatedAdminStampsRoute
   '/_authenticated/collection': typeof AuthenticatedCollectionRoute
   '/_authenticated/lot': typeof AuthenticatedLotRoute
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
+    | '/admin-set-checklist'
     | '/admin-stamps'
     | '/collection'
     | '/lot'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/admin-coin-images'
     | '/admin-images'
     | '/admin-import'
+    | '/admin-set-checklist'
     | '/admin-stamps'
     | '/collection'
     | '/lot'
@@ -300,6 +312,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin-coin-images'
     | '/_authenticated/admin-images'
     | '/_authenticated/admin-import'
+    | '/_authenticated/admin-set-checklist'
     | '/_authenticated/admin-stamps'
     | '/_authenticated/collection'
     | '/_authenticated/lot'
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-import'
       fullPath: '/admin-import'
       preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin-set-checklist': {
+      id: '/_authenticated/admin-set-checklist'
+      path: '/admin-set-checklist'
+      fullPath: '/admin-set-checklist'
+      preLoaderRoute: typeof AuthenticatedAdminSetChecklistRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin-stamps': {
@@ -511,6 +531,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminCoinImagesRoute: typeof AuthenticatedAdminCoinImagesRoute
   AuthenticatedAdminImagesRoute: typeof AuthenticatedAdminImagesRoute
   AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
+  AuthenticatedAdminSetChecklistRoute: typeof AuthenticatedAdminSetChecklistRoute
   AuthenticatedAdminStampsRoute: typeof AuthenticatedAdminStampsRoute
   AuthenticatedCollectionRoute: typeof AuthenticatedCollectionRoute
   AuthenticatedLotRoute: typeof AuthenticatedLotRoute
@@ -526,6 +547,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminCoinImagesRoute: AuthenticatedAdminCoinImagesRoute,
   AuthenticatedAdminImagesRoute: AuthenticatedAdminImagesRoute,
   AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
+  AuthenticatedAdminSetChecklistRoute: AuthenticatedAdminSetChecklistRoute,
   AuthenticatedAdminStampsRoute: AuthenticatedAdminStampsRoute,
   AuthenticatedCollectionRoute: AuthenticatedCollectionRoute,
   AuthenticatedLotRoute: AuthenticatedLotRoute,
