@@ -112,12 +112,12 @@ export function AdminCardImport() {
       const CHUNK = 8;
       const uploadPair = async (index: number) => {
         const pair = pdfCardPair(batch.page_count, index);
-        for (const side of ["front", "back"] as const) {
+        await Promise.all((["front", "back"] as const).map(async (side) => {
           const blob = await scannerPage(document, pair[side], dpi);
-          const path = `${session.user.id}/${batch.id}/${index}-${side}.png`;
-          const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/png" });
+          const path = `${session.user.id}/${batch.id}/${index}-${side}.jpg`;
+          const { error } = await supabase.storage.from("admin-card-scans").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
           if (error) throw new Error(error.message);
-        }
+        }));
       };
       for (let start = 0; start < total; start += CHUNK) {
         if (stop.current) break;
