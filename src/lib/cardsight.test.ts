@@ -68,3 +68,20 @@ describe("rankCardsightCandidates", () => {
     expect(rankCardsightCandidates([b, a], { name: "Earl Snyder", set_name: null })).toHaveLength(2);
   });
 });
+
+describe("bulk-import set shortcut (empty name, number + known set)", () => {
+  const inSet = { name: "", set_name: "2002 Topps Gold Label", number: "49", year: "2002" };
+  it("pins by number inside the remembered set without a player name", () => {
+    const match = card({ name: "Earl Snyder", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
+    expect(pickCardsightCard([match], inSet)).toBe(match);
+  });
+  it("rejects a same-numbered card from a different set", () => {
+    const other = card({ name: "Someone Else", number: "49", releaseName: "2002 Topps", releaseYear: "2002" });
+    expect(pickCardsightCard([other], inSet)).toBeNull();
+  });
+  it("returns null when two cards in the set share the number", () => {
+    const a = card({ name: "Player A", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
+    const b = card({ name: "Player B", number: "49", releaseName: "2002 Topps Gold Label", releaseYear: "2002" });
+    expect(pickCardsightCard([a, b], inSet)).toBeNull();
+  });
+});
