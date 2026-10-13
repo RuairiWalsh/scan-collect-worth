@@ -1,5 +1,5 @@
 // Server-only: CardSight AI catalog metadata. Provider artwork is prohibited.
-import { cardsightNumber, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
+import { cardsightNumber, cardsightSameSet, pickCardsightCard, rankCardsightCandidates, type CardsightCard, type CardsightQuery } from "@/lib/cardsight";
 import type { CardsightPricing } from "@/lib/cardsight-pricing";
 export type { CardsightPricing, CardsightPriceRecord } from "@/lib/cardsight-pricing";
 
@@ -61,7 +61,9 @@ export async function cardsightFindInSet(setName: string, number: string | null 
     params.delete("year");
     cards = await searchCards(params);
   }
-  return pickCardsightCard(cards, { name: "", set_name: setName, number, year: year ?? null });
+  // Exact set only — a base "2002 Topps" card must never satisfy a "2002 Topps Gold Label" batch.
+  const inSet = cards.filter((c) => cardsightSameSet(c.releaseName, setName) || cardsightSameSet(c.setName, setName));
+  return pickCardsightCard(inSet, { name: "", set_name: setName, number, year: year ?? null });
 }
 
 export async function cardsightGetPricing(cardId: string, period = "90d"): Promise<CardsightPricing | null> {
