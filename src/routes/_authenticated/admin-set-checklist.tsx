@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useRoles } from "@/hooks/use-roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { missingScannedSetCards, missingSetCards, scannedSets, searchCardSets } from "@/lib/admin-set-checklist.functions";
+import { missingSetCards, scannedSetCards, scannedSets, searchCardSets } from "@/lib/admin-set-checklist.functions";
 
 export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
   head: () => ({ meta: [
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/admin-set-checklist")({
 
 type SetRow = { id: string; name: string; cardCount: number; releaseName: string; releaseYear: string };
 type Missing = { total: number; have: number; missing: { number: string; name: string }[]; sizeKnown?: boolean };
+type Have = { have: number; cards: { number: string; name: string }[] };
 
 function Page() {
   const { isAdmin, isLoading } = useRoles();
@@ -55,12 +56,30 @@ function MissingList({ title, result }: { title: string; result: Missing }) {
   );
 }
 
+function HaveList({ title, result }: { title: string; result: Have }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{title}</h2>
+      <p className="text-sm">
+        <ListChecks className="mr-1 inline size-4" />
+        We have <strong>{result.have}</strong> cards from this set:
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {result.cards.map((c, i) => (
+          <span key={i} title={c.name} className="rounded border px-2 py-0.5 font-mono text-sm">#{c.number}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Checklist() {
   const [name, setName] = useState("");
   const [year, setYear] = useState("");
   const [sets, setSets] = useState<SetRow[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<Missing | null>(null);
+  const [haveResult, setHaveResult] = useState<Have | null>(null);
 
   const scanned = useQuery({ queryKey: ["admin-scanned-sets"], queryFn: () => scannedSets() });
 
@@ -74,8 +93,8 @@ function Checklist() {
     onError: (e) => toast.error(e.message),
   });
   const checkScanned = useMutation({
-    mutationFn: (s: { setName: string; year: string }) => missingScannedSetCards({ data: { setName: s.setName, year: s.year || undefined } }),
-    onSuccess: (r, s) => { setPicked(`${s.year} ${s.setName}`.trim()); setResult(r as Missing); },
+    mutationFn: (s: { setName: string; year: string }) => scannedSetCards({ data: { setName: s.setName, year: s.year || undefined } }),
+    onSuccess: (r, s) => { setPicked(`${s.year} ${s.setName}`.trim()); setResult(null); setHaveResult(r as Have); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -85,7 +104,7 @@ function Checklist() {
         <Button asChild variant="ghost" size="icon"><Link to="/admin"><ArrowLeft className="size-4" /></Link></Button>
         <h1 className="font-display text-3xl font-black">Set checklist</h1>
       </div>
-      <p className="text-sm text-muted-foreground">Sets already in our catalog, and which card numbers are still missing from each — handy before scanning a batch.</p>
+      <p className="text-sm text-muted-foreground">Sets already in our catalog, and the card numbers we have for each — handy before scanning a batch.</p>
 
       <section className="space-y-2">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Sets we've scanned</h2>
@@ -99,7 +118,7 @@ function Checklist() {
                 key={`${s.setName}|${s.year}`}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
                 disabled={checkScanned.isPending}
-                onClick={() => { setResult(null); checkScanned.mutate(s); }}
+                onClick={() => { setResult(null); setHaveResult(null); checkScanned.mutate(s); }}
               >
                 <span className="font-medium">{s.year} {s.setName}</span>
                 <span className="text-sm text-muted-foreground">{s.count} in catalog</span>
@@ -109,8 +128,8 @@ function Checklist() {
         )}
       </section>
 
-      {checkScanned.isPending && <p className="text-muted-foreground">Checking the catalog…</p>}
-      {picked && result && <MissingList title={picked} result={result} />}
+      {checkScanned.isPending && <p className="text-muted-foreground">Reading the catalog…</p>}
+      {picked && haveResult && <HaveList title={picked} result={haveResult} />}
 
       <section className="space-y-2 border-t-2 border-ink pt-4">
         <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Look up any other set</h2>
@@ -127,7 +146,7 @@ function Checklist() {
               <button
                 key={s.id}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-accent"
-                onClick={() => { setPicked(`${s.releaseYear} ${s.releaseName} — ${s.name}`); setResult(null); check.mutate(s.id); }}
+                onClick={() => { setPicked(`${s.releaseYear} ${s.releaseName} — ${s.name}`); setResult(null); setHaveResult(null); check.mutate(s.id); }}
               >
                 <span className="font-medium">{s.releaseYear} {s.releaseName} — {s.name}</span>
                 <span className="text-sm text-muted-foreground">{s.cardCount} cards</span>
