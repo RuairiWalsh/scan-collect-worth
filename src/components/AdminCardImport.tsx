@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
+import { Upload, Pause, Play, FileText, Pencil, ChevronLeft, ChevronRight, RotateCw, Check } from "lucide-react";
 import { toast } from "sonner";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { supabase } from "@/integrations/supabase/client";
@@ -211,6 +211,26 @@ export function AdminCardImport() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save details."); }
     finally { setSaving(false); }
   }
+  const [approving, setApproving] = useState<string | null>(null);
+  function pairDetails(row: Pair): Details | null {
+    const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
+    const str = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]) : "";
+    const item: Details = { name: str("name"), set_name: str("set_name"), number: str("number"), year: str("year"), line: str("line"), variant: str("variant"), language: str("language") || "English", subcategory: str("subcategory") === "tcg" ? "tcg" : str("subcategory") === "nonsport" ? "nonsport" : "sports" };
+    return item.name && item.set_name && item.number && item.year && item.line ? item : null;
+  }
+  async function approve(row: Pair) {
+    const details = pairDetails(row);
+    if (!details) { edit(row); return; }
+    setApproving(row.id);
+    try {
+      await confirm({ data: { pairId: row.id, ...details } });
+      toast.success("Card added to the database and daily price updates");
+      qc.invalidateQueries({ queryKey: ["catalog-card"] });
+      await loadStatuses(row.import_id);
+      qc.invalidateQueries({ queryKey: ["admin-import-pairs"] }); qc.invalidateQueries({ queryKey: ["admin-images"] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not approve the card."); }
+    finally { setApproving(null); }
+  }
   const total = batch?.page_count ? batch.page_count / 2 : 0;
   return <div className="space-y-8">
     <section className="space-y-4 border-b-2 border-ink pb-6">
@@ -256,7 +276,10 @@ export function AdminCardImport() {
           return <article key={row.id} className="flex flex-wrap items-center gap-4 border-b border-border pb-3">
             <div className="flex gap-2">{[row.front_path, row.back_path].map((path, i) => <div key={path} className="space-y-1"><img src={images.data?.get(path) ?? undefined} alt={`Card ${row.pair_index + 1} ${i ? "back" : "front"}`} className="h-24 w-16 bg-muted object-contain" loading="lazy" /><Button variant="outline" size="sm" className="w-full" disabled={rotating === path || running} aria-label={`Rotate ${i ? "back" : "front"} image`} onClick={() => void rotateImage(path)}><RotateCw className={rotating === path ? "animate-spin" : undefined} />{rotating === path ? "…" : "Rotate"}</Button></div>)}</div>
             <div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">Card {row.pair_index + 1} · Pages {row.pair_index * 2 + 1}–{row.pair_index * 2 + 2}</p><h3 className="break-words font-bold">{typeof metadata["name"] === "string" ? metadata["name"] : "Scanned card"}</h3><p className="text-xs text-muted-foreground">{[metadata["set_name"], metadata["number"], metadata["year"]].filter(v => typeof v === "string").join(" · ")}</p><p className="mt-1 text-sm font-semibold">{labels[row.status] ?? row.status}</p>{row.error && <p className="mt-1 text-xs text-destructive">{row.error}</p>}</div>
-            {row.status === "needs_details" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Review card match</Button>}
+            {row.status === "needs_details" && <>
+              <Button size="sm" disabled={running || approving !== null} onClick={() => void approve(row)}><Check />{approving === row.id ? "Approving…" : "Approve match"}</Button>
+              <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Review card match</Button>
+            </>}
             {row.status === "approved" && <Button variant="outline" size="sm" disabled={running} onClick={() => edit(row)}><Pencil />Edit card</Button>}
           </article>;
         })}</div>
