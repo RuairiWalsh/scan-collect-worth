@@ -211,6 +211,26 @@ export function AdminCardImport() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Could not save details."); }
     finally { setSaving(false); }
   }
+  const [approving, setApproving] = useState<string | null>(null);
+  function pairDetails(row: Pair): Details | null {
+    const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata : {};
+    const str = (key: string) => typeof metadata[key] === "string" ? String(metadata[key]) : "";
+    const item: Details = { name: str("name"), set_name: str("set_name"), number: str("number"), year: str("year"), line: str("line"), variant: str("variant"), language: str("language") || "English", subcategory: str("subcategory") === "tcg" ? "tcg" : str("subcategory") === "nonsport" ? "nonsport" : "sports" };
+    return item.name && item.set_name && item.number && item.year && item.line ? item : null;
+  }
+  async function approve(row: Pair) {
+    const details = pairDetails(row);
+    if (!details) { edit(row); return; }
+    setApproving(row.id);
+    try {
+      await confirm({ data: { pairId: row.id, ...details } });
+      toast.success("Card added to the database and daily price updates");
+      qc.invalidateQueries({ queryKey: ["catalog-card"] });
+      await loadStatuses(row.import_id);
+      qc.invalidateQueries({ queryKey: ["admin-import-pairs"] }); qc.invalidateQueries({ queryKey: ["admin-images"] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not approve the card."); }
+    finally { setApproving(null); }
+  }
   const total = batch?.page_count ? batch.page_count / 2 : 0;
   return <div className="space-y-8">
     <section className="space-y-4 border-b-2 border-ink pb-6">
