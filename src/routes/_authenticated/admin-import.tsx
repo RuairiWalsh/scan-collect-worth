@@ -20,5 +20,5 @@ function AdminImportPage() {
   const { isAdmin, isLoading } = useRoles();
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>;
   if (!isAdmin) return <div className="mx-auto max-w-md p-8 text-center"><h1 className="text-2xl font-extrabold">Admins only</h1><Link to="/collection" className="mt-4 inline-block text-primary underline">Back to collection</Link></div>;
-  return <main className="mx-auto max-w-6xl space-y-8 px-4 py-6"><div className="flex flex-wrap items-center justify-between gap-3"><h1 className="font-display text-3xl font-black">Scanner PDF imports</h1><Button asChild variant="outline"><Link to="/admin"><ArrowLeft />Back to admin</Link></Button></div><AdminCardImport /></main>;
+  return <main className="mx-auto max-w-6xl space-y-8 px-4 py-6"><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between"><h1 className="truncate font-display text-2xl font-black sm:text-3xl">Scanner PDF imports</h1><Button asChild variant="outline" size="sm"><Link to="/admin"><ArrowLeft />Back</Link></Button></div><AdminCardImport /></main>;
 }
