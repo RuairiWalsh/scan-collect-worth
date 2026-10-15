@@ -9,8 +9,9 @@ import { usd } from "@/lib/image";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useState } from "react";
 import { ConditionSelect } from "@/components/ConditionSelect";
-import { ConditionPrices, VariantSelect } from "@/components/CardPricingControls";
+import { ConditionPrices, GradedPrices, VariantSelect, gradedOptions } from "@/components/CardPricingControls";
 import { resolvePrinting, selectedCardVariant } from "@/lib/card-pricing";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marketQuery } from "@/lib/market";
 import { ListingCard } from "@/components/ListingCard";
 
@@ -32,6 +33,8 @@ function CardPage() {
   const { catalogId } = Route.useParams();
   const [condition, setCondition] = useState<string | null>(null);
   const [printing, setPrinting] = useState<string | null>(null);
+  const [grader, setGrader] = useState<string | null>(null);
+  const [grade, setGrade] = useState<string | null>(null);
   const [side, setSide] = useState<"front" | "back">("front");
   const fetchDetail = useServerFn(catalogCardDetail);
   const { data, isLoading } = useQuery({
@@ -41,7 +44,11 @@ function CardPage() {
   const variants = data?.card?.variants ?? [];
   const resolvedCondition = condition ?? (data?.card?.price_provider === "justtcg" ? "raw_nm" : "raw_ungraded");
   const resolved = resolvePrinting(variants, printing);
-  const selected = selectedCardVariant(variants, resolvedCondition, printing);
+  const graded = gradedOptions(variants);
+  const resolvedGrader = grader && graded.some((g) => g.grader === grader) ? grader : graded[0]?.grader ?? null;
+  const gradeOptions = graded.find((g) => g.grader === resolvedGrader)?.grades ?? [];
+  const resolvedGrade = grade && gradeOptions.includes(grade) ? grade : gradeOptions[0] ?? null;
+  const selected = selectedCardVariant(variants, resolvedCondition, printing, resolvedGrader, resolvedGrade);
   // Saved historical series is NM/base only; never relabel it as another quality.
   const baseHistory = (resolvedCondition === "raw_nm" || resolvedCondition === "raw_ungraded") && resolved === resolvePrinting(variants, null);
   const points = baseHistory ? trimPresale(data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
@@ -95,6 +102,22 @@ function CardPage() {
               <div className="space-y-1"><p className="text-xs font-semibold">Variant</p><VariantSelect variants={variants} value={printing} onChange={setPrinting} /></div>
               <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" subcategory={data.card.price_provider === "cardsight" ? "sports" : null} value={resolvedCondition} onChange={setCondition} /></div>
             </div>
+            {resolvedCondition === "graded" && graded.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="space-y-1"><p className="text-xs font-semibold">Grader</p>
+                  <Select value={resolvedGrader ?? ""} onValueChange={(v) => { setGrader(v); setGrade(null); }}>
+                    <SelectTrigger aria-label="Grader"><SelectValue placeholder="Grader" /></SelectTrigger>
+                    <SelectContent>{graded.map((g) => <SelectItem key={g.grader} value={g.grader}>{g.grader}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1"><p className="text-xs font-semibold">Grade</p>
+                  <Select value={resolvedGrade ?? ""} onValueChange={setGrade}>
+                    <SelectTrigger aria-label="Grade"><SelectValue placeholder="Grade" /></SelectTrigger>
+                    <SelectContent>{gradeOptions.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
             {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed sales · USD</p>}
             {data.card.price_status === "failed" && <p className="text-xs text-destructive">{variants.length ? "Latest price check unavailable; showing the last saved price." : "No exact price match available yet; daily checks will retry."}</p>}
@@ -110,6 +133,7 @@ function CardPage() {
               emptyHint="No price history available for this condition and variant."
             />
             <ConditionPrices variants={variants} printing={printing} />
+            <GradedPrices variants={variants} printing={printing} />
           </div>
           <CardListings catalogId={catalogId} />
         </>

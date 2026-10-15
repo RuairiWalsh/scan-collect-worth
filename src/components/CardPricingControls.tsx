@@ -29,6 +29,33 @@ export function ItemVariantSelect({ catalogId, ...props }: { catalogId: string |
   const { data = [] } = useCardVariants(catalogId);
   return <VariantSelect variants={data} {...props} />;
 }
+export function gradedOptions(variants: CardVariant[]) {
+  const byGrader = new Map<string, Set<string>>();
+  for (const v of variants) {
+    if (v.condition !== "Graded" || !v.grader || !v.grade) continue;
+    byGrader.set(v.grader, new Set([...(byGrader.get(v.grader) ?? []), v.grade]));
+  }
+  return [...byGrader.entries()].map(([grader, grades]) => ({
+    grader,
+    grades: [...grades].sort((a, b) => Number(b) - Number(a) || a.localeCompare(b)),
+  }));
+}
+export function GradedPrices({ variants, printing }: { variants: CardVariant[]; printing: string | null }) {
+  const groups = gradedOptions(variants).map(({ grader, grades }) => ({
+    grader,
+    rows: grades
+      .map((grade) => ({ grade, v: selectedCardVariant(variants, "graded", printing, grader, grade) }))
+      .filter((r): r is { grade: string; v: CardVariant } => Boolean(r.v)),
+  })).filter((g) => g.rows.length);
+  if (!groups.length) return null;
+  return <div className="mt-4 border-t border-border pt-3">
+    <p className="mb-2 text-xs font-semibold text-muted-foreground">GRADED PRICES · COMPLETED SALES</p>
+    <div className="space-y-3">{groups.map((g) => <div key={g.grader}>
+      <p className="text-xs font-semibold">{g.grader}</p>
+      <dl className="mt-1 space-y-1 text-sm">{g.rows.map((r) => <div key={r.grade} className="flex justify-between gap-3"><dt>{g.grader} {r.grade}</dt><dd className="tabular font-semibold">{usd(r.v.price ?? null)}</dd></div>)}</dl>
+    </div>)}</div>
+  </div>;
+}
 export function ConditionPrices({ variants, printing }: { variants: CardVariant[]; printing: string | null }) {
   return <div className="mt-4 border-t border-border pt-3">
     <p className="mb-2 text-xs font-semibold text-muted-foreground">CONDITION PRICES{resolvePrinting(variants, printing) ? ` · ${printingLabel(resolvePrinting(variants, printing) ?? "")}` : ""}</p>
