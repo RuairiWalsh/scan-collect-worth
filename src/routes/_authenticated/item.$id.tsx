@@ -22,7 +22,7 @@ import { ItemArtwork } from "@/components/ItemArtwork";
 import { parseNumistaId } from "@/lib/numista";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
-import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
+import { useCardVariants, VariantSelect, ConditionPrices, GradedPrices, gradedOptions } from "@/components/CardPricingControls";
 import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
 import { FolderPicker, itemFoldersQuery } from "@/components/FolderPicker";
 
@@ -204,8 +204,10 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const nul = (v: string) => (v.trim() ? v : null);
   const identityUnchanged = f.category === item.category && f.name === item.name && f.number === item.number && f.set_name === item.set_name && f.line === item.line;
   const exactPricing = f.category === "cards" && variants.length > 0 && identityUnchanged;
-  const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant)?.price ?? null : item.est_value;
-  const sources = exactPricing ? cardPriceSources(variants, f.condition, f.variant) : (item.price_sources as unknown as PriceSource[]) ?? [];
+  const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant, f.grader, f.grade)?.price ?? null : item.est_value;
+  const sources = exactPricing ? cardPriceSources(variants, f.condition, f.variant, f.grader, f.grade) : (item.price_sources as unknown as PriceSource[]) ?? [];
+  const hasGraded = exactPricing && gradedOptions(variants).length > 0;
+  const [priceTab, setPriceTab] = useState<"raw" | "graded">("raw");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
