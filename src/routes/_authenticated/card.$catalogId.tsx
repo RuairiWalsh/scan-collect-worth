@@ -102,6 +102,22 @@ function CardPage() {
               <div className="space-y-1"><p className="text-xs font-semibold">Variant</p><VariantSelect variants={variants} value={printing} onChange={setPrinting} /></div>
               <div className="space-y-1"><p className="text-xs font-semibold">Condition</p><ConditionSelect category="cards" subcategory={data.card.price_provider === "cardsight" ? "sports" : null} value={resolvedCondition} onChange={setCondition} /></div>
             </div>
+            {resolvedCondition === "graded" && graded.length > 0 && (
+              <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="space-y-1"><p className="text-xs font-semibold">Grader</p>
+                  <Select value={resolvedGrader ?? ""} onValueChange={(v) => { setGrader(v); setGrade(null); }}>
+                    <SelectTrigger aria-label="Grader"><SelectValue placeholder="Grader" /></SelectTrigger>
+                    <SelectContent>{graded.map((g) => <SelectItem key={g.grader} value={g.grader}>{g.grader}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1"><p className="text-xs font-semibold">Grade</p>
+                  <Select value={resolvedGrade ?? ""} onValueChange={setGrade}>
+                    <SelectTrigger aria-label="Grade"><SelectValue placeholder="Grade" /></SelectTrigger>
+                    <SelectContent>{gradeOptions.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Market price</p>
             {data.card.price_provider === "cardsight" && <p className="text-xs text-muted-foreground">CardSight · completed sales · USD</p>}
             {data.card.price_status === "failed" && <p className="text-xs text-destructive">{variants.length ? "Latest price check unavailable; showing the last saved price." : "No exact price match available yet; daily checks will retry."}</p>}
