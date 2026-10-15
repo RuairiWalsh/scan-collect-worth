@@ -263,20 +263,22 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               </p>
             )}
             <PriceHistoryChart history={history} />
-            {exactPricing && hasGraded && (
+            {exactPricing && (hasGraded || item.subcategory === "sports") && (
               <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Price type">
                 <Button size="sm" variant={priceTab === "raw" ? "default" : "outline"} aria-pressed={priceTab === "raw"} onClick={() => setPriceTab("raw")}>Ungraded</Button>
                 <Button size="sm" variant={priceTab === "graded" ? "default" : "outline"} aria-pressed={priceTab === "graded"} onClick={() => setPriceTab("graded")}>Graded</Button>
               </div>
             )}
-            {exactPricing && (!hasGraded || priceTab === "raw") && (
+            {exactPricing && priceTab === "raw" && (
               <ConditionPrices
                 variants={variants}
                 printing={f.variant}
                 conditions={item.subcategory === "sports" ? [{ key: "raw_ungraded", label: "Raw (ungraded)" }] : undefined}
               />
             )}
-            {exactPricing && hasGraded && priceTab === "graded" && <GradedPrices variants={variants} printing={f.variant} />}
+            {exactPricing && priceTab === "graded" && (hasGraded
+              ? <GradedPrices variants={variants} printing={f.variant} />
+              : <p className="mt-4 border-2 border-foreground p-3 text-sm text-muted-foreground">No graded sales found for this card yet. Prices appear here once PSA, BGS, SGC or CGC copies sell.</p>)}
             <ul className="mt-4 space-y-2 text-sm">
               {sources.map((s) => (
                 <li key={s.source} className="flex items-center justify-between gap-2">
