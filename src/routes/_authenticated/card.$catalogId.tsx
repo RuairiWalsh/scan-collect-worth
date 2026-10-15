@@ -44,7 +44,11 @@ function CardPage() {
   const variants = data?.card?.variants ?? [];
   const resolvedCondition = condition ?? (data?.card?.price_provider === "justtcg" ? "raw_nm" : "raw_ungraded");
   const resolved = resolvePrinting(variants, printing);
-  const selected = selectedCardVariant(variants, resolvedCondition, printing);
+  const graded = gradedOptions(variants);
+  const resolvedGrader = grader && graded.some((g) => g.grader === grader) ? grader : graded[0]?.grader ?? null;
+  const gradeOptions = graded.find((g) => g.grader === resolvedGrader)?.grades ?? [];
+  const resolvedGrade = grade && gradeOptions.includes(grade) ? grade : gradeOptions[0] ?? null;
+  const selected = selectedCardVariant(variants, resolvedCondition, printing, resolvedGrader, resolvedGrade);
   // Saved historical series is NM/base only; never relabel it as another quality.
   const baseHistory = (resolvedCondition === "raw_nm" || resolvedCondition === "raw_ungraded") && resolved === resolvePrinting(variants, null);
   const points = baseHistory ? trimPresale(data?.history ?? []).map((h) => ({ recorded_at: h.recorded_at, value: h.nm_price })) : (selected?.priceHistory ?? []).map((p) => ({ recorded_at: new Date(p.t * 1000).toISOString(), value: p.p }));
