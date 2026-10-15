@@ -22,7 +22,7 @@ import { ItemArtwork } from "@/components/ItemArtwork";
 import { parseNumistaId } from "@/lib/numista";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useOfficialImages } from "@/hooks/use-official-images";
-import { useCardVariants, VariantSelect, ConditionPrices } from "@/components/CardPricingControls";
+import { useCardVariants, VariantSelect, ConditionPrices, GradedPrices, gradedOptions } from "@/components/CardPricingControls";
 import { cardPriceSources, selectedCardVariant } from "@/lib/card-pricing";
 import { FolderPicker, itemFoldersQuery } from "@/components/FolderPicker";
 
@@ -204,8 +204,10 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
   const nul = (v: string) => (v.trim() ? v : null);
   const identityUnchanged = f.category === item.category && f.name === item.name && f.number === item.number && f.set_name === item.set_name && f.line === item.line;
   const exactPricing = f.category === "cards" && variants.length > 0 && identityUnchanged;
-  const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant)?.price ?? null : item.est_value;
-  const sources = exactPricing ? cardPriceSources(variants, f.condition, f.variant) : (item.price_sources as unknown as PriceSource[]) ?? [];
+  const selectedPrice = exactPricing ? selectedCardVariant(variants, f.condition, f.variant, f.grader, f.grade)?.price ?? null : item.est_value;
+  const sources = exactPricing ? cardPriceSources(variants, f.condition, f.variant, f.grader, f.grade) : (item.price_sources as unknown as PriceSource[]) ?? [];
+  const hasGraded = exactPricing && gradedOptions(variants).length > 0;
+  const [priceTab, setPriceTab] = useState<"raw" | "graded">("raw");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -261,7 +263,20 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               </p>
             )}
             <PriceHistoryChart history={history} />
-            {exactPricing && <ConditionPrices variants={variants} printing={f.variant} />}
+            {exactPricing && hasGraded && (
+              <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Price type">
+                <Button size="sm" variant={priceTab === "raw" ? "default" : "outline"} aria-pressed={priceTab === "raw"} onClick={() => setPriceTab("raw")}>Ungraded</Button>
+                <Button size="sm" variant={priceTab === "graded" ? "default" : "outline"} aria-pressed={priceTab === "graded"} onClick={() => setPriceTab("graded")}>Graded</Button>
+              </div>
+            )}
+            {exactPricing && (!hasGraded || priceTab === "raw") && (
+              <ConditionPrices
+                variants={variants}
+                printing={f.variant}
+                conditions={item.subcategory === "sports" ? [{ key: "raw_ungraded", label: "Raw (ungraded)" }] : undefined}
+              />
+            )}
+            {exactPricing && hasGraded && priceTab === "graded" && <GradedPrices variants={variants} printing={f.variant} />}
             <ul className="mt-4 space-y-2 text-sm">
               {sources.map((s) => (
                 <li key={s.source} className="flex items-center justify-between gap-2">

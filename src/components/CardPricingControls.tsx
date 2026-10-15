@@ -56,9 +56,9 @@ export function GradedPrices({ variants, printing }: { variants: CardVariant[]; 
     </div>)}</div>
   </div>;
 }
-export function ConditionPrices({ variants, printing }: { variants: CardVariant[]; printing: string | null }) {
+export function ConditionPrices({ variants, printing, conditions = CARD_CONDITIONS }: { variants: CardVariant[]; printing: string | null; conditions?: { key: string; label: string }[] | undefined }) {
   return <div className="mt-4 border-t border-border pt-3">
     <p className="mb-2 text-xs font-semibold text-muted-foreground">CONDITION PRICES{resolvePrinting(variants, printing) ? ` · ${printingLabel(resolvePrinting(variants, printing) ?? "")}` : ""}</p>
-    <dl className="space-y-1 text-sm">{CARD_CONDITIONS.map((c) => <div key={c.key} className="flex justify-between gap-3"><dt>{c.label}</dt><dd className="tabular font-semibold">{selectedCardVariant(variants, c.key, printing)?.price != null ? usd(selectedCardVariant(variants, c.key, printing)?.price ?? null) : "Unavailable"}</dd></div>)}</dl>
+    <dl className="space-y-1 text-sm">{conditions.map((c) => <div key={c.key} className="flex justify-between gap-3"><dt>{c.label}</dt><dd className="tabular font-semibold">{selectedCardVariant(variants, c.key, printing)?.price != null ? usd(selectedCardVariant(variants, c.key, printing)?.price ?? null) : "Unavailable"}</dd></div>)}</dl>
   </div>;
 }
