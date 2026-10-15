@@ -133,6 +133,7 @@ function CardPage() {
               emptyHint="No price history available for this condition and variant."
             />
             <ConditionPrices variants={variants} printing={printing} />
+            <GradedPrices variants={variants} printing={printing} />
           </div>
           <CardListings catalogId={catalogId} />
         </>
