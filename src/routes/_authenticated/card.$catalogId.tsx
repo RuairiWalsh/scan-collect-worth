@@ -9,8 +9,9 @@ import { usd } from "@/lib/image";
 import { PriceSparkline } from "@/components/PriceSparkline";
 import { useState } from "react";
 import { ConditionSelect } from "@/components/ConditionSelect";
-import { ConditionPrices, VariantSelect } from "@/components/CardPricingControls";
+import { ConditionPrices, GradedPrices, VariantSelect, gradedOptions } from "@/components/CardPricingControls";
 import { resolvePrinting, selectedCardVariant } from "@/lib/card-pricing";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { marketQuery } from "@/lib/market";
 import { ListingCard } from "@/components/ListingCard";
 
