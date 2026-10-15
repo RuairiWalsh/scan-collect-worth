@@ -263,7 +263,20 @@ function ItemEditor({ item, history }: { item: Item; history: HistoryPoint[] }) 
               </p>
             )}
             <PriceHistoryChart history={history} />
-            {exactPricing && <ConditionPrices variants={variants} printing={f.variant} />}
+            {exactPricing && hasGraded && (
+              <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label="Price type">
+                <Button size="sm" variant={priceTab === "raw" ? "default" : "outline"} aria-pressed={priceTab === "raw"} onClick={() => setPriceTab("raw")}>Ungraded</Button>
+                <Button size="sm" variant={priceTab === "graded" ? "default" : "outline"} aria-pressed={priceTab === "graded"} onClick={() => setPriceTab("graded")}>Graded</Button>
+              </div>
+            )}
+            {exactPricing && (!hasGraded || priceTab === "raw") && (
+              <ConditionPrices
+                variants={variants}
+                printing={f.variant}
+                conditions={item.subcategory === "sports" ? [{ key: "raw_ungraded", label: "Raw (ungraded)" }] : undefined}
+              />
+            )}
+            {exactPricing && hasGraded && priceTab === "graded" && <GradedPrices variants={variants} printing={f.variant} />}
             <ul className="mt-4 space-y-2 text-sm">
               {sources.map((s) => (
                 <li key={s.source} className="flex items-center justify-between gap-2">
