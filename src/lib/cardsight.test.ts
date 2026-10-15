@@ -94,3 +94,11 @@ describe("matchSetCardByNumber", () => {
   it("does not guess between repeated numbers", () => { expect(matchSetCardByNumber(set, "50", null)).toBeNull(); });
   it("returns null for numbers not in the set", () => { expect(matchSetCardByNumber(set, "999", "Earl Snyder")).toBeNull(); });
 });
+
+import { pickCardsightCard as pickExact } from "./cardsight";
+import { test as t2, expect as e2 } from "vitest";
+t2("exact set name beats a longer release (Topps vs Topps Chrome)", () => {
+  const base = { id: "a", number: "290", name: "Jim Thome", setName: "Base Set", releaseName: "Topps", releaseYear: "1998" } as never;
+  const chrome = { id: "b", number: "290", name: "Jim Thome", setName: "Base Set", releaseName: "Topps Chrome", releaseYear: "1998" } as never;
+  e2(pickExact([base, chrome], { name: "Jim Thome", set_name: "Topps", number: "290", year: "1998" })?.id).toBe("a");
+});

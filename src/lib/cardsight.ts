@@ -56,6 +56,8 @@ export function pickCardsightCard(candidates: CardsightCard[], item: CardsightQu
     const setBits = [norm(card.setName), norm(card.releaseName)].filter(Boolean);
     if (wantSet && !setBits.some((s) => s.includes(wantSet) || wantSet.includes(s))) return { card, score: -1 };
     if (wantSet) score += 2;
+    // "Topps" must beat "Topps Chrome" when the set name matches exactly.
+    if (wantSet && setBits.some((s) => s === wantSet || s === wantSet.replace(/^\d{4} /, ""))) score += 1;
     if (wantYear && (card.releaseYear ?? "").trim() === wantYear) score += 1;
     return { card, score };
   });
