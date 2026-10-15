@@ -52,7 +52,11 @@ export async function cardsightFindCard(item: CardsightQuery): Promise<Cardsight
     params.delete("number");
     cards = await searchCards(params);
   }
-  return pickCardsightCard(cards, item);
+  const picked = pickCardsightCard(cards, item);
+  if (picked) return picked;
+  // A misspelled player name hides the card; set + number alone still pins it exactly.
+  if (num && item.set_name) return cardsightFindInSet(item.set_name, item.number, item.year);
+  return null;
 }
 
 /**
